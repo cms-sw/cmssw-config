@@ -1,0 +1,47 @@
+# -*- toolbox -*-
+<doc type=BuildSystem::Requirements version=2.0>
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_112_3">
+<include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
+<select name=cxxcompiler>
+<select name=f77compiler>
+<select name=ccompiler>
+<select name=clhep>
+<select name=AIDA>
+#<select name=qt>
+#<select name=geant>
+#<select name=pythia>
+#<select name=cern-generic>
+<select name=RFIO>
+<select name=zlib>
+<select name=sockets>
+<select name=python>
+<select name=boost>
+#<select name=cmsim>
+#<select name=geant4>
+<select name=xerces-c>
+<select name=ROOT>
+<select name=ROOTCore>
+<select name=UUID>
+<select name=OTL>
+<select name=gsl>
+#<select name=oracle>
+<select name=sqlite>
+<select name=unixODBC>
+<select name=MyODBC>
+<select name=pool>
+<select name=CondDB>
+<select name=mysqlpp>
+<select name=mysql>
+<select name=edg-rls-client>
+<select name=seal>
+<select name=gccxml>
+<select name=graphviz>
+#<select name=opengl>
+#<select name=x11>
+<select name=boost_python>
+<select name=pi>
+<select name=bz2lib>
+<select name=pcre>
+<select name=dcap>
+#<select name=ignominy>
+</base>

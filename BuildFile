@@ -1,0 +1,47 @@
+# -*-toolbox-*-
+
+<Architecture name=rh73_gcc323>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</Architecture>
+
+<Architecture name=slc3_ia32_gcc323>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</Architecture>
+
+<Architecture name=slc3_ia32_gcc323_dbg>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</Architecture>
+
+
+
+# Storage locations:
+<ProductStore name=lib type=arch swap=true>
+<ProductStore name=bin type=arch swap=true>
+<ProductStore name=module type=arch swap=true>
+<ProductStore name=python type=arch swap=true>
+
+
+
+# ClassPaths:
+<ClassPath path=+Project/+SubSystem/+Package/src+library>
+<ClassPath path=+Project/+SubSystem/+Package/bin+binary>
+<ClassPath path=+Project/+SubSystem/+Package/test+binary>
+<ClassPath path=+Project/+SubSystem/+Package/plugmodule+module>
+<ClassPath path=+Project/+SubSystem/+Package/python+python>
+
+# Add use for SCRAM-managed projects we're going to use 
+# (this ensures that we end up with LIBDIR and INCLUDE from each):
+<use name=seal>
+<use name=pool>
+
+# Choose a compiler:
+<use name=cxxcompiler>
