@@ -22,6 +22,4 @@
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
 <Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
-# We globally depend on the wrappers:
-<use name=Porting>
 </Tool>
