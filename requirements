@@ -1,6 +1,6 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_115">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_115_1">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
@@ -32,4 +32,6 @@
 <select name=bz2lib>
 <select name=pcre>
 <select name=dcap>
+<select name=ignominy>
+<select name=rulechecker>
 </base>
