@@ -35,8 +35,8 @@ CCcompiler:=gcc3
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
 <ClassPath path=+Project/+SubSystem/+Package/test+binary>
-<ClassPath path=+Project/+SubSystem/+Package/plugmodule+module>
-<ClassPath path=+Project/+SubSystem/+Package/python+python>
+# <ClassPath path=+Project/+SubSystem/+Package/plugmodule+module>
+# <ClassPath path=+Project/+SubSystem/+Package/python+python>
 
 # Add use for SCRAM-managed projects we're going to use 
 # (this ensures that we end up with LIBDIR and INCLUDE from each):
