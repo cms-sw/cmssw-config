@@ -20,6 +20,7 @@
 <select name=OTL>
 <select name=gsl>
 <select name=sqlite>
+<select name=oracle>
 <select name=unixODBC>
 <select name=MyODBC>
 <select name=pool>
