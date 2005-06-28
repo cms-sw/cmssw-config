@@ -11,7 +11,7 @@
  <Environment name=INCLUDE value="$LOCALTOP/src">
  </Environment>
 </Client>
-<Runtime name=BASE_PATH value="$LOCALTOP">
+<Runtime name=CMSSW_BASE value="$LOCALTOP">
 <Runtime name=LOCALRT value="$LOCALTOP">
 <Runtime name=LD_LIBRARY_PATH value="$LIBDIR" type=path>
 <Runtime name=LD_LIBRARY_PATH value="$MODULEDIR" type=path>
