@@ -36,4 +36,5 @@
 <select name=ignominy>
 <select name=rulechecker>
 <select name=cppunit>
+<select name=xdaq>
 </base>
