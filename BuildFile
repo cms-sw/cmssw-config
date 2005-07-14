@@ -26,17 +26,15 @@ CCcompiler:=gcc3
 # Storage locations:
 <ProductStore name=lib type=arch swap=true>
 <ProductStore name=bin type=arch swap=true>
+<ProductStore name=test type=arch swap=true>
+<ProductStore name=logs>
 <ProductStore name=module type=arch swap=true>
 <ProductStore name=python type=arch swap=true>
-
-
 
 # ClassPaths:
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
-<ClassPath path=+Project/+SubSystem/+Package/test+binary>
-# <ClassPath path=+Project/+SubSystem/+Package/plugmodule+module>
-# <ClassPath path=+Project/+SubSystem/+Package/python+python>
+<ClassPath path=+Project/+SubSystem/+Package/test+test>
 
 # Add use for SCRAM-managed projects we're going to use 
 # (this ensures that we end up with LIBDIR and INCLUDE from each):
