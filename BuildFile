@@ -22,14 +22,12 @@ CCcompiler:=gcc3
 </Architecture>
 
 
-
 # Storage locations:
 <ProductStore name=lib type=arch swap=true>
 <ProductStore name=bin type=arch swap=true>
 <ProductStore name=test type=arch swap=true>
 <ProductStore name=logs>
 <ProductStore name=module type=arch swap=true>
-<ProductStore name=python type=arch swap=true>
 
 # ClassPaths:
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
