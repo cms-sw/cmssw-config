@@ -26,7 +26,6 @@
 <select name=pool>
 <select name=mysqlpp>
 <select name=mysql>
-<select name=edg-rls-client>
 <select name=seal>
 <select name=gccxml>
 <select name=boost_python>
