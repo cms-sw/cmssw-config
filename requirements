@@ -20,6 +20,7 @@
 <select name=xerces-c>
 <select name=ROOT>
 <select name=ROOTCore>
+<select name=ROOTInteractive>
 <select name=UUID>
 <select name=OTL>
 <select name=gsl>
