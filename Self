@@ -6,7 +6,7 @@
  </Environment>
  <Environment name=LIBDIR value="$LOCALTOP/lib/$SCRAM_ARCH">
  </Environment>
- <Environment name=EDM_BINDIR value="$LOCALTOP/bin/$SCRAM_ARCH">
+ <Environment name=CMSSW_BINDIR value="$LOCALTOP/bin/$SCRAM_ARCH">
  </Environment>
  <Environment name=INCLUDE value="$LOCALTOP/src">
  </Environment>
@@ -15,10 +15,8 @@
 <Runtime name=LOCALRT value="$LOCALTOP">
 <Runtime name=LD_LIBRARY_PATH value="$LIBDIR" type=path>
 <Runtime name=LD_LIBRARY_PATH value="$MODULEDIR" type=path>
-<Runtime name=PATH value="$EDM_BINDIR" type=path>
+<Runtime name=PATH value="$CMSSW_BINDIR" type=path>
 <Runtime name=MODULEPATH value="$MODULEDIR" type=path>
-<Runtime name=PYTHONPATH value="$LOCALTOP/python/$SCRAM_ARCH" type=path handler=warn>
-<Runtime name=PYTHONPATH value="$LIBDIR" type=path>
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
 <Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
