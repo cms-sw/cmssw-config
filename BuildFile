@@ -27,9 +27,11 @@ CCcompiler:=gcc3
 <ProductStore name=bin type=arch swap=true>
 <ProductStore name=test type=arch swap=true>
 <ProductStore name=logs>
+<ProductStore name=doc>
 <ProductStore name=module type=arch swap=true>
 
 # ClassPaths:
+<ClassPath path=+Project/Documentation+Documentation/+doc>
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
 <ClassPath path=+Project/+SubSystem/+Package/test+test>
