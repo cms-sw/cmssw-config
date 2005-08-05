@@ -40,7 +40,7 @@
 <select name=cppunit>
 <select name=qt>
 <select name=soqt>
-<select name=opengl                                                                                    
+<select name=opengl>
 <select name=openinventor>
 <select name=coin3d>
 <select name=jpeg>
