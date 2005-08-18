@@ -49,4 +49,5 @@
 <select name=hippodraw>
 <select name=qutexmlrpc>
 <select name=x11>
+<select name=frontier>
 </base>
