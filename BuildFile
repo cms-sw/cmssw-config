@@ -19,9 +19,9 @@ CCcompiler:=gcc3
 <makefile>
 F77compiler:=g77
 CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </Architecture>
-
 
 # Storage locations:
 <ProductStore name=lib type=arch swap=true>
