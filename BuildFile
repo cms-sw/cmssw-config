@@ -15,6 +15,7 @@ CCcompiler:=gcc3
 </Architecture>
 
 <Architecture name=slc3_ia32_gcc323_dbg>
+<Flags CXXFLAGS="-g">
 <makefile>
 F77compiler:=g77
 CCcompiler:=gcc3
