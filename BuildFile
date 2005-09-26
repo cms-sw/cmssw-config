@@ -33,6 +33,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 
 # ClassPaths:
 <ClassPath path=+Project/Documentation+Documentation/+doc>
+<ClassPath path=+Project/+SubSystem/+Package/scripts+scripts>
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
 <ClassPath path=+Project/+SubSystem/+Package/test+test>
