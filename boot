@@ -8,7 +8,7 @@
 	CMSSW_0_2_0_pre3 boot file
 
 <Config dir=config>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_0_2_0_pre2">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_0_2_0_pre3">
 <download url="cvs:?module=config" name="config">
 <RequirementsDoc name=config/requirements>
 </base>
