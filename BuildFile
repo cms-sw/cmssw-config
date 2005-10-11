@@ -27,7 +27,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <ProductStore name=lib type=arch swap=true>
 <ProductStore name=bin type=arch swap=true>
 <ProductStore name=test type=arch swap=true>
-<ProductStore name=logs>
+<ProductStore name=logs type=arch swap=true>
 <ProductStore name=doc>
 <ProductStore name=module type=arch swap=true>
 
