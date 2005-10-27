@@ -54,4 +54,7 @@
 <select name=pythia>
 <select name=pythia6_227>
 <select name=CMKIN>
+<select name=fed9uutils>
+<select name=icutils>
+<select name=doxygen>
 </base>
