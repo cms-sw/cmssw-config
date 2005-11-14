@@ -20,7 +20,7 @@
 <Runtime name=PATH value="$CMSSW_BINDIR" type=path>
 <Runtime name=MODULEPATH value="$MODULEDIR" type=path>
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
-<Runtime name=CMSSW_SEARCH_PATH value=".:$CMSSW_DATA_PATH">
+<Runtime name=CMSSW_SEARCH_PATH value=".:CMSSW_DATA_PATH">
 <Runtime name=CMSSW_VERSION value="CMSSW_0_2_0">
 #<Runtime name=CMSSW_PVERSION value="$SCRAMRT_SET">
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
