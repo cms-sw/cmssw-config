@@ -2,26 +2,22 @@
 <doc type=BuildSystem::ToolDoc version=1.0>
 <Tool name=SELF version=SELF>
 <Client>
- <Environment name=MODULEDIR value="$LOCALTOP/module/$SCRAM_ARCH">
- </Environment>
  <Environment name=LIBDIR value="$LOCALTOP/lib/$SCRAM_ARCH">
  </Environment>
  <Environment name=CMSSW_BINDIR value="$LOCALTOP/bin/$SCRAM_ARCH">
  </Environment>
  <Environment name=INCLUDE value="$LOCALTOP/src">
  </Environment>
- <Environment name=CMSSW_DATA_PATH value="$CMS_PATH/data/$SCRAM_PROJECTVERSION">
- </Environment>
+# <Environment name=CMSSW_DATA_PATH value="$CMS_PATH/data/$SCRAM_PROJECTVERSION">
+# </Environment>
 </Client>
 <Runtime name=CMSSW_BASE value="$LOCALTOP">
 <Runtime name=LOCALRT value="$LOCALTOP">
 <Runtime name=LD_LIBRARY_PATH value="$LIBDIR" type=path>
-<Runtime name=LD_LIBRARY_PATH value="$MODULEDIR" type=path>
 <Runtime name=PATH value="$CMSSW_BINDIR" type=path>
-<Runtime name=MODULEPATH value="$MODULEDIR" type=path>
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
 <Runtime name=CMSSW_SEARCH_PATH value=".:CMSSW_DATA_PATH">
-<Runtime name=CMSSW_VERSION value="CMSSW_0_2_0">
+#<Runtime name=CMSSW_VERSION value="CMSSW_0_2_0">
 #<Runtime name=CMSSW_PVERSION value="$SCRAMRT_SET">
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
 <Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
