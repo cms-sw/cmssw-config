@@ -14,9 +14,9 @@
 <Runtime name=LD_LIBRARY_PATH value="$LIBDIR" type=path>
 <Runtime name=PATH value="$CMSSW_BINDIR" type=path>
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
-<Runtime name=CMSSW_DATA_PATH value="$CMS_PATH/data/CMSSW_0_3_0_pre2">
+<Runtime name=CMSSW_DATA_PATH value="$CMS_PATH/data/CMSSW_0_3_0_pre3">
 <Runtime name=CMSSW_SEARCH_PATH value="LOCAL:CMSSW_DATA_PATH">
-<Runtime name=CMSSW_VERSION value="CMSSW_0_3_0_pre2">
+<Runtime name=CMSSW_VERSION value="CMSSW_0_3_0_pre3">
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
 <Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
 </Tool>
