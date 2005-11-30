@@ -28,6 +28,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <ProductStore name=bin type=arch swap=true>
 <ProductStore name=test type=arch swap=true>
 <ProductStore name=logs type=arch swap=true>
+<ProductStore name=share>
 <ProductStore name=doc>
 <ProductStore name=module type=arch swap=true>
 
@@ -37,6 +38,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
 <ClassPath path=+Project/+SubSystem/+Package/test+test>
+<ClassPath path=+Project/+SubSystem/+Package/data+data_install>
 
 # Add use for SCRAM-managed projects we're going to use 
 # (this ensures that we end up with LIBDIR and INCLUDE from each):
