@@ -10,14 +10,14 @@
  </Environment>
 </Client>
 <Runtime name=CMSSW_BASE value="$LOCALTOP">
+<Runtime name=CMSSW_RELEASE_BASE value="$RELEASETOP">
 <Runtime name=LOCALRT value="$LOCALTOP">
+<Runtime name=CMSSW_VERSION value="$SCRAM_PROJECTVERSION">
 <Runtime name=LD_LIBRARY_PATH value="$LIBDIR" type=path>
 <Runtime name=PATH value="$CMSSW_BINDIR" type=path>
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
-<Runtime name=CMSSW_DATA_PATH value="$CMS_PATH/data/CMSSW_0_3_0_pre4">
-<Runtime name=CMSSW_SEARCH_PATH value="LOCAL:CMSSW_DATA_PATH">
-# NEW <Runtime name=CMSSW_SEARCH_PATH value=".:$LOCALTOP/share" type=path>
-<Runtime name=CMSSW_VERSION value="CMSSW_0_3_0_pre4">
+<Runtime name=CMSSW_SEARCH_PATH value="$LOCALTOP/src" type=path handler=warn>
+<Runtime name=CMSSW_SEARCH_PATH value="$LOCALTOP/share" type=path handler=warn>
 <Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
 <Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
 </Tool>
