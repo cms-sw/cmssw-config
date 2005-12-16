@@ -1,6 +1,6 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_128_2">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_129_2">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
@@ -8,7 +8,6 @@
 <select name=pool>
 <select name=seal>
 <select name=ignominy>
-<select name=iguana>
 <select name=xdaq>
 <select name=geant4>
 <select name=clhep>
@@ -49,7 +48,7 @@
 <select name=hippodraw>
 <select name=qutexmlrpc>
 <select name=x11>
-<select name=frontier>
+<select name=frontier_client>
 <select name=genser>
 <select name=pythia>
 <select name=pythia6_227>
