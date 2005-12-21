@@ -6,7 +6,6 @@
 <select name=f77compiler>
 <select name=ccompiler>
 <select name=pool>
-<select name=coral>
 <select name=seal>
 <select name=ignominy>
 <select name=xdaq>
