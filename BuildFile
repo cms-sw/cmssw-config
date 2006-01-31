@@ -41,8 +41,10 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 
 # Add use for SCRAM-managed projects we're going to use 
 # (this ensures that we end up with LIBDIR and INCLUDE from each):
+<use name=lcgaa>
 <use name=seal>
 <use name=pool>
+<use name=coral>
 
 # Choose a compiler:
 <use name=cxxcompiler>

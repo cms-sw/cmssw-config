@@ -1,15 +1,19 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_129_2">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_130_2">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
 <select name=ccompiler>
+<select name=LCGAA>
+<select name=coral>
 <select name=pool>
 <select name=seal>
-<select name=ignominy>
+<select name=relax>
+#<select name=ignominy>
 <select name=xdaq>
 <select name=geant4>
+<select name=hepmc>
 <select name=clhep>
 <select name=AIDA>
 <select name=RFIO>
@@ -19,10 +23,10 @@
 <select name=boost>
 <select name=xerces-c>
 <select name=ROOT>
+<select name=ROOTRflx>
 <select name=ROOTCore>
 <select name=ROOTInteractive>
 <select name=UUID>
-<select name=OTL>
 <select name=gsl>
 <select name=sqlite>
 <select name=oracle>
@@ -57,5 +61,5 @@
 <select name=icutils>
 <select name=doxygen>
 <select name=meschach>
-<select name=iguana>
+#<select name=iguana>
 </base>
