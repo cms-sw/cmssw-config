@@ -10,7 +10,7 @@
 <select name=pool>
 <select name=seal>
 <select name=relax>
-#<select name=ignominy>
+<select name=ignominy>
 <select name=xdaq>
 <select name=geant4>
 <select name=hepmc>
