@@ -61,5 +61,5 @@
 <select name=icutils>
 <select name=doxygen>
 <select name=meschach>
-#<select name=iguana>
+<select name=iguana>
 </base>
