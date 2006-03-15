@@ -16,7 +16,6 @@
 <select name=hepmc>
 <select name=heppdt>
 <select name=clhep>
-<select name=AIDA>
 <select name=RFIO>
 <select name=zlib>
 <select name=sockets>
@@ -57,7 +56,6 @@
 <select name=genser>
 <select name=pythia>
 <select name=pythia6_227>
-<select name=CMKIN>
 <select name=fed9uutils>
 <select name=icutils>
 <select name=doxygen>
