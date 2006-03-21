@@ -9,7 +9,6 @@
 <select name=coral>
 <select name=pool>
 <select name=seal>
-<select name=relax>
 <select name=ignominy>
 <select name=xdaq>
 <select name=geant4>
@@ -31,7 +30,6 @@
 <select name=sqlite>
 <select name=oracle>
 <select name=unixODBC>
-<select name=MyODBC>
 <select name=mysqlpp>
 <select name=mysql>
 <select name=gccxml>
@@ -52,6 +50,7 @@
 <select name=hippodraw>
 <select name=qutexmlrpc>
 <select name=x11>
+<select name=expat>
 <select name=frontier_client>
 <select name=genser>
 <select name=pythia>
