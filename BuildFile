@@ -1,12 +1,5 @@
 # -*-toolbox-*-
 
-<Architecture name=rh73_gcc323>
-<makefile>
-F77compiler:=g77
-CCcompiler:=gcc3
-</makefile>
-</Architecture>
-
 <Architecture name=slc3_ia32_gcc323>
 <makefile>
 F77compiler:=g77
@@ -15,6 +8,22 @@ CCcompiler:=gcc3
 </Architecture>
 
 <Architecture name=slc3_ia32_gcc323_dbg>
+<Flags CXXFLAGS="-g">
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</Architecture>
+
+<Architecture name=slc3_ia32_gcc344>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</Architecture>
+
+<Architecture name=slc3_ia32_gcc344_dbg>
 <Flags CXXFLAGS="-g">
 <makefile>
 F77compiler:=g77
