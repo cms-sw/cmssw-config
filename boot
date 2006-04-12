@@ -1,13 +1,13 @@
 # -*- toolbox -*-
 <doc type=Configuration::BootStrapProject version=1.0>
-<project name=CMSSW version=CMSSW_0_6_0_pre3>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_133_2">
+<project name=CMSSW version=CMSSW_0_6_0_pre4>
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_134_2">
 <download url="cvs:?module=SCRAMToolBox/CMSconfigs" name=config/site>
 </base>
-	CMSSW_0_6_0_pre3 boot file
+	CMSSW_0_6_0_pre4 boot file
 
 <Config dir=config>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_0_6_0_pre3">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_0_6_0_pre4">
 <download url="cvs:?module=config" name="config">
 <RequirementsDoc name=config/requirements>
 </base>
