@@ -8,7 +8,7 @@ CCcompiler:=gcc3
 </Architecture>
 
 <Architecture name=slc3_ia32_gcc323_dbg>
-<Flags CXXFLAGS="-g">
+<Flags CXXFLAGS="-O0 -g -DDEBUG">
 <makefile>
 F77compiler:=g77
 CCcompiler:=gcc3
@@ -24,7 +24,7 @@ CCcompiler:=gcc3
 </Architecture>
 
 <Architecture name=slc3_ia32_gcc344_dbg>
-<Flags CXXFLAGS="-g">
+<Flags CXXFLAGS="-O0 -g -DDEBUG">
 <makefile>
 F77compiler:=g77
 CCcompiler:=gcc3
