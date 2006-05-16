@@ -1,6 +1,6 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_134a_2">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_135_2">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
@@ -22,6 +22,7 @@
 <select name=boost>
 <select name=xerces-c>
 <select name=ROOT>
+<select name=ROOTCintex>
 <select name=ROOTRflx>
 <select name=ROOTCore>
 <select name=ROOTInteractive>
@@ -55,8 +56,6 @@
 <select name=pythia>
 <select name=pythia6_227>
 <select name=tkonlinesw>
-<select name=fed9uutils>
-<select name=icutils>
 <select name=doxygen>
 <select name=meschach>
 <select name=iguana>
