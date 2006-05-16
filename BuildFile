@@ -16,14 +16,14 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </Architecture>
 
-<Architecture name=slc3_ia32_gcc344>
+<Architecture name=slc4_ia32_gcc345>
 <makefile>
 F77compiler:=g77
 CCcompiler:=gcc3
 </makefile>
 </Architecture>
 
-<Architecture name=slc3_ia32_gcc344_dbg>
+<Architecture name=slc4_ia32_gcc345_dbg>
 <Flags CXXFLAGS="-O0 -g -DDEBUG">
 <makefile>
 F77compiler:=g77
