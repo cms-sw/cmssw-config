@@ -17,7 +17,6 @@
 <select name=heppdt>
 <select name=clhep>
 <select name=Castor>
-<select name=RFIO>
 <select name=zlib>
 <select name=sockets>
 <select name=python>
