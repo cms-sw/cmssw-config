@@ -1,6 +1,6 @@
 # -*- toolbox -*-
 <doc type=Configuration::BootStrapProject version=1.0>
-<project name=CMSSW version=CMSSW_0_9_0_pre3
+<project name=CMSSW version=CMSSW_0_9_0_pre3>
 <base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_139_2">
 <download url="cvs:?module=SCRAMToolBox/CMSconfigs" name=config/site>
 </base>
