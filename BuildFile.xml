@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<doc type="BuildSystem::BuildFile" version="1.0">
+
+<architecture name="slc3_ia32_gcc323">
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</architecture>
+
+<architecture name="slc3_ia32_gcc323_dbg">
+<flags CXXFLAGS="-O0 -g -DDEBUG"/>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</architecture>
+
+<architecture name="slc4_ia32_gcc345">
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+</makefile>
+</architecture>
+
+<architecture name="slc4_ia32_gcc345_dbg">
+<flags CXXFLAGS="-O0 -g -DDEBUG"/>
+<makefile>
+F77compiler:=g77
+CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</architecture>
+
+ <productstore name="lib" type="arch" swap="true"/>
+ <productstore name="bin" type="arch" swap="true"/>
+ <productstore name="test" type="arch" swap="true"/>
+ <productstore name="logs" type="arch" swap="true"/>
+ <productstore name="doc"/>
+ <productstore name="module" type="arch" swap="true"/>
+
+ <classpath path="+Project/+SubSystem/+Package/scripts+scripts"/>
+ <classpath path="+Project/Documentation+Documentation/+doc"/>
+ <classpath path="+Project/+SubSystem/+Package/src+library"/>
+ <classpath path="+Project/+SubSystem/+Package/bin+binary"/>
+ <classpath path="+Project/+SubSystem/+Package/test+test"/>
+ <classpath path="+Project/+SubSystem/+Package/data+data_install"/>
+
+ <use name="lcgaa"/>
+ <use name="coral"/>
+ <use name="pool"/>
+ <use name="seal"/>
+ <use name="cxxcompiler"/>
+
+</doc>
