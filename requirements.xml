@@ -63,7 +63,6 @@
  <select name="expat"/>
  <select name="frontier_client"/>
  <select name="genser"/>
- <select name="pythia"/>
  <select name="pythia6_227"/>
  <select name="toprex421"/>
  <select name="tauola27_121_1"/>
