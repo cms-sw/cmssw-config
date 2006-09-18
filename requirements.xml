@@ -41,6 +41,7 @@
  <select name="mysql"/>
  <select name="gccxml"/>
  <select name="boost_python"/>
+ <select name="elementtree"/>
  <select name="sigcpp"/>
  <select name="mimetic"/>
  <select name="bz2lib"/>
