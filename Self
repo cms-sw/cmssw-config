@@ -18,6 +18,4 @@
 <Runtime name=SEAL_PLUGINS value="$LOCALTOP/module/$SCRAM_ARCH" type=path>
 <Runtime name=CMSSW_SEARCH_PATH value="$LOCALTOP/src" type=path handler=warn>
 <Runtime name=CMSSW_SEARCH_PATH value="$LOCALTOP/share" type=path handler=warn>
-<Flags CPPDEFINES="PROJECT_NAME=$(SCRAM_PROJECTNAME)">
-<Flags CPPDEFINES="PROJECT_VERSION=$(SCRAM_PROJECTVERSION)">
 </Tool>
