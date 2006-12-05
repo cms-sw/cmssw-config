@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <doc type="Configuration::BootStrapProject" version="1.0">
-<<<<<<< boot.xml
  <project name="CMSSW" version="CMSSW_1_2_0">
   <base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_143a_2">
-=======
- <project name="CMSSW" version="CMSSW_1_2_0_pre9">
-  <base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_143a_2">
->>>>>>> 1.13
    <download url="cvs:?module=SCRAMToolBox/CMSconfigs" name="config/site"/>
   </base>
 
