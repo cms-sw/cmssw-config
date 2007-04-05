@@ -1,11 +1,10 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_143f_2">
+<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_147">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
 <select name=ccompiler>
-<select name=LCGAA>
 <select name=coral>
 <select name=pool>
 <select name=RELAX>
@@ -59,8 +58,6 @@
 <select name=jpeg>
 <select name=simage>
 <select name=openssl>
-<select name=hippodraw>
-<select name=qutexmlrpc>
 <select name=x11>
 <select name=expat>
 <select name=frontier_client>
@@ -77,4 +74,9 @@
 <select name=meschach>
 <select name=iguana>
 <select name=glimpse>
+<select name=fastjet>
+<select name=ktjet>
+<select name=valgrind>
+<select name=gmp>
+<select name=glpk>
 </base>
