@@ -1,0 +1,40 @@
+<doc type=Configuration::BootStrapProject version=1.0>
+<project name=CORAL version=CORAL_1_7_2>
+*************************************************************
+ CORAL 1_7_2 project bootstrap with the sources
+ using config with shortened LD_LIBRARY_PATH
+*************************************************************
+<Config dir=config>
+
+# Download requirements and project build templates:
+# Using development tag:
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CORAL_1_7_2">
+<download url="cvs:?module=config" name="config">
+# Download SCRAMV1 compliant BuildFiles :
+</base>
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CORAL_1_7_2">
+<download url="cvs:?module=LCGAAwrappers/CORAL/src" name="scramv1/src">
+<download url="cvs:?module=LCGAAwrappers/CORAL/config" name="scramv1/config">
+</base>
+
+<base url="cvs://coral.cvs.cern.ch/cvs/coral?auth=pserver&user=anonymous&version=CORAL_1_7_2">
+<download url="cvs:?module=coral/config/scram" name="src/config/scram">
+<download url="cvs:?module=coral/CoralBase" name="src/CoralBase">
+<download url="cvs:?module=coral/RelationalAccess" name="src/RelationalAccess">
+<download url="cvs:?module=coral/CoralCommon" name="src/CoralCommon">
+<download url="cvs:?module=coral/OracleAccess" name="src/OracleAccess">
+<download url="cvs:?module=coral/MySQLAccess" name="src/MySQLAccess">
+<download url="cvs:?module=coral/SQLiteAccess" name="src/SQLiteAccess">
+<download url="cvs:?module=coral/FrontierAccess" name="src/FrontierAccess">
+<download url="cvs:?module=coral/RelationalService" name="src/RelationalService">
+<download url="cvs:?module=coral/XMLLookupService" name="src/XMLLookupService">
+#<download url="cvs:?module=coral/LFCLookupService" name="src/LFCLookupService">
+<download url="cvs:?module=coral/PyCoral" name="src/PyCoral">
+<download url="cvs:?module=coral/XMLAuthenticationService" name="src/XMLAuthenticationService">
+<download url="cvs:?module=coral/EnvironmentAuthenticationService" name="src/EnvironmentAuthenticationService">
+<download url="cvs:?module=coral/MonitoringService" name="src/MonitoringService">
+<download url="cvs:?module=coral/ConnectionService" name="src/ConnectionService">
+<download url="cvs:?module=coral/Tests" name="src/Tests">
+</base>
+<RequirementsDoc name=config/CORAL_requirements>
+</project>
