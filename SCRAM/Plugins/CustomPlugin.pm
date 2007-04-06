@@ -242,7 +242,8 @@ sub addPluginSupport ()
     my $c=$self->{cache}{SupportedPlugins}{$t}{Cache};
     my $f=$self->{cache}{SupportedPlugins}{$t}{Flag};
     my $r=$self->{cache}{SupportedPlugins}{$t}{Refresh};
-    if($f eq $flag){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same BuildFile Flag \"$f\"\n.";$err=1;}
+    my $bn=$self->{cache}{BuildFile};
+    if($f eq $flag){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same $bn Flag \"$f\"\n.";$err=1;}
     if($r eq $refresh){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin refresh command \"$r\"\n.";$err=1;}
     if("$c" eq "$cache"){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin cache file \"$c\"\n.";$err=1;}
   }
@@ -493,8 +494,9 @@ sub buildFileTimeStampChecking ()
   my $path=$stash->get('path');
   if ($stash->get('packremoveonly') == 0)
   {
-    my $bf="${path}/BuildFile";
-    if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/BuildFile";}
+    my $bn=$self->{cache}{BuildFile};
+    my $bf="${path}/${bn}";
+    if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/${bn}";}
     if (-f $bf)
     {
       my $name=$stash->get('safename');
@@ -649,10 +651,25 @@ sub getLocalBuildFile ()
 {
   my $self=shift;
   my $path=$self->{context}->stash()->get('path');
-  my $bf="${path}/BuildFile";
-  if(!-f $bf){if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/BuildFile";}}
+  my $bn=$self->{cache}{BuildFile};
+  my $bf="${path}/${bn}";
+  if(!-f $bf){if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/${bn}";}}
   if(!-f $bf){$bf="";}
   return $bf;
+}
+
+sub setBuildFileName ()
+{
+  my $self=shift;
+  my $file=shift || return;
+  $self->{cache}{BuildFile}=$file;
+  return ;
+}
+
+sub getBuildFileName ()
+{
+  my $self=shift;
+  return $self->{cache}{BuildFile};
 }
 
 sub isReleaseArea ()
@@ -830,7 +847,8 @@ sub searchLCGRootDict ()
   }
   elsif($flag>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$h1\") does not match NO. of .xml (\"$x1\") files.\n";}
   my $dref;
-  opendir($dref, $dir) || die "ERROR: Can not open \"$dir\" directory. \"${path}/BuildFile\" is refering for files in this directory.";
+  my $bn=$self->{cache}{BuildFile};
+  opendir($dref, $dir) || die "ERROR: Can not open \"$dir\" directory. \"${path}/${bn}\" is refering for files in this directory.";
   foreach my $file (readdir($dref))
   {
     if($file=~/.*?LinkDef\.h$/)
@@ -1259,6 +1277,7 @@ sub initTemplate_PROJECT ()
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
   $self->{cache}{IgLetFile}="iglet.cc";
+  $self->{cache}{BuildFile}="BuildFile";
   return;
 }
 
