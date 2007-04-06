@@ -3,6 +3,7 @@
 <tool name="SELF" version="SELF">
 <client>
  <environment name="LIBDIR" value="$LOCALTOP/lib/$SCRAM_ARCH"/>
+ <environment name="LIBDIR" value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
  <environment name="CMSSW_BINDIR" value="$LOCALTOP/bin/$SCRAM_ARCH"/>
  <environment name="INCLUDE" value="$LOCALTOP/src"/>
 </client>
@@ -10,9 +11,12 @@
 <runtime name="CMSSW_RELEASE_BASE" value="$RELEASETOP"/>
 <runtime name="LOCALRT" value="$LOCALTOP"/>
 <runtime name="CMSSW_VERSION" value="$SCRAM_PROJECTVERSION"/>
-<runtime name="LD_LIBRARY_PATH" value="$LIBDIR" type="path"/>
+<runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/lib/$SCRAM_ARCH" type="path"/>
+<runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/lib/$SCRAM_ARCH" type="path" handler="warn"/>
 <runtime name="PATH" value="$CMSSW_BINDIR" type="path"/>
 <runtime name="SEAL_PLUGINS" value="$LOCALTOP/module/$SCRAM_ARCH" type="path"/>
+<runtime name="PYTHONPATH" value="$LOCALTOP/lib/$SCRAM_ARCH" type="path"/>
+<runtime name="PYTHONPATH" value="$LOCALTOP/python" type="path"/>
 <runtime name="CMSSW_SEARCH_PATH" value="$LOCALTOP/src" type="path" handler="warn"/>
 <runtime name="CMSSW_SEARCH_PATH" value="$LOCALTOP/share" type="path" handler="warn"/>
 </tool>

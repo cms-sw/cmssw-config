@@ -47,7 +47,6 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
  <classpath path="+Project/+SubSystem/+Package/test+test"/>
  <classpath path="+Project/+SubSystem/+Package/data+data_install"/>
 
- <use name="lcgaa"/>
  <use name="coral"/>
  <use name="pool"/>
  <use name="seal"/>

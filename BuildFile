@@ -37,20 +37,32 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <ProductStore name=bin type=arch swap=true>
 <ProductStore name=test type=arch swap=true>
 <ProductStore name=logs type=arch swap=true>
+<ProductStore name=include type=arch swap=true>
 <ProductStore name=doc>
+<ProductStore name=python>
 <ProductStore name=module type=arch swap=true>
+<ProductStore name=share/ivs>
+<ProductStore name=share/images>
+<ProductStore name=share/htdocs>
 
 # ClassPaths:
+<ClassPath path=+Project/Iguana+SubSystem/Iguana+Package/src+binary>
+<ClassPath path=+Project/Iguana+SubSystem/Utilities+Classlib>
+<ClassPath path=+Project/Iguana+SubSystem/Utilities+Package/+donothing>
+<ClassPath path=+Project/+SubSystem/+Package/ivs+ivs>
+<ClassPath path=+Project/+SubSystem/+Package/html+html>
+<ClassPath path=+Project/+SubSystem/+Package/images+images>
 <ClassPath path=+Project/+SubSystem/+Package/scripts+scripts>
 <ClassPath path=+Project/Documentation+Documentation/+doc>
 <ClassPath path=+Project/+SubSystem/+Package/src+library>
 <ClassPath path=+Project/+SubSystem/+Package/bin+binary>
 <ClassPath path=+Project/+SubSystem/+Package/test+test>
+<ClassPath path=+Project/+SubSystem/+Package/plugins+plugins>
 <ClassPath path=+Project/+SubSystem/+Package/data+data_install>
+<ClassPath path=+Project/+SubSystem/+Package/python+python>
 
 # Add use for SCRAM-managed projects we're going to use 
 # (this ensures that we end up with LIBDIR and INCLUDE from each):
-<use name=lcgaa>
 <use name=coral>
 <use name=pool>
 <use name=seal>
