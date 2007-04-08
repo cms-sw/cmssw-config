@@ -9,7 +9,7 @@
 
 <Config dir=config>
 
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_1_4_0_pre3">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=HEAD">
 <download url="cvs:?module=config" name="config">
 <RequirementsDoc name=config/requirements>
 </base>
