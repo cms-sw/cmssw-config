@@ -3,6 +3,7 @@
 <base url="cvs://cmscvs.cern.ch/cvs_server/repositories/SCRAMToolBox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_147_2">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 
+<select name=ccompiler>
 <select name=cxxcompiler>
 <select name=pcre>
 <select name=zlib>
