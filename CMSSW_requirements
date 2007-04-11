@@ -58,8 +58,6 @@
 <select name=jpeg>
 <select name=simage>
 <select name=openssl>
-<select name=hippodraw>
-<select name=qutexmlrpc>
 <select name=x11>
 <select name=expat>
 <select name=frontier_client>
