@@ -7,7 +7,6 @@
 <select name=ccompiler>
 <select name=coral>
 <select name=pool>
-<select name=RELAX>
 <select name=seal>
 <select name=ignominy>
 <select name=xdaq>
