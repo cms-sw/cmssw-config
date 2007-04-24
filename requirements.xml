@@ -60,7 +60,6 @@
  <select name="expat"/>
  <select name="frontier_client"/>
  <select name="genser"/>
- <select name="pythia6_227"/>
  <select name="toprex421"/>
  <select name="tauola27_121_1"/>
  <select name="charybdis1_002"/>
@@ -74,5 +73,8 @@
  <select name="ktjet"/>
  <select name="gmp"/>
  <select name="glpk"/>
+ <select name="pythia6"/>
+ <select name="pythia8"/>
+ <select name="jimmy/>
 </base>
 </doc>
