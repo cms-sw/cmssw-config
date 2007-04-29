@@ -1,6 +1,6 @@
 # -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_147a2_2">
+<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_147c_2">
 <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
@@ -74,5 +74,4 @@
 <select name=pythia8>
 <select name=jimmy>
 <select name=herwig>
-<select name=iguana>
 </base>
