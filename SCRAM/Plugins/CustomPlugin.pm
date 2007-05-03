@@ -1172,7 +1172,7 @@ sub safename_LCGProjects ()
 }
 
 sub safename_ignominy (){return &safename_CMSProjects("safename_PackageBased",shift);}
-sub safename_iguana (){return &safename_CMSProjects("safename_PackageBased",shift);}
+sub safename_iguana (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
 sub safename_cmssw (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
 
 sub safename_CMSProjects ()
