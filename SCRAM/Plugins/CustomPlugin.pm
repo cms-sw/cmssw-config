@@ -1139,8 +1139,9 @@ sub runToolFunction ()
   my $tool=shift || "self";
   if($tool eq "self"){$tool=$ENV{SCRAM_PROJECTNAME};}
   $tool=lc($tool);
-  $func.="_${tool}";
-  if(exists &$func){return &$func(@_);}
+  my $func1="${func}_${tool}";
+  if(exists &$func1){return &$func1(@_);}
+  elsif($tool ne "default"){return &runToolFunction($func,"default",@_);}
   return "";
 }
 
@@ -1174,6 +1175,7 @@ sub safename_LCGProjects ()
 sub safename_ignominy (){return &safename_CMSProjects("safename_PackageBased",shift);}
 sub safename_iguana (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
 sub safename_cmssw (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
+sub safename_default (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
 
 sub safename_CMSProjects ()
 {
