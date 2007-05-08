@@ -1139,9 +1139,8 @@ sub runToolFunction ()
   my $tool=shift || "self";
   if($tool eq "self"){$tool=$ENV{SCRAM_PROJECTNAME};}
   $tool=lc($tool);
-  my $func1="${func}_${tool}";
-  if(exists &$func1){return &$func1(@_);}
-  elsif($tool ne "default"){return &runToolFunction($func,"default",@_);}
+  $func.="_${tool}";
+  if(exists &$func){return &$func(@_);}
   return "";
 }
 
@@ -1308,8 +1307,20 @@ sub initTemplate_LIBRARY ()
   my $stash=$self->{context}->stash(); 
   my $path=$stash->get('path');
   my $sname=&runToolFunction("safename","self", "$ENV{LOCALTOP}/${path}");
-  if($sname eq ""){$self->processTemplate("safename_generator");}
-  else{$stash->set("safename", $sname);}
+  if($sname eq "")
+  {
+    $self->processTemplate("safename_generator");
+    $sname=$stash->get('safename');
+    if($sname eq ""){$sname=&runToolFunction("safename","default", "$ENV{LOCALTOP}/${path}");}
+  }
+  if($sname ne ""){$stash->set("safename", $sname);}
+  else
+  {
+    print STDERR "*** ERROR: Unable to generate library safename for package \"$path\" of project $ENV{SCRAM_PROJECTNAME}\n";
+    print STDERR "    Please either update the $ENV{SCRAM_PROJECTNAME}_safename_generator.tmpl file to properly generate\n";
+    print STDERR "    safename for this project or add the support for this project in this built template plugin.\n";
+    exit 1;
+  }
   if(exists $self->{cache}{IgLetFile})
   {
     my $file=$self->{cache}{IgLetFile};
