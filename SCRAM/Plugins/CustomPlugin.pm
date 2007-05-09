@@ -878,8 +878,10 @@ sub isDataDownloadCopy ()
     my $urls=();
     foreach my $file (@{&readDir($datapath,2,-1)})
     {if($file=~/\/download\.url$/){push @$urls,$file;$add_download=1;}}
-    if($add_download){$stash->set('downloadurls',$urls);}
-    if($ENV{RELEASETOP} eq ""){$add_data_copy=1;}
+#lange- turn off downloads now - distribute separately
+#    if($add_download){$stash->set('downloadurls',$urls);}
+#lange - turn off copy of data for now
+#    if($ENV{RELEASETOP} eq ""){$add_data_copy=1;}
   }
   $stash->set('add_data_copy',$add_data_copy);
   $stash->set('add_download',$add_download);
