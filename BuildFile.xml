@@ -3,32 +3,24 @@
 
 <architecture name="slc3_ia32_gcc323">
 <makefile>
-F77compiler:=g77
-CCcompiler:=gcc3
 </makefile>
 </architecture>
 
 <architecture name="slc3_ia32_gcc323_dbg">
 <flags CXXFLAGS="-O0 -g -DDEBUG"/>
 <makefile>
-F77compiler:=g77
-CCcompiler:=gcc3
 CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </architecture>
 
 <architecture name="slc4_ia32_gcc345">
 <makefile>
-F77compiler:=g77
-CCcompiler:=gcc3
 </makefile>
 </architecture>
 
 <architecture name="slc4_ia32_gcc345_dbg">
 <flags CXXFLAGS="-O0 -g -DDEBUG"/>
 <makefile>
-F77compiler:=g77
-CCcompiler:=gcc3
 CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </architecture>
