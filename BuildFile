@@ -22,6 +22,16 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </Architecture>
 
+<Architecture name=osx104_ppc32_gcc400>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=osx104_ia32_gcc401>
+<makefile>
+</makefile>
+</Architecture>
+
 <Architecture name=slc4_ia32_gcc345_dbg>
 <Flags CXXFLAGS="-O0 -g -DDEBUG">
 <makefile>
