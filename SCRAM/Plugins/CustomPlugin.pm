@@ -240,17 +240,16 @@ sub addPluginSupport ()
   {
     if($t eq $type){next;}
     my $c=$self->{cache}{SupportedPlugins}{$t}{Cache};
-    my $f=$self->{cache}{SupportedPlugins}{$t}{Flag};
     my $r=$self->{cache}{SupportedPlugins}{$t}{Refresh};
     my $bn=$self->{cache}{BuildFile};
-    if($f eq $flag){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same $bn Flag \"$f\"\n.";$err=1;}
     if($r eq $refresh){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin refresh command \"$r\"\n.";$err=1;}
     if("$c" eq "$cache"){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin cache file \"$c\"\n.";$err=1;}
   }
   if(!$err)
   {
     $self->{cache}{SupportedPlugins}{$type}{Refresh}=$refresh;
-    $self->{cache}{SupportedPlugins}{$type}{Flag}=$flag;
+    $self->{cache}{SupportedPlugins}{$type}{Flag}=[];
+    foreach my $f (split /:/,$flag){push @{$self->{cache}{SupportedPlugins}{$type}{Flag}}, $f;}
     $self->{cache}{SupportedPlugins}{$type}{Cache}=$cache;
     $self->{cache}{SupportedPlugins}{$type}{DefaultDirName}=$reg;
     $self->{cache}{SupportedPlugins}{$type}{Dir}=$dir;
@@ -375,31 +374,32 @@ sub checkSealPluginFlag ()
   }
   else
   {
-    my $pflagfound="";
+    my %xflags=();
     foreach my $ptype (keys %{$self->{cache}{SupportedPlugins}})
     {
-      my $pflag=$self->{cache}{SupportedPlugins}{$ptype}{Flag};
-      if(exists $flags->{$pflag})
+      foreach my $pflag (@{$self->{cache}{SupportedPlugins}{$ptype}{Flag}})
       {
-        if($pflagfound ne ""){print STDERR "****ERROR: More than one plugin flags ($pflag,$pflagfound) in \"$bf[@bf-1]\" file.\n";$err=1;}
-        else
+        if(exists $flags->{$pflag})
         {
-          $pflagfound=$pflag;
+          $xflags{$pflag}=1;
 	  $plugin=$flags->{$pflag};
 	  $plugintype=$ptype;
-	  if(($pflag eq "SEALPLUGIN") && (exists $flags->{SEAL_PLUGIN_NAME}))
-	  {
-            print STDERR "****ERROR: Both flags \"SEALPLUGIN\" and \"SEAL_PLUGIN_NAME\" are set for \"$libname\" library in \"$bf[@bf-1]\" file.\n";
-            print STDERR "           You only need to provide one flag (preferred flag is SEALPLUGIN). Please fix this first otherwise plugin will not be registered.\n";
-            $err=1;
-	  }
+	  if($pflag eq "SEAL_PLUGIN_NAME"){$plugin=1;}
 	  if($plugin!~/^[01]$/)
-          { 
+	  {
             print STDERR "****ERROR: Only allowed values for \"$pflag\" flag are \"0\" OR \"1\". Please fix this for \"$libname\" library in \"$bf[@bf-1]\" file.\n";
             $err=1;
 	  }
-        }
+	}
       }
+    }
+    if(scalar(keys %xflags)>1)
+    {
+      print STDERR "****ERROR: More than one plugin flags\n";
+      foreach my $f (keys %xflags){print STDERR "             $f\n";}
+      print STDERR "           are set for \"$libname\" library in \"$bf[@bf-1]\" file.\n";
+      print STDERR "           You only need to provide one flag. Please fix this first otherwise plugin will not be registered.\n";
+      $err=1;
     }
     if($plugintype eq "")
     {
@@ -409,7 +409,7 @@ sub checkSealPluginFlag ()
         if($path=~/$exp/)
         {
           if(exists $flags->{DEFAULT_PLUGIN})
-	  {
+          {
   	    $self->setDefaultPluginType($flags->{DEFAULT_PLUGIN});
 	    $plugintype=$stash->get('plugin_type');
 	    if($plugintype eq ""){$err=1;}
