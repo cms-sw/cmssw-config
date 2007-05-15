@@ -74,4 +74,5 @@
 <select name=pythia8>
 <select name=jimmy>
 <select name=herwig>
+<select name=hector>
 </base>
