@@ -935,7 +935,7 @@ sub getRootCintPath ()
   foreach my $t ("ROOTCORE", "ROOTRFLX")
   {
     if(exists $self->{cache}{ToolVariables}{"${t}_BASE"})
-    {$cint="\$(${t}_BASE)/root/bin/rootcint";last;}
+    {$cint="\$(${t}_BASE)/bin/rootcint";last;}
   }
   return $cint;
 }
