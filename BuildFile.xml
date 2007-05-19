@@ -58,5 +58,6 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
  <use name="pool"/>
  <use name="seal"/>
  <use name="cxxcompiler"/>
+ <use name="ccompiler"/>
 
 </doc>
