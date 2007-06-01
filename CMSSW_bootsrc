@@ -5,17 +5,17 @@
 <download url="cvs:?module=SCRAMToolBox/CMSconfigs" name=config/site>
 </base>
 
-	CMSSW_1_5_0_pre4 boot file
+	CMSSW_1_5_0_pre5 boot file
 
 <Config dir=config>
 
 # Download requirements and project build templates:
 # Using development tag:
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_1_5_0_pre4">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_1_5_0_pre5">
 <download url="cvs:?module=config" name="config">
 </base>
 
-<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_1_5_0_pre4">
+<base url="cvs://cmscvs.cern.ch/cvs_server/repositories/CMSSW?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMSSW_1_5_0_pre5">
 #<download url="cvs:?module=config" name="config">
 <download url="cvs:?module=CMSSW" name="src">
 <RequirementsDoc name=config/CMSSW_requirements>
