@@ -1,0 +1,20 @@
+<doc type=BuildSystem::Requirements version=2.0>
+<base url="file:@PROJECT_BUILD_PATH@/SCRAMToolBox/">
+<include url="file:CMS/Configuration/CMSconfiguration">
+<select name=seal>
+<select name=oracle>
+<select name=sqlite>
+<select name=mysql>
+<select name=openssl>
+<select name=frontier_client>
+<select name=expat>
+<select name=xerces-c>
+<select name=zlib>
+<select name=cxxcompiler>
+<select name=pcre>
+<select name=sockets>
+<select name=uuid>
+<select name=python>
+<select name=boost>
+<select name=cppunit>
+</base>

@@ -1,0 +1,12 @@
+<doc type=Configuration::BootStrapProject version=1.0>
+<project name=@PROJECT_NAME@ version=@PROJECT_VERSION@>
+
+@PROJECT_VERSION@ BootStrap
+
+<Config dir=config>
+<base url="file:@PROJECT_BUILD_PATH@/">
+<download url="file:config" name="config">
+<download url="file:src"    name="src">
+<RequirementsDoc name=config/requirements>
+</base>
+</project>

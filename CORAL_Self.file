@@ -1,0 +1,17 @@
+# -*- toolbox -*-
+<doc type=BuildSystem::ToolDoc version=1.0>
+<Tool name=SELF version=SELF>
+<Client>
+ <Environment name=LIBDIR value="$LOCALTOP/$SCRAM_ARCH/lib">
+ </Environment>
+ <Environment name=LIBDIR value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler=warn>
+ </Environment>
+ <Environment name=INCLUDE value="$LOCALTOP/include">
+ </Environment>
+</Client>
+<Runtime name=LD_LIBRARY_PATH value="$LOCALTOP/$SCRAM_ARCH/lib" type=path>
+<Runtime name=LD_LIBRARY_PATH value="$LOCALTOP/external/$SCRAM_ARCH/lib" type=path handler=warn>
+<Runtime name=PYTHONPATH value="$LOCALTOP/$SCRAM_ARCH/python" type=path handler=warn>
+<Runtime name=PYTHONPATH value="$LOCALTOP/$SCRAM_ARCH/lib" type=path handler=warn>
+<Runtime name=SEAL_PLUGINS default="$LOCALTOP/$SCRAM_ARCH/lib/modules" type=path>
+</Tool>

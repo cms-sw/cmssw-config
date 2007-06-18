@@ -1,0 +1,28 @@
+<doc type=Configuration::BootStrapProject version=1.0>
+<project name=@PROJECT_NAME@ version=@PROJECT_VERSION@>
+
+@PROJECT_VERSION@ BootStrap
+
+<Config dir=config>
+<base url="file:@PROJECT_BUILD_PATH@/">
+<download url="file:config"                                 name="config">
+<download url="file:LCGAAwrappers/@PROJECT_NAME@/src"       name="scramv1/src">
+<download url="file:coral/config/scram"                     name="src/config/scram">
+<download url="file:coral/CoralBase"                        name="src/CoralBase">
+<download url="file:coral/RelationalAccess"                 name="src/RelationalAccess">
+<download url="file:coral/CoralCommon"                      name="src/CoralCommon">
+<download url="file:coral/OracleAccess"                     name="src/OracleAccess">
+<download url="file:coral/MySQLAccess"                      name="src/MySQLAccess">
+<download url="file:coral/SQLiteAccess"                     name="src/SQLiteAccess">
+<download url="file:coral/FrontierAccess"                   name="src/FrontierAccess">
+<download url="file:coral/RelationalService"                name="src/RelationalService">
+<download url="file:coral/XMLLookupService"                 name="src/XMLLookupService">
+<download url="file:coral/PyCoral"                          name="src/PyCoral">
+<download url="file:coral/XMLAuthenticationService"         name="src/XMLAuthenticationService">
+<download url="file:coral/EnvironmentAuthenticationService" name="src/EnvironmentAuthenticationService">
+<download url="file:coral/MonitoringService"                name="src/MonitoringService">
+<download url="file:coral/ConnectionService"                name="src/ConnectionService">
+<download url="file:coral/Tests"                            name="src/Tests">
+<RequirementsDoc name=config/requirements>
+</base>
+</project>
