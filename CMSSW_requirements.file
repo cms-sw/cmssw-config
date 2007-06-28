@@ -76,4 +76,6 @@
 <select name=pythia6>
 <select name=pythia8>
 <select name=jimmy>
+<select name=CMSSWData>
+<select name=hector>
 </base>
