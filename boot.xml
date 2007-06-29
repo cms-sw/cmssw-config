@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <doc type="Configuration::BootStrapProject" version="1.0">
- <project name="CMSSW" version="CMSSW_1_5_0">
-  <base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_147f3_2">
+ <project name="CMSSW" version="CMSSW_1_5_1">
+  <base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_147f4_2">
    <download url="cvs:?module=SCRAMToolBox/CMSconfigs" name="config/site"/>
   </base>
 
