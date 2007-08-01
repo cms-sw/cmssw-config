@@ -719,13 +719,31 @@ sub hasPythonscripts ()
     }
   }
   my $scripts = 0;
-  foreach my $f (@{&readDir($path,2,-1)})
+  if($self->{cache}{SymLinkPython} == 0)
   {
-    if(exists $pythonprod->{$f}){next;}
-    if($f=~/\.py$/)
-    {$scripts = 1;last;}
+    foreach my $f (@{&readDir($path,2,-1)})
+    {
+      if(exists $pythonprod->{$f}){next;}
+      if($f=~/\.py$/)
+      {$scripts = 1;last;}
+    }
   }
+  else{$scripts=1;}
   $stash->set(hasscripts => $scripts);
+  return $scripts;
+}
+
+sub symlinkPythonDirectory ()
+{
+  my $self=shift;
+  $self->{cache}{SymLinkPython}=shift;
+  return;
+}
+
+sub isSymlinkPythonDirectory ()
+{
+  my $self=shift;
+  return $self->{cache}{SymLinkPython};
 }
 
 sub isRuleCheckerEnabled ()
@@ -1182,7 +1200,7 @@ sub safename_CMSProjects ()
 {
   my $func=shift;
   my $dir=shift;
-  my $rel=$ENV{LOCALTOP};
+  my $rel=quotemeta($ENV{LOCALTOP});
   my $prefix="";
   if($dir=~s/^${rel}\/src\/(.+?)\/(python|src)$/$1/)
   {
@@ -1263,6 +1281,7 @@ sub initTemplate_PROJECT ()
     }
   }
   my $stash=$self->{context}->stash();
+  $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
   $self->{cache}{ProjectConfig}="${ltop}/$ENV{SCRAM_CONFIGDIR}";

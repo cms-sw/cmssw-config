@@ -21,8 +21,7 @@ sub processfile ()
   while($line=<INFILE>)
   {
     chomp $line;
-    while($line=~/^(.*?)($olddir)(['\/].*)$/)
-    {$line="${1}${localtop}${3}";$changed=1;}
+    $line=~s/$olddir(['\/])/$localtop${1}/g;
     print OUTFILE "$line\n";
   }
   close(INFILE);
