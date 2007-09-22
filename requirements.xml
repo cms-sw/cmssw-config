@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <doc type="BuildSystem::Requirements" version="2.0">
-<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_147a4_2">
+<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&amp;user=anonymous&amp;passkey=AA_:yZZ3e&amp;version=CMS_147a3_2">
  <include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration.xml"/>
  <select name="cxxcompiler"/>
  <select name="f77compiler"/>
@@ -54,6 +54,9 @@
  <select name="coin3d"/>
  <select name="Curl"/>
  <select name="jpeg"/>
+ <select name="png"/>
+ <select name="tiff"/>
+ <select name="dpm"/>
  <select name="simage"/>
  <select name="openssl"/>
  <select name="x11"/>
@@ -77,6 +80,5 @@
  <select name="pythia8"/>
  <select name="jimmy/>
  <select name="iguana/>
- <select name="alpgen/>
 </base>
 </doc>
