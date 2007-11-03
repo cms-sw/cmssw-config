@@ -54,6 +54,9 @@
  <select name="coin3d"/>
  <select name="Curl"/>
  <select name="jpeg"/>
+ <select name="png"/>
+ <select name="tiff"/>
+ <select name="dpm"/>
  <select name="simage"/>
  <select name="openssl"/>
  <select name="x11"/>
