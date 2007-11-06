@@ -1,63 +1,34 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<doc type="BuildSystem::BuildFile" version="1.0">
-
-<architecture name="slc3_ia32_gcc323">
-<makefile>
-</makefile>
-</architecture>
-
-<architecture name="slc3_ia32_gcc323_dbg">
-<flags CXXFLAGS="-O0 -g -DDEBUG"/>
-<makefile>
-CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
-</makefile>
-</architecture>
-
-<architecture name="slc4_ia32_gcc345">
-<makefile>
-</makefile>
-</architecture>
-
-<architecture name="slc4_amd64_gcc345">
-<makefile>
-</makefile>
-</architecture>
-
-<architecture name="osx104_ppc32_gcc400">
-<makefile>
-</makefile>
-</architecture>
-
-<architecture name="osx104_ia32_gcc401">
-<makefile>
-</makefile>
-</architecture>
-
 <architecture name="slc4_ia32_gcc345_dbg">
 <flags CXXFLAGS="-O0 -g -DDEBUG"/>
 <makefile>
-CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))<br/>
 </makefile>
 </architecture>
 
- <productstore name="lib" type="arch" swap="true"/>
- <productstore name="bin" type="arch" swap="true"/>
- <productstore name="test" type="arch" swap="true"/>
- <productstore name="logs" type="arch" swap="true"/>
- <productstore name="doc"/>
- <productstore name="module" type="arch" swap="true"/>
+<productstore name="lib"     type="arch" swap="true"/>
+<productstore name="bin"     type="arch" swap="true"/>
+<productstore name="test"    type="arch" swap="true"/>
+<productstore name="logs"    type="arch" swap="true"/>
+<productstore name="include" type="arch" swap="true"/>
+<productstore name="module"  type="arch" swap="true"/>
+<productstore name="doc"/>
+<productstore name="python"/>
+<productstore name="share/ivs"/>
+<productstore name="share/images"/>
+<productstore name="share/htdocs"/>
 
- <classpath path="+Project/+SubSystem/+Package/scripts+scripts"/>
- <classpath path="+Project/Documentation+Documentation/+doc"/>
- <classpath path="+Project/+SubSystem/+Package/src+library"/>
- <classpath path="+Project/+SubSystem/+Package/bin+binary"/>
- <classpath path="+Project/+SubSystem/+Package/test+test"/>
- <classpath path="+Project/+SubSystem/+Package/data+data_install"/>
+<classpath path="+Project/Iguana+SubSystem/Iguana+Package/src+binary"/>
+<classpath path="+Project/Iguana+SubSystem/Utilities+Package/src+Classlib"/>
+<classpath path="+Project/+SubSystem/+Package/ivs+ivs"/>
+<classpath path="+Project/+SubSystem/+Package/html+html"/>
+<classpath path="+Project/+SubSystem/+Package/images+images"/>
+<classpath path="+Project/+SubSystem/+Package/scripts+scripts"/>
+<classpath path="+Project/Documentation+Documentation/+doc"/>
+<classpath path="+Project/+SubSystem/+Package/src+library"/>
+<classpath path="+Project/+SubSystem/+Package/bin+binary"/>
+<classpath path="+Project/+SubSystem/+Package/test+test"/>
+<classpath path="+Project/+SubSystem/+Package/plugins+plugins"/>
+<classpath path="+Project/+SubSystem/+Package/data+data_install"/>
+<classpath path="+Project/+SubSystem/+Package/python+python"/>
 
- <use name="coral"/>
- <use name="pool"/>
- <use name="seal"/>
- <use name="cxxcompiler"/>
- <use name="ccompiler"/>
-
-</doc>
+<use name="self"/>

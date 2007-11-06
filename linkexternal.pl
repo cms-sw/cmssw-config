@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
+BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use File::Basename;
 use Getopt::Long;
+use Cache::CacheUtilities;
 $|=1;
 my $SCRAM_CMD="scramv1";
 my %cache=();
@@ -12,6 +14,7 @@ $cache{defaultlinks}{LIBDIR}=1;
 $cache{ignorefiles}{LIBDIR}{"python.+"}="d";
 $cache{ignorefiles}{LIBDIR}{"modules"}="d";
 $cache{ignorefiles}{LIBDIR}{"pkgconfig"}="d";
+$cache{ignorefiles}{LIBDIR}{"archive"}="d";
 
 if(&GetOptions(
                "--update=s",\@update,
@@ -80,7 +83,7 @@ for(my $i=0;$i<20;$i++)
 
 if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
 if(!-f "${dir}/.SCRAM/${arch}/ToolCache.db"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
-$cache{toolcache}=&readCache($dir);
+$cache{toolcache}=&Cache::CacheUtilities::read("${dir}/.SCRAM/${arch}/ToolCache.db");
 
 #### Read previous link info
 my $externals="external/${arch}";
@@ -305,22 +308,6 @@ sub getFixedPath ()
     elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
   }
   return "/".join("/",@parts);
-}
-
-sub readCache()
-{
-  use IO::File;
-  my $release=shift  || die "Missing release directory";
-  my $cachefilename=shift || "${release}/.SCRAM/${arch}/ToolCache.db";
-  my $cachefh = IO::File->new($cachefilename, O_RDONLY)
-     || die "Unable to read cached data file $cachefilename: ",$ERRNO,"\n";
-  my @cacheitems = <$cachefh>;
-  close $cachefh;
-
-  # Copy the new cache object to self and return:
-  my $cache = eval "@cacheitems";
-  die "Cache load error: ",$EVAL_ERROR,"\n", if ($EVAL_ERROR);
-  return $cache;
 }
 
 sub usage ()

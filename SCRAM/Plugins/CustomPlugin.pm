@@ -4,6 +4,7 @@ use base qw(Template::Plugin);
 use Template::Plugin;
 use Exporter;
 use File::Basename;
+use Cache::CacheUtilities;
 @ISA=qw(Exporter);
 
 sub load()
@@ -56,17 +57,26 @@ sub newInit_ ()
   &runFunction("initTemplate_${class}",$self);
 }
 
+sub getTool ()
+{
+  my $self=shift;
+  my $tool=shift;
+  if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}{$tool}))
+  {return $self->{cache}{toolcache}{SETUP}{$tool};}
+  return {};
+}
+
 sub isDependentOnTool ()
 {
   my $self=shift;
   my $tool=shift;
-  my $bdata=$self->{context}->stash()->get('branch')->branchdata();
-  if((defined $bdata) && (ref($bdata) eq "BuildSystem::DataCollector"))
+  my $bdata=$self->{core}->data("USE");
+  if((defined $bdata) && (ref($bdata) eq "ARRAY"))
   {
-    foreach my $t (@{$bdata->{BUILD_ORDER}})
+    foreach my $t (@$bdata)
     {
-      my $lt=lc($t);
-      if($lt eq $tool){return 1;}
+      my $tx=lc($t);
+      foreach my $t1 (@$tool){if($tx eq $t1){return 1;}}
     }
   }
   return 0;
@@ -150,6 +160,74 @@ sub getSubDirIfEnabled ()
   return;
 }
 ##############################################################
+sub fixData ()
+{
+  my $self=shift;
+  my $data=shift;
+  my $type=shift;
+  my $bf=shift;
+  my $section=shift;
+  my $ndata=[];
+  if (ref($data) ne "ARRAY") {return "";}
+  if (scalar(@$data)==0){return "";}
+  if(defined $section){$section="export";}
+  else{$section="non-export";}
+  my $ltop=$self->{cache}{LocalTop};
+  my $rtop="";
+  my $udata={};
+  if($self->{cache}{ReleaseArea} == 0)
+  {$rtop=$ENV{RELEASETOP};}
+  if ($type eq "INCLUDE")
+  {
+    my $ldir=dirname($bf);
+    foreach my $d (@$data)
+    {
+      my $x=$d;
+      $x=~s/^\s*//;$x=~s/\s*$//;
+      if($x=~/^[^\/\$]/){$x="${ltop}/${ldir}/${x}";}
+      $x=&fixPath($x);
+      if(!exists $udata->{$x}){$udata->{$x}=1;push @$ndata,$x;}
+      else{print STDERR "***WARNING: Multiple usage of \"$d\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+    }
+  }
+  elsif($type eq "USE")
+  {
+    foreach my $u (@$data)
+    {
+      my $x=$u;
+      $x=~s/^\s*//;$x=~s/\s*$//;
+      my $lx=lc($x);
+      if($lx eq $self->{cache}{CXXCompiler}){next;}
+      my $found=0;
+      foreach my $dir ($ltop,$rtop)
+      {if(($dir ne "") && (-f "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/timestamps/${lx}")){$found=1;last;}}
+      if(!$found){$lx=$x;}
+      if(!exists $udata->{$lx}){$udata->{$lx}=1;push @$ndata,$lx;}
+      else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+    }
+  }
+  elsif($type eq "LIB")
+  {
+    foreach my $l (@$data)
+    {
+      my $x=$l;
+      $x=~s/^\s*//;$x=~s/\s*$//;
+      if($x eq "1"){$x=$self->{context}->stash()->get('safename');}
+      if(!exists $udata->{$x}){$udata->{$x}=1;push @$ndata,$x;}
+      else{print STDERR "***WARNING: Multiple usage of \"$l\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+    }
+  }
+  if(scalar(@$ndata)==0){return "";}
+  return $ndata;
+}
+
+##############################################################
+sub allProductDirs ()
+{
+  my $self=shift;
+  return keys %{$self->{cache}{ProductTypes}};
+}
+
 sub addProductDirMap ()
 {
   my $self=shift;
@@ -241,7 +319,6 @@ sub addPluginSupport ()
     if($t eq $type){next;}
     my $c=$self->{cache}{SupportedPlugins}{$t}{Cache};
     my $r=$self->{cache}{SupportedPlugins}{$t}{Refresh};
-    my $bn=$self->{cache}{BuildFile};
     if($r eq $refresh){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin refresh command \"$r\"\n.";$err=1;}
     if("$c" eq "$cache"){print STDERR "****ERROR: Can not have two plugins type (\"$t\" and \"$type\") using the same plugin cache file \"$c\"\n.";$err=1;}
   }
@@ -382,7 +459,7 @@ sub checkSealPluginFlag ()
         if(exists $flags->{$pflag})
         {
           $xflags{$pflag}=1;
-	  $plugin=$flags->{$pflag};
+	  $plugin=$flags->{$pflag}[0];
 	  $plugintype=$ptype;
 	  if($pflag eq "SEAL_PLUGIN_NAME"){$plugin=1;}
 	  if($plugin!~/^[01]$/)
@@ -470,97 +547,6 @@ sub checkSealPluginFlag ()
   return;
 }
 ######################################################
-sub outputLogging ()
-{
-  my $self=shift;
-  my $stash=$self->{context}->stash();
-  my $path = $stash->get('path');
-  my $name = $stash->get('logname');
-  if ($name eq "")
-  {
-    $name = $stash->get('safename');
-    if ($name eq ""){$name = $stash->get('safepath');}
-    $stash->set('logname', $name);
-  }
-  $path=~s/^(.+?)\/[^\/]+$/$1/;
-  $stash->set('logfile', "$ENV{SCRAM_INTwork}/cache/log/${path}/${name}");
-  return;
-}
-
-sub buildFileTimeStampChecking ()
-{
-  my $self=shift;
-  my $stash=$self->{context}->stash();
-  my $path=$stash->get('path');
-  if ($stash->get('packremoveonly') == 0)
-  {
-    my $bn=$self->{cache}{BuildFile};
-    my $bf="${path}/${bn}";
-    if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/${bn}";}
-    if (-f $bf)
-    {
-      my $name=$stash->get('safename');
-      my $cachebf="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/cache/bf/${name}";
-      my $cacheprod="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/cache/prod/${name}";
-      my $ref;
-      if (!-f $cachebf)
-      {
-        my @data=stat $bf;
-        my $bftime=$data[9];
-        open($ref, ">$cachebf") || die "ERROR: Can not open $cachebf file for writing.";
-        print $ref "$bf\n"; close($ref);
-        open($ref, ">$cacheprod") || die "ERROR: Can not open $cacheprod file for writing.";
-        close($ref);
-        #setting the bf time to -100 less to force the building of this product 
-        $bftime-=100;
-        utime $bftime,$bftime,$cachebf;
-      }
-      else
-      { 
-        my @data=stat $bf;
-        my $bftime=$data[9];
-        @data=stat $cachebf;
-        if ($data[9] != $bftime)
-        {
-          open($ref, ">$cacheprod") || die "ERROR: Can not open $cacheprod file for writing.";
-          close($ref);
-          #setting the bf time to -100 less to force the building of this product 
-          $bftime-=100;
-          utime $bftime,$bftime,$cachebf;
-        }
-      }
-    }
-  }
-  else
-  {
-    my $name=$stash->get('safename');
-    my $core=$self->{core};
-    my $strlibs=$core->data("LIB");
-    my @libs=();
-    if(exists $ENV{LIB}){$strlibs.=" $ENV{LIB}";}
-    foreach my $lib (split /\s+/,$strlibs){push @libs,$lib;}
-    foreach my $lib (@libs)
-    {
-      if($lib=~/^\s*$/){next;}
-      my $cachebf="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/cache/bf/${lib}";
-      if (-f $cachebf)
-      {
-        my $ref;
-        open($ref, "$cachebf") || die "ERROR: Can not open $cachebf file for reading.";
-        my $bf=readline($ref); chomp $bf;
-        close($ref);
-        if(($bf ne "") && (!-f "$ENV{LOCALTOP}/$bf"))
-        {
-          my $cacheprod="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/cache/prod/${lib}";
-          my $objdir="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/${path}/${name}";
-          system("/bin/rm -rf $objdir; touch $cacheprod; touch -t 197001010100 $cachebf");
-        }
-      }
-    }
-  }
-  return;
-}
-
 sub addAllVariables ()
 {
   my $self=shift;
@@ -605,7 +591,7 @@ sub shouldRunMoc ()
 {
   my $self=shift;
   my $hasmoc=0;
-  if($self->isDependentOnTool("qt"))
+  if($self->isDependentOnTool(["qt","soqt"]))
   {
     my $stash=$self->{context}->stash();
     my $src=$stash->get('path');
@@ -625,9 +611,17 @@ sub shouldRunMoc ()
 	   if(-d "${dir}/${file}"){next;}
 	   if($file=~/.+?\.(h|cc|cpp|cxx|C)$/)
 	   {
-	     my $qobject=`grep Q_OBJECT ${dir}/${file} >/dev/null 2>&1`;
-	     if($? == 0)
-	     {$mocfiles.=" ${file}";$hasmoc=1;}
+	     my $fref;
+	     if (open($fref,"${dir}/${file}"))
+	     {
+	       my $line;
+	       while($line=<$fref>)
+	       {
+	         chomp $line;
+	         if($line=~/Q_OBJECT/){$mocfiles.=" ${file}";$hasmoc=1;last;}
+	       }
+	       close($fref);
+	     }
 	   }
 	 }
 	 closedir($dref);
@@ -652,9 +646,23 @@ sub getLocalBuildFile ()
   my $self=shift;
   my $path=$self->{context}->stash()->get('path');
   my $bn=$self->{cache}{BuildFile};
-  my $bf="${path}/${bn}";
-  if(!-f $bf){if ($path=~/^(src\/.+?)\/src$/){$bf="${1}/${bn}";}}
+  my $bf="${path}/${bn}.xml";
+  if(!-f $bf)
+  {
+    $bf="${path}/${bn}";
+    if (!-f $bf)
+    {
+      my $pub = $self->{core}->publictype();
+      if ($pub)
+      {
+        $path=dirname($path);
+        $bf="${path}/${bn}.xml";
+	if (!-f $bf){$bf="${path}/${bn}";}
+      }
+    }
+  }
   if(!-f $bf){$bf="";}
+  else{$bf=~s/\.xml//;}
   return $bf;
 }
 
@@ -672,6 +680,32 @@ sub getBuildFileName ()
   return $self->{cache}{BuildFile};
 }
 
+sub setCompiler ()
+{
+  my $self=shift;
+  my $type=uc(shift);
+  my $compiler=lc(shift);
+  $self->{cache}{"${type}Compiler"}=$compiler;
+  return ;
+}
+
+sub getCompiler ()
+{
+  my $self=shift;
+  my $type=uc(shift);
+  if (exists $self->{cache}{"${type}Compiler"}){return  $self->{cache}{"${type}Compiler"};}
+  return "";
+}
+
+sub shouldAddCompilerFlag ()
+{
+  my $self=shift;
+  my $flag=shift;
+  if(exists $self->{cache}{CompilerFlags}{$flag}){return 0;}
+  $self->{cache}{CompilerFlags}{$flag}=1;
+  return 1;
+}
+
 sub isReleaseArea ()
 {
   my $self=shift;
@@ -684,39 +718,38 @@ sub hasPythonscripts ()
   my $stash=$self->{context}->stash();
   my $path=&fixPath($stash->get('path'));
   my $pythonprod={};
-  my $bdata=$stash->get('branch')->branchdata();
-  if((defined $bdata) && (ref($bdata) eq "BuildSystem::DataCollector"))
+  my $flags=$self->{core}->allflags();
+  if(exists $flags->{PYTHONPRODUCT})
   {
-    if((exists $bdata->{DATA}{FLAGS}) && (exists $bdata->{DATA}{FLAGS}{PYTHONPRODUCT}))
+    my $flags1=$flags->{PYTHONPRODUCT};
+    my $bfile=$self->getLocalBuildFile();
+    my $xfiles=[];
+    my $xdirs=[];
+    foreach my $p (@$flags1)
     {
-      my $flags1=$bdata->{DATA}{FLAGS}{PYTHONPRODUCT};
-      my @bf=keys %{$self->{core}->bfdeps()};
-      my $bfile=$bf[@bf-1];
-      my $xfiles=[];
-      my $xdirs=[];
-      foreach my $p (@$flags1)
+      my @files=split /,/,$p;
+      my $count=scalar(@files);
+      if($count==1){push @files,"";$count++;}
+      if($count==0){print STDERR "ERROR: Invalid use of \"PYTHONPRODUCT\" flag in \"$bfile\" file. Please correct it.\n";}
+      else
       {
-        my @files=split /,/,$p;
-        my $count=scalar(@files);
-        if($count==1){push @files,".";$count++;}
-        if($count==0){print STDERR "ERROR: Invalid use of \"PYTHONPRODUCT\" flag in \"$bfile\" file. Please correct it.\n";}
-        else
-        {
-          my $des=$self->{cache}{PythonProductStore}."/".$files[$count-1];
-	  pop @files;
-	  my $list="";
-	  foreach my $f (@files)
+        my $des=$self->{cache}{PythonProductStore}."/".$files[$count-1];
+	$des=~s/\/+$//;
+	pop @files;
+	my $list="";
+	foreach my $fs (@files)
+	{
+	  foreach my $f (split /\s+/,$fs)
 	  {
 	    $f=&fixPath("${path}/${f}");
 	    if(!-f $f){print STDERR "ERROR: No such file \"$f\" for \"PYTHONPRODUCT\" flag in \"$bfile\" file. Please correct it.\n";}
-	    else{$pythonprod->{$f}=1;$list.=" $f";}
+	    else{$pythonprod->{$f}=1;push @$xfiles,$f;push @$xdirs,$des;}
 	  }
-	  if($list){push @$xfiles,$list;push @$xdirs,$des;}
 	}
       }
-      $stash->set("xpythonfiles",$xfiles);
-      $stash->set("xpythondirs",$xdirs);
     }
+    $stash->set("xpythonfiles",$xfiles);
+    $stash->set("xpythondirs",$xdirs);
   }
   my $scripts = 0;
   if($self->{cache}{SymLinkPython} == 0)
@@ -1097,6 +1130,49 @@ sub getSourceExtensions ()
 
 sub getSourceExtensionsStr ()
 {return join(" ",&getSourceExtensions(@_));}
+#########################################
+sub depsOnlyBuildFile
+{
+  my $self=shift;
+  my $stash=$self->{context}->stash();
+  my $cache=$stash->get("branch")->branchdata();
+  if(defined $cache)
+  {
+    my $src=$ENV{SCRAM_SOURCEDIR};
+    my $path=$stash->get("path");
+    my $pack=$path; $pack=~s/^$src\///;
+    my $sname=$stash->get("safepath");
+    my $ex=$self->{core}->data("EXPORT");
+    my $fname=".SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache/${sname}.mk";
+    my $fref;
+    open($fref,">$fname") || die "Can not open file for writing: $fname";
+    print $fref "ifeq (\$(strip \$($pack)),)\n";
+    print $fref "$sname := self/${pack}\n";
+    print $fref "$pack  := $sname\n";
+    print $fref "${sname}_BuildFile    := \$(WORKINGDIR)/cache/bf/${path}/",$self->{cache}{BuildFile},"\n";
+    if (defined $ex)
+    {
+      foreach my $type ("INCLUDE", "LIB", "USE")
+      {
+        my $value="";
+	my $data=$self->getCacheData($type) || [];
+	$value=join(" ",@$data)." ";
+	$data=$self->fixData($self->{core}->value($type,$ex),$type,"${path}/".$self->{cache}{BuildFile},1) || [];
+	$value.=join(" ",@$data);
+	if($value!~/^\s*$/)
+	{
+	  print $fref "${sname}_EX_${type} := $value\n";
+	}
+      }
+      print $fref "\$(foreach x,\$(sort \$(${sname}_LOC_USE) \$(${sname}_EX_USE)),\$(eval \$(x)_USED_BY += ${sname}))\n";
+    }
+    print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
+    print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname))\nendif\n\n";
+    close($fref);
+    $cache->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/MakeData/DirCache"}=1;
+  }
+  return;
+}
 
 #########################################
 # Util functions
@@ -1155,12 +1231,13 @@ sub readDir ()
 
 sub runToolFunction ()
 {
+  my $self=shift;
   my $func=shift || return "";
   my $tool=shift || "self";
   if($tool eq "self"){$tool=$ENV{SCRAM_PROJECTNAME};}
   $tool=lc($tool);
   $func.="_${tool}";
-  if(exists &$func){return &$func(@_);}
+  if(exists &$func){return $self->$func(@_);}
   return "";
 }
 
@@ -1178,35 +1255,42 @@ sub runFunction ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_pool (){return &safename_LCGProjects(shift,$self->{cache}{LCGProjectLibPrefix});}
-sub safename_seal (){return &safename_LCGProjects(shift,$self->{cache}{LCGProjectLibPrefix});}
-sub safename_coral (){&safename_LCGProjects(shift,$self->{cache}{LCGProjectLibPrefix});}
+sub safename_pool (){return &safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
+sub safename_seal (){return &safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
+  my $self=shift;
   my $dir=shift;
   my $prefix=shift || "lcg_";
   my $sname=$prefix;
-  if($dir=~/^(.+?)\/src$/){$sname.=basename($1);}
+  my $class=$self->{context}->stash()->get('class');
+  if ($class eq "LIBRARY"){$sname.=basename(dirname($dir));}
+  elsif($class eq "PYTHON"){$sname.="Py".basename(dirname($dir));}
   else{$sname.=basename($dir);}
   return $sname;
 }
 
-sub safename_ignominy (){return &safename_CMSProjects("safename_PackageBased",shift);}
-sub safename_iguana (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
-sub safename_cmssw (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
-sub safename_default (){return &safename_CMSProjects("safename_SubsystemPackageBased",shift);}
+sub safename_ignominy (){return &safename_CMSProjects(shift,"safename_PackageBased",shift);}
+sub safename_iguana (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_cmssw (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_default (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 
 sub safename_CMSProjects ()
 {
+  my $self=shift;
   my $func=shift;
   my $dir=shift;
-  my $rel=quotemeta($ENV{LOCALTOP});
-  my $prefix="";
-  if($dir=~s/^${rel}\/src\/(.+?)\/(python|src)$/$1/)
+  my $class=$self->{context}->stash()->get('class');
+  if (($class eq "LIBRARY") || ($class eq "PYTHON"))
   {
-    if($2 eq "python"){$prefix="Py";}
+    my $src=$ENV{SCRAM_SOURCEDIR};
+    my $rel=quotemeta($ENV{LOCALTOP});
+    $dir=dirname($dir);
+    $dir=~s/^${rel}\/${src}\/(.+)$/$1/;
     my $val=&$func($dir);
-    return "${prefix}${val}";
+    if($class eq "PYTHON"){$val="Py$val";}
+    return $val;
   }
   return "";
 }
@@ -1224,32 +1308,34 @@ sub safename_SubsystemPackageBased ()
   if($dir=~/^([^\/]+)\/([^\/]+)$/){return "${1}${2}";}
   return "";
 }
+########################################
+sub addCacheData ()
+{
+  my $self=shift;
+  my $name=shift || return;
+  my $value=shift || "";
+  $self->{cache}{CacheData}{$name}=$value;
+  return;
+}
+
+sub getCacheData ()
+{
+  my $self=shift;
+  my $name=shift || return "";
+  if(exists $self->{cache}{CacheData}{$name}){return $self->{cache}{CacheData}{$name};}
+  return "";
+}
 
 ######################################
 # Template initialization for different levels
-sub readToolCache ()
-{
-  use IO::File;
-  my $cachefilename=shift;
-  my $cachefh = IO::File->new($cachefilename, O_RDONLY)
-     || die "Unable to read cached data file $cachefilename: ",$ERRNO,"\n";
-  my @cacheitems = <$cachefh>;
-  close $cachefh;
-
-  # Copy the new cache object to self and return:
-  my $cache = eval "@cacheitems";
-  die "Cache load error: ",$EVAL_ERROR,"\n", if ($EVAL_ERROR);
-  return $cache;
-}
-
 sub initTemplate_PROJECT ()
 {
   my $self=shift;
-  my $ltop=&fixPath($ENV{LOCALTOP});
+  my $ltop=$ENV{LOCALTOP};
   my $odir=$ltop;
   if(-f ".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db")
   {
-    $self->{cache}{toolcache}=&readToolCache(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db");
+    $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db");
     my $odir1=$self->{cache}{toolcache}{topdir};
     if($odir1 ne "")
     {
@@ -1299,7 +1385,12 @@ sub initTemplate_PROJECT ()
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
   $self->{cache}{IgLetFile}="iglet.cc";
-  $self->{cache}{BuildFile}="BuildFile";
+  $self->{cache}{CXXCompiler}="cxxcompiler";
+  $self->{cache}{CCompiler}="ccompiler";
+  $self->{cache}{F77Compiler}="f77compiler";
+  if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
+  {$self->{cache}{BuildFile}=$ENV{SCRAM_BUILDFILE};}
+  else{$self->{cache}{BuildFile}="BuildFile";}
   return;
 }
 
@@ -1318,6 +1409,7 @@ sub initTemplate_PACKAGE ()
   }
   $path=~s/^src\///;
   $stash->set('packpath',$path);
+  $self->depsOnlyBuildFile();
   return;
 }
 
@@ -1327,12 +1419,12 @@ sub initTemplate_LIBRARY ()
   $self->initTemplate_common2all();
   my $stash=$self->{context}->stash(); 
   my $path=$stash->get('path');
-  my $sname=&runToolFunction("safename","self", "$ENV{LOCALTOP}/${path}");
+  my $sname=$self->runToolFunction("safename","self", "$ENV{LOCALTOP}/${path}");
   if($sname eq "")
   {
     $self->processTemplate("safename_generator");
     $sname=$stash->get('safename');
-    if($sname eq ""){$sname=&runToolFunction("safename","default", "$ENV{LOCALTOP}/${path}");}
+    if($sname eq ""){$sname=$self->runToolFunction("safename","default", "$ENV{LOCALTOP}/${path}");}
   }
   if($sname ne ""){$stash->set("safename", $sname);}
   else
@@ -1356,8 +1448,7 @@ sub initTemplate_SEAL_PLATFORM ()
   my $self=shift;
   $self->initTemplate_common2all();
   my $stash=$self->{context}->stash(); 
-  $sname=basename($stash->get('path'));
-  $stash->set("safename", $sname);
+  $stash->set("safename", "SealPlatform");
   return;
 }
 

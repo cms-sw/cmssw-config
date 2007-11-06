@@ -1,7 +1,6 @@
-# -*- toolbox -*-
 <doc type=BuildSystem::Requirements version=2.0>
-<base url="cvs://isscvs.cern.ch/local/reps/scramtoolbox?auth=pserver&user=anonymous&passkey=AA_:yZZ3e&version=CMS_147b2_2">
-<include url="cvs:?module=SCRAMToolBox/CMS/Configuration/CMSconfiguration">
+<base url="file:/afs/cern.ch/cms/sw/BUILD/slc4_ia32_gcc345/cms/cmssw/CMSSW_1_7_0_pre1/SCRAMToolBox/">
+<include url="file:CMS/Configuration/CMSconfiguration">
 <select name=cxxcompiler>
 <select name=f77compiler>
 <select name=ccompiler>
@@ -55,9 +54,6 @@
 <select name=coin3d>
 <select name=Curl>
 <select name=jpeg>
-<select name=png>
-<select name=tiff>
-<select name=dpm>
 <select name=simage>
 <select name=openssl>
 <select name=x11>
@@ -80,6 +76,6 @@
 <select name=pythia6>
 <select name=pythia8>
 <select name=jimmy>
-<select name=iguana>
-<select name=alpgen>
+<select name=CMSSWData>
+<select name=hector>
 </base>
