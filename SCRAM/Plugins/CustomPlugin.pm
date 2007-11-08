@@ -57,6 +57,17 @@ sub newInit_ ()
   &runFunction("initTemplate_${class}",$self);
 }
 
+sub hasData ()
+{
+  my $self=shift;
+  my $data=shift;
+  my $key=shift;
+  my $r=ref($data);
+  if($r eq "ARRAY"){foreach my $d (@$data){if($d eq $key){return 1;}}}
+  elsif($r eq "HASH"){foreach my $d (keys %$data){if($d eq $key){return 1;}}}
+  return 0;
+}
+
 sub getTool ()
 {
   my $self=shift;
@@ -187,7 +198,7 @@ sub fixData ()
       if($x=~/^[^\/\$]/){$x="${ltop}/${ldir}/${x}";}
       $x=&fixPath($x);
       if(!exists $udata->{$x}){$udata->{$x}=1;push @$ndata,$x;}
-      else{print STDERR "***WARNING: Multiple usage of \"$d\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+      else{print STDERR "***WARNING: Multiple usage of \"$d\". Please cleanup \"include\" in \"$section\" section of \"$bf\".\n";}
     }
   }
   elsif($type eq "USE")
@@ -203,7 +214,7 @@ sub fixData ()
       {if(($dir ne "") && (-f "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/timestamps/${lx}")){$found=1;last;}}
       if(!$found){$lx=$x;}
       if(!exists $udata->{$lx}){$udata->{$lx}=1;push @$ndata,$lx;}
-      else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+      else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"use\" in \"$section\" section of \"$bf\".\n";}
     }
   }
   elsif($type eq "LIB")
@@ -214,7 +225,7 @@ sub fixData ()
       $x=~s/^\s*//;$x=~s/\s*$//;
       if($x eq "1"){$x=$self->{context}->stash()->get('safename');}
       if(!exists $udata->{$x}){$udata->{$x}=1;push @$ndata,$x;}
-      else{print STDERR "***WARNING: Multiple usage of \"$l\". Please cleanup \"$type\" in \"$section\" section of \"$bf\".\n";}
+      else{print STDERR "***WARNING: Multiple usage of \"$l\". Please cleanup \"lib\" in \"$section\" section of \"$bf\".\n";}
     }
   }
   if(scalar(@$ndata)==0){return "";}
@@ -866,8 +877,8 @@ sub searchLCGRootDict ()
   my $x1="";
   my @h=();
   my @x=();
-  foreach my $f (split /\s+/,$hfile){if(-f "${path}/${f}"){$h1.="$f ";push @h,"${top}/${path}/${f}";$flag|=1;}}
-  foreach my $f (split /\s+/,$xfile){if(-f "${path}/${f}"){$x1.="$f ";push @x,"${top}/${path}/${f}";$flag|=2;}}
+  foreach my $f (split /\s+/,$hfile){if(-f "${path}/${f}"){$h1.="$f ";push @h,"\$(LOCALTOP)/${path}/${f}";$flag|=1;}}
+  foreach my $f (split /\s+/,$xfile){if(-f "${path}/${f}"){$x1.="$f ";push @x,"\$(LOCALTOP)/${path}/${f}";$flag|=2;}}
   if ((scalar(@h) == scalar(@x)) && ($flag==3))
   {
     for(my $i=0;$i<scalar(@h);$i++)
@@ -1138,6 +1149,7 @@ sub depsOnlyBuildFile
   my $cache=$stash->get("branch")->branchdata();
   if(defined $cache)
   {
+    my $core=$self->{core};
     my $src=$ENV{SCRAM_SOURCEDIR};
     my $path=$stash->get("path");
     my $pack=$path; $pack=~s/^$src\///;
@@ -1169,7 +1181,7 @@ sub depsOnlyBuildFile
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
     print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname))\nendif\n\n";
     close($fref);
-    $cache->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/MakeData/DirCache"}=1;
+    $cache->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
   }
   return;
 }
@@ -1326,6 +1338,39 @@ sub getCacheData ()
   return "";
 }
 
+#####################################
+sub updateEnvVarMK
+{
+  my $self=shift;
+  my $ltop=$self->{cache}{LocalTop};
+  my $mkfile="${ltop}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/variables.mk";
+  my $fref;
+  open($fref,">$mkfile") || die "Can not open file for writing: $mkfile";
+  print $fref "############## All Tools Variables ################\n";
+  foreach my $var ($self->addAllVariables())
+  {print $fref "$var\n";}
+  my $env=$self->{context}->stash()->get('environment');
+  print $fref "############## All SCRAM ENV variables ################\n";
+  foreach my $key (keys %$env)
+  {
+    if($key=~/^SCRAM_(BUILDVERBOSE|NOPLUGINREFRESH|NOSYMCHECK)/){next;}
+    if(!$self->shouldAddToolVariables($key)){next;}
+    print $fref "$key:=".$env->{$key}."\n";
+  }
+  my $core=
+  my $stores=$self->{core}->allscramstores();
+  if(ref($stores) eq "HASH")
+  {
+    print $fref "################ ALL SCRAM Stores #######################\n";
+    foreach my $store (keys %{$stores})
+    {
+      print $fref "$store:=".$stores->{$store}."\n";
+    }
+  }
+  close($fref);
+  return;
+}
+
 ######################################
 # Template initialization for different levels
 sub initTemplate_PROJECT ()
@@ -1337,34 +1382,7 @@ sub initTemplate_PROJECT ()
   {
     $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db");
     my $odir1=$self->{cache}{toolcache}{topdir};
-    if($odir1 ne "")
-    {
-      $odir=$odir1;
-      $odir1=&fixPath($odir);
-      if($odir1 ne $ltop)
-      {
-	if((scalar(@ARGV)==0) || ($ARGV[0] ne "ProjectRename"))
-	{
-	  my $dummyfile="$ENV{SCRAM_INTwork}/localtopchecking.$$";
-          while(-f "${odir1}/${dummyfile}"){$dummyfile.="x";}
-          my $fref;
-          open($fref,">${ltop}/${dummyfile}") || die "Can not create file under \"${ltop}/$ENV{SCRAM_INTwork}\" directory.";
-          close($fref);
-          if (-f "${odir1}/${dummyfile}")
-          {
-            unlink "${ltop}/${dummyfile}";
-	    $ltop=$odir1;
-          }
-          else
-          {
-            unlink "${ltop}/${dummyfile}";
-	    print STDERR "**** ERROR: You have moved/renamed this project area \"$ltop\" from \"$odir1\".\n";
-	    print STDERR "            Please first run \"scramv1 b ProjectRename\" command.\n";
-	    exit 1;
-          }
-	}
-      }
-    }
+    if($odir1 ne ""){$odir=$odir1;}
   }
   my $stash=$self->{context}->stash();
   $self->{cache}{SymLinkPython}=0;
@@ -1374,6 +1392,8 @@ sub initTemplate_PROJECT ()
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
+  my $env=$stash->get('environment');
+  $env->{SCRAM_INIT_LOCALTOP}=$odir;
   my $bdir="${ltop}/$ENV{SCRAM_INTwork}/cache";
   system("mkdir -p ${bdir}/prod ${bdir}/bf ${bdir}/log");
   if((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne "")){$stash->set('releasearea',0);$self->{cache}{ReleaseArea}=0;}

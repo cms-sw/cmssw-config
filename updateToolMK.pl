@@ -13,7 +13,7 @@ $reltop      = &fixPath($reltop);
 
 my $arch     = shift     || $ENV{SCRAM_ARCH} || die "Usage: $0 <arch> [<tool> [<tool> [...]]]";
 my %tools=();
-while(my $t=shift){$tools{lc($t)}=1;print STDERR "New tool:$t\n";}
+while(my $t=shift){$tools{lc($t)}=1;}
 my $tcache=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.db");
 
 if(scalar(keys %tools)==0){foreach my $t (keys %{$tcache->{SETUP}}){$tools{$t}=1;}}
@@ -130,9 +130,6 @@ foreach my $line (`sort -r ${stooldir}/order | sed 's|.*:||'`)
   print OFALL "include ${stooldir}/${line}.mk\n";
 }
 close(OFALL);
-
-print "LOCALTOP := $localtop\n";
-system("sed 's|=| := |' ${localtop}/.SCRAM/Environment");
 ##############################################################
 sub mkprocessfile ()
 {
@@ -188,16 +185,6 @@ sub fixPath ()
     elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
   }
   return "$p".join("/",@parts);
-}
-
-sub addCommonData ()
-{
-  my $out=shift || STDOUT;
-  my $name=shift;
-  my $obase=shift || 99999;
-  my $order=shift;
-  if(defined $order){$order=$obase-$order;print "\$(eval \$(call ProductCommonVars,$name,$obase,$order))\n";}
-  else{print "\$(eval \$(call ProductCommonVars,$name,$obase))\n";}
 }
 
 sub getScramProjectOrder ()
