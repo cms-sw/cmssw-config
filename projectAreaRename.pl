@@ -6,7 +6,6 @@ use UNIVERSAL qw(isa);
 my $olddir=shift || die "Missing old installation path";
 my $localtop=shift || die "Missing current installation path";
 my $arch=shift || die "Missing SCRAM arch";
-print "$olddir : $localtop\n";
 if($olddir ne $localtop)
 {
   my $bdir="${localtop}/.SCRAM/${arch}";
@@ -17,10 +16,7 @@ if($olddir ne $localtop)
   }
   $bdir="${bdir}/MakeData";
   foreach my $file ("DirCache","Tools","src.mk","variables.mk")
-  {
-    print "Working on $file\n";
-    &processtext("${bdir}/${file}");
-  }
+  {&processtext("${bdir}/${file}");}
 }
 
 sub processtext ()
