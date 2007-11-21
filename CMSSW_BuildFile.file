@@ -1,0 +1,80 @@
+# -*-toolbox-*-
+
+<Architecture name=slc3_ia32_gcc323>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=slc3_ia32_gcc323_dbg>
+<Flags CXXFLAGS="-O0 -g -DDEBUG">
+<makefile>
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</Architecture>
+
+<Architecture name=slc4_ia32_gcc345>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=slc4_amd64_gcc345>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=osx104_ppc32_gcc400>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=osx104_ia32_gcc401>
+<makefile>
+</makefile>
+</Architecture>
+
+<Architecture name=slc4_ia32_gcc345_dbg>
+<Flags CXXFLAGS="-O0 -g -DDEBUG">
+<makefile>
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</Architecture>
+
+# Storage locations:
+<ProductStore name=lib type=arch swap=true>
+<ProductStore name=bin type=arch swap=true>
+<ProductStore name=test type=arch swap=true>
+<ProductStore name=logs type=arch swap=true>
+<ProductStore name=include type=arch swap=true>
+<ProductStore name=doc>
+<ProductStore name=python>
+<ProductStore name=module type=arch swap=true>
+<ProductStore name=share/ivs>
+<ProductStore name=share/images>
+<ProductStore name=share/htdocs>
+
+# ClassPaths:
+<ClassPath path=+Project/Iguana+SubSystem/Iguana+Package/src+binary>
+<ClassPath path=+Project/Iguana+SubSystem/Utilities+Classlib>
+<ClassPath path=+Project/Iguana+SubSystem/Utilities+Package/+donothing>
+<ClassPath path=+Project/+SubSystem/+Package/ivs+ivs>
+<ClassPath path=+Project/+SubSystem/+Package/html+html>
+<ClassPath path=+Project/+SubSystem/+Package/images+images>
+<ClassPath path=+Project/+SubSystem/+Package/scripts+scripts>
+<ClassPath path=+Project/Documentation+Documentation/+doc>
+<ClassPath path=+Project/+SubSystem/+Package/src+library>
+<ClassPath path=+Project/+SubSystem/+Package/bin+binary>
+<ClassPath path=+Project/+SubSystem/+Package/test+test>
+<ClassPath path=+Project/+SubSystem/+Package/plugins+plugins>
+<ClassPath path=+Project/+SubSystem/+Package/data+data_install>
+<ClassPath path=+Project/+SubSystem/+Package/python+python>
+
+# Add use for SCRAM-managed projects we're going to use 
+# (this ensures that we end up with LIBDIR and INCLUDE from each):
+<use name=coral>
+<use name=pool>
+<use name=seal>
+
+# Choose a compiler:
+<use name=cxxcompiler>
+<use name=ccompiler>
+<use name=f77compiler>
