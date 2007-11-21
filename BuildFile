@@ -77,3 +77,4 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 # Choose a compiler:
 <use name=cxxcompiler>
 <use name=ccompiler>
+<use name=f77compiler>
