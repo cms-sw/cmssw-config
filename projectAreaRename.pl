@@ -69,7 +69,7 @@ sub processdir ()
     if(-f "${dir}.mk")
     {
       my @s=stat("${dir}.mk");
-      system("cd $dir; find . -name \"*\" -type f | xargs -n 2000 cat >> ${dir}.mk.new");
+      system("cd $dir; find . -name \"*\" -type f -maxdepth 1 | xargs -n 2000 cat >> ${dir}.mk.new");
       system("mv ${dir}.mk.new ${dir}.mk");
       utime $s[9],$s[9],"${dir}.mk";
     }
