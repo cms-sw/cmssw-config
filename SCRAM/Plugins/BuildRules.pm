@@ -1,21 +1,11 @@
-package SCRAM::Plugins::CustomPlugin;
+package SCRAM::Plugins::BuildRules;
 use vars qw( @ISA );
-use base qw(Template::Plugin);
-use Template::Plugin;
 use Exporter;
 use File::Basename;
 use Cache::CacheUtilities;
+use BuildSystem::Template::Plugins::PluginCore;
+use BuildSystem::TemplateStash;
 @ISA=qw(Exporter);
-
-sub load()
-{
-  my ($class, $context) = @_;
-  my $self = {};
-  $self->{context}=undef;
-  bless($self, $class);
-  $self->loadInit_();
-  return $self;   
-}
 
 sub loadInit_ ()
 {
@@ -37,25 +27,58 @@ sub loadInit_ ()
 
 sub new()
 {
-  my $self=shift;
-  $self->{context}=shift;
-  $self->{core}=shift;
-  $self->newInit_();
+  my $class = shift;
+  my $self = {};
+  bless($self, $class);
+  $self->loadInit_();
   return $self;
 }
 
-sub newInit_ ()
+sub process()
 {
   my $self=shift;
-  my $context=$self->{context};
-  if(!$context->isa("Template::Context"))
-  {
-    my $ref=ref($context);
-    die "Can not initialize CustomPlugin. \"$ref\" pased instead of \"Template::Context\".";
-  }
-  my $class = $self->{context}->stash()->get('class');
-  &runFunction("initTemplate_${class}",$self);
+  my $name=shift;
+  my $data=shift;
+  $self->{FH}=shift;
+  $self->{context}=BuildSystem::TemplateStash->new();
+  $self->{context}->stash($data);
+  $self->pushstash();
+  $self->{core}=BuildSystem::Template::Plugins::PluginCore->new($self->{context});
+  my $ret=$self->runTemplate("${name}_template");
+  $self->popstash();
+  return $ret;
 }
+
+sub filehandle()
+{
+  my $self=shift;;
+  return $self->{FH};
+}
+
+sub core()
+{
+  my $self=shift;
+  return $self->{core};
+}
+
+sub error()
+{
+  my $self=shift;
+  return "CustomPlugin Error\n";
+}
+
+##################### Stash Interface ###############
+sub get(){my $self=shift;return $self->{context}->get(@_);}
+
+sub set(){my $self=shift;return $self->{context}->set(@_);}
+
+sub stash(){my $self=shift;return $self->{context};}
+
+sub pushstash(){my $self=shift;$self->{context}->pushstash();}
+
+sub popstash(){my $self=shift;$self->{context}->popstash();}
+
+#################################################
 
 sub hasData ()
 {
@@ -120,29 +143,24 @@ sub getEnv ()
 }
 
 sub processTemplate ()
-{
-  return &projectSpecificTemplate(shift,"process",@_);
-}
+{return &doTheTemplateProcessing(shift,"process",@_);}
 
 sub includeTemplate ()
-{
-  return &projectSpecificTemplate(shift,"include",@_);
-}
+{return &doTheTemplateProcessing(shift,"include",@_);}
 
-sub projectSpecificTemplate ()
+sub doTheTemplateProcessing ()
 {
   my $self=shift;
-  my $type=shift;
+  my $type=shift || "process";
   my $name=shift || return;
-  my $context=$self->{context};
-  my $tmplfile=$self->{cache}{ProjectName}."_${name}.tmpl";
-  my $tmplfpath=$self->{cache}{ProjectConfig}."/$tmplfile";
-  if(-f $tmplfpath)
+  if (defined $self->{cache}{ProjectPlugin})
   {
-    if($type eq "process"){return $context->process($tmplfile,@_);}
-    else{return $context->include($tmplfile,@_);}
+    my $plugin=$self->{cache}{ProjectPlugin};
+    if($type eq "include"){$self->stash()->pushstash();}
+    eval {$ret=$plugin->$name($self,@_);};
+    if($type eq "include"){$self->stash()->popstash();}
   }
-  return;
+  return $ret;
 }
 
 sub unsupportedProductType ()
@@ -960,24 +978,6 @@ sub fixProductName ()
   return $name;
 }
 
-sub doLCGWrapperStuff ()
-{
-  my $self=shift;
-  my $bfile="$ENV{LOCALTOP}/src/scramv1_buildfiles";
-  if((!-f "$bfile") && (-d "$ENV{LOCALTOP}/scramv1"))
-  {
-    if(!-f "$ENV{LOCALTOP}/config/obviate_buildfiles.pl")
-    {die "Missing $ENV{LOCALTOP}/config/obviate_buildfiles.pl file";}
-    my $argv="";
-    foreach my $arg (@ARGV){$argv.=" $arg";}
-    system("$ENV{LOCALTOP}/config/obviate_buildfiles.pl -d $ENV{LOCALTOP}/src -v");
-    system("gtar -c -C $ENV{LOCALTOP}/scramv1 ./ --exclude CVS | gtar -x -C $ENV{LOCALTOP}");
-    system("touch $bfile");
-    system("touch dummy.conf");
-    exec ("scramv1 setup -f dummy.conf self; rm -f dummy.conf; scramv1 b -r $argv");
-  }
-}
-
 sub getGenReflexPath ()
 {
   my $self=shift;
@@ -1253,13 +1253,19 @@ sub runToolFunction ()
   return "";
 }
 
-sub runFunction ()
+sub runTemplate ()
 {
+  my $self=shift;
   my $func=shift || return "";
-  if(exists &$func){return &$func(@_);}
-  elsif($func=~/^initTemplate_(.+)$/){return &initTemplate_common2all (@_);}
-  else{print STDERR "WRANING: Coulld not find the func \"$func\".\n";}
-  return "";
+  my $ret=0;
+  if (defined $self->{cache}{ProjectPlugin})
+  {
+    eval {$ret=$self->{cache}{ProjectPlugin}->$func(@_);};
+    if(!$@){return $ret;}
+  }
+  eval {$ret=$self->$func(@_);};
+  if ($@){print STDERR "****ERROR:Unable to run $func. Template/Function not found.\n";}
+  return $ret;
 }
 
 #############################################
@@ -1400,7 +1406,7 @@ sub initTemplate_PROJECT ()
   else{$stash->set('releasearea',1);$self->{cache}{ReleaseArea}=1;}
   if(!-d "${ltop}/external/$ENV{SCRAM_ARCH}")
   {
-    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
+    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
@@ -1411,25 +1417,10 @@ sub initTemplate_PROJECT ()
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
   {$self->{cache}{BuildFile}=$ENV{SCRAM_BUILDFILE};}
   else{$self->{cache}{BuildFile}="BuildFile";}
-  return;
-}
-
-sub initTemplate_PACKAGE ()
-{
-  my $self=shift;
-  $self->initTemplate_common2all();
-  my $stash=$self->{context}->stash();
-  my $path=$stash->get("path");
-  my $suffix=$stash->get("suffix");
-  if($suffix eq "")
-  {
-    my $logdir="$ENV{SCRAM_INTwork}/cache/log/${path}";
-    $stash->set('logfile', "${logdir}/build.log");
-    $stash->set('logdir', $logdir);
-  }
-  $path=~s/^src\///;
-  $stash->set('packpath',$path);
-  $self->depsOnlyBuildFile();
+  my $plugin="SCRAM_ExtraBuildRule";
+  eval "require $plugin";
+  if(!$@){$self->{cache}{ProjectPlugin}=$plugin->new($self);}
+  else{$self->{cache}{ProjectPlugin}=undef;}
   return;
 }
 
@@ -1442,7 +1433,7 @@ sub initTemplate_LIBRARY ()
   my $sname=$self->runToolFunction("safename","self", "$ENV{LOCALTOP}/${path}");
   if($sname eq "")
   {
-    $self->processTemplate("safename_generator");
+    $self->processTemplate("Safename_generator");
     $sname=$stash->get('safename');
     if($sname eq ""){$sname=$self->runToolFunction("safename","default", "$ENV{LOCALTOP}/${path}");}
   }
@@ -1450,8 +1441,7 @@ sub initTemplate_LIBRARY ()
   else
   {
     print STDERR "*** ERROR: Unable to generate library safename for package \"$path\" of project $ENV{SCRAM_PROJECTNAME}\n";
-    print STDERR "    Please either update the $ENV{SCRAM_PROJECTNAME}_safename_generator.tmpl file to properly generate\n";
-    print STDERR "    safename for this project or add the support for this project in this built template plugin.\n";
+    print STDERR "    Please send email to hn-cms-sw-develtools\@cern.ch\n";
     exit 1;
   }
   if(exists $self->{cache}{IgLetFile})
@@ -1460,15 +1450,6 @@ sub initTemplate_LIBRARY ()
     if(-f "${path}/${file}")
     {$stash->set("iglet_file",$file);}
   }
-  return;
-}
-
-sub initTemplate_SEAL_PLATFORM ()
-{
-  my $self=shift;
-  $self->initTemplate_common2all();
-  my $stash=$self->{context}->stash(); 
-  $stash->set("safename", "SealPlatform");
   return;
 }
 
@@ -1483,5 +1464,693 @@ sub initTemplate_common2all ()
   $stash->set("ProjectConfig",$self->{cache}{ProjectConfig});
   return;
 }
+
+##########################################################
+sub SubSystem_template()
+{
+  my $self=shift;
+  $self->initTemplate_common2all();
+  my $fh=$self->{FH};
+  print $fh "ALL_SUBSYSTEMS+=\$(patsubst src/%,%,",$self->get("path"),")\n";
+  print $fh "subdirs_",$self->get("safepath")," = ",$self->core()->safesubdirs(),"\n";
+  return 1;
+}
+
+sub Package_template()
+{
+  my $self=shift;
+  $self->initTemplate_common2all();
+  my $fh=$self->{FH};
+  my $path=$self->get("path");
+  if($self->get("suffix") eq "")
+  {
+    $self->depsOnlyBuildFile();
+    my $safepath=$self->get("safepath");
+    print $fh "ALL_PACKAGES += \$(patsubst src/%,%,$path)\n";
+    print $fh "subdirs_${safepath} := ",$self->core()->safesubdirs(),"\n";
+  }
+  else{print $fh "all_empty_packages += \$(patsubst src/%,%,$path)\n";}
+  return 1;  
+}
+
+sub Documentation_template()
+{return &SubSystem_template(shift);}
+
+sub Project_template()
+{
+  my $self=shift;
+  $self->initTemplate_PROJECT ();
+  my $core=$self->core();
+  my $path=$self->get("path");
+  my $safepath=$self->get("safepath");
+  my $fh=$self->{FH};
+  $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
+  #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
+  $self->addPluginSupport("seal","SEALPLUGIN:SEAL_PLUGIN_NAME","SealPluginRefresh",'\/sealplugins$',"SCRAMSTORENAME_MODULE",".cache",'$name="${name}.reg"',"");
+  $self->setProjectDefaultPluginType ("seal");
+  $self->setLCGCapabilitiesPluginType ("seal");
+  #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
+  foreach my $type ("lib","bin","test","python","java","logs","include")
+  {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
+  $self->addProductDirMap ("scripts",'.+',"SCRAMSTORENAME_BIN");
+  $self->addProductDirMap ("ivs",'.+',"SCRAMSTORENAME_SHARE_IVS");
+  $self->addProductDirMap ("html",'.+',"SCRAMSTORENAME_SHARE_HTDOCS");
+  $self->addProductDirMap ("images",'.+',"SCRAMSTORENAME_SHARE_IMAGES");
+  $self->updateEnvVarMK();
+
+  # LIB/INCLUDE/USE from toplevel BuildFile
+  foreach my $var ("LIB","INCLUDE","USE")
+  {
+    my $val=$self->fixData($core->value($var),$var,"");
+    if(($var eq "USE") && ($self->hasData($val,"self")==0))
+    {
+      if ($val eq ""){$val = ["self"];}
+      else{unshift @$val,"self";}
+    }
+    if ($val ne "")
+    {
+      my $vals=join(" ",@$val);
+      print $fh "$var += $vals\n";
+      $self->addCacheData($var,$vals);
+    }
+  }
+  
+  #Compiler tools variables
+  foreach my $toolname ("CXX","C")
+  {
+    my $compiler=$self->getCompiler($toolname);
+    if($compiler ne "")
+    {
+      my $tool = $self->getTool($compiler);
+      foreach my $flag (keys %{$tool->{FLAGS}})
+      {
+        if($self->shouldAddCompilerFlag($flag))
+	{
+	  my $addtype="+";
+	  if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
+	  print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
+	}
+      }
+    }
+  }
+  
+  # All flags from top level BuildFile
+  my $flags=$core->allflags();
+  foreach my $flag (keys %$flags)
+  {
+    my $val=join(" ",@{$flags->{$flag}});
+    print $fh "$flag+=$val\n";
+  }
+
+  # Makefile section of toplevel BuildFile
+  my $mk=$core->value("MAKEFILE");
+  if($mk ne ""){foreach my $line (@$mk){print $fh "$line\n";}}
+  print $fh "\n\n";
+  
+  print $fh "CXXSRC_FILES_SUFFIXES       := ",join(" ",$self->getSourceExtensions("cxx")),"\n",
+            "CSRC_FILES_SUFFIXES         := ",join(" ",$self->getSourceExtensions("c")),"\n",
+            "FORTRANSRC_FILES_SUFFIXES   := ",join(" ",$self->getSourceExtensions("fortran")),"\n",
+            "SRC_FILES_SUFFIXES          := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)\n",
+	    "\n",
+            "ifeq (\$(strip \$(GENREFLEX)),)\n",
+            "GENREFLEX:=",$self->getGenReflexPath(),"\n",
+            "endif\n",
+            "ifeq (\$(strip \$(ROOTCINT)),)\n",
+            "ROOTCINT:=",$self->getRootCintPath(),"\n",
+            "endif\n",
+	    "\n",
+            "LIBDIR+=\$(self_EX_LIBDIR)\n",
+            "ifdef RELEASETOP\n",
+            "ifeq (\$(strip \$(wildcard \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk)),)\n",
+            "\$(error Release area has been removed/modified as \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk is missing.)\n",
+            "endif\n",
+            "endif\n",
+            "LIBTYPE:= ",$core->data("LIBTYPE"),"\n",
+	    "\n",
+            "subdirs_${safepath}+=\$(filter-out Documentation, ",$core->safesubdirs(),")\n\n";
+
+  $self->processTemplate("Project");
+
+  print $fh ".PHONY: ${safepath} prebuild postbuild runtests_${safepath}\n",
+            "${safepath}: prebuild \$(${safepath}) \$(subdirs_${safepath})\n",
+            "prebuild: \$(prebuild)\n",
+            "\t\@echo \">> Building \$(SCRAM_PROJECTNAME) version \$(SCRAM_PROJECTVERSION) ----\"\n",
+            "\t\@if [ ! -d \$(LOCALTOP)/logs/\$(SCRAM_ARCH) ] ; then	\\\n",
+            "\t  mkdir -p \$(LOCALTOP)/logs/\$(SCRAM_ARCH) >/dev/null 2>&1; \\\n",
+            "\tfi\n",
+            "postbuild: \$(postbuild) release-check\n",
+            "\t\@echo \"Release \$(SCRAM_PROJECTNAME) version \$(SCRAM_PROJECTVERSION) build finished at `date`\"\n",
+            "runtests_${safepath}: \$(addprefix runtests_, \$(subdirs_${safepath}))\n",
+            "\t\@echo \"Test sequence completed for \$(SCRAM_PROJECTNAME) \$(SCRAM_PROJECTVERSION)\"\n\n";
+
+  my %pdirs=();
+  foreach my $ptype ($self->getPluginTypes())
+  {foreach my $dir ($self->getPluginProductDirs($ptype)){$pdirs{$dir}=1;}}
+  print $fh ".PHONY: vclean\nvclean:\n";
+  foreach my $dir (keys %pdirs)
+  {
+    if($dir ne "")
+    {
+      print $fh "\t\@if [ \"X\$($dir)\" != \"X\" ] ; then \\\n",
+                "\t  if [ -d \$(LOCALTOP)/\$($dir]) ] ; then \\\n",
+                "\t    echo \"Cleaning local working directory:\$($dir)\"; \\\n",
+	        "\t    /bin/rm -rf \$(LOCALTOP)/\$($dir) ;\\\n",
+	        "\t    mkdir -p \$(LOCALTOP)/\$($dir) ;\\\n",
+	        "\t  fi \\\n",
+	        "\tfi\n";
+    }
+  }
+  my $stores="";
+  foreach my $store ($self->allProductDirs())
+  {
+    my $dir=$self->getProductStore($store,$safepath);
+    $stores.=" \$($dir)";
+  }
+  print $fh "\t\@for store in $stores; do\\\n",
+            "\t  if [ \"X\$\$store\" != \"X\" ] ; then \\\n",
+            "\t    if [ -d \$(LOCALTOP)/\$\$store ] ; then \\\n",
+            "\t      echo \"Cleaning local directory:\$\$store\"; \\\n",
+            "\t      /bin/rm -rf \$(LOCALTOP)/\$\$store ;\\\n",
+            "\t      mkdir -p \$(LOCALTOP)/\$\$store ;\\\n",
+            "\t    fi ;\\\n",
+            "\t  fi ;\\\n",
+            "\tdone\n",
+            "\t\$(call clean_path,\$(SCRAM_INTwork)/${safepath})\n";
+
+  foreach my $ptype ($self->getPluginTypes ())
+  {
+    my $refreshcmd=$self->getPluginData("Refresh", $ptype);
+    my $cachefile= $self->getPluginData("Cache",   $ptype);
+    print $fh "PLUGIN_REFRESH_CMDS += ${refreshcmd}\n",
+              "define do_${refreshcmd}\n",
+              "  echo \"\@\@\@\@ Refreshing Plugins:${refreshcmd}\" &&\\\n",
+              "${refreshcmd} \$(1)\n",
+              "endef\n";
+    foreach my $dir ($self->getPluginProductDirs($ptype))
+    {
+      print $fh "\$(LOCALTOP)/\$($dir)/${cachefile}: \$(LOCALTOP)/\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd} \$(WORKINGDIR)/cache/prod/${refreshcmd}\n",
+                "\t\@if [ -f \$< ] ; then \\\n",
+                "\t  touch -t 198001010100 \$\@ &&\\\n",
+                "\t  \$(call do_${refreshcmd},\$(\@D)) &&\\\n",
+                "\t  touch \$\@ ;\\\n",
+                "\tfi\n",
+                "${refreshcmd}_cache := \$(LOCALTOP)/\$($dir)/${cachefile}\n";
+    }
+    
+    print $fh "\$(LOCALTOP)/\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd}: \$(PSR_BASE_TARGET)\n",
+              "\t@:\n";
+  }
+  print $fh "ProjectPluginRefresh: \$(foreach file,\$(addsuffix _cache,\$(PLUGIN_REFRESH_CMDS)),\$(\$(file)))\n",
+            "\t@:\n",
+            "###############################################################################\n\n";
+  $self->processTemplate("Common_rules");
+  return 1;
+}
+
+sub plugin_template ()
+{
+  my $self=shift;
+  $self->checkSealPluginFlag();
+  if ($self->get("plugin_name") ne "")
+  {
+    my $fh=$self->{FH};
+    print $fh $self->get("safename"),"_PRE_INIT_FUNC += \$\$(eval \$\$(call ",$self->get("plugin_type"),"Plugin,",$self->get("plugin_name"),",",$self->get("safename"),",\$(",$self->get("plugin_dir"),")))\n";
+  }
+  return;
+}
+
+sub dict_template()
+{
+  my $self=shift;
+  $self->searchLCGRootDict();
+  my $x=$self->get("classes_h");
+  if(scalar(@$x)>0)
+  {
+    $self->pushstash();
+    $self->lcgdict_template();
+    $self->popstash();
+  }
+  if ($self->get("rootdictfile") ne "")
+  {
+    $self->pushstash();
+    $self->rootdict_template();
+    $self->popstash();
+  }
+  return 1;
+}
+
+sub rootdict_template()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  my $path=$self->get("path");
+  my $rootdictfile=$self->get("rootdictfile");
+  my $fh=$self->{FH};
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},${path},${rootdictfile}))\n";
+}
+
+sub lcgdict_template()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  my $fh=$self->{FH};
+  $self->set("plugin_name","${safename}Capabilities");
+  $self->pushstash();
+  $self->set("plugin_name_force",1);
+  $self->set("plugin_type",$self->getLCGCapabilitiesPluginType());
+  $self->plugin_template();
+  $self->popstash();
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
+	    join(" ",@{$self->get("headers")}),",",join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
+	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),"))\n";
+}
+
+sub library_template ()
+{
+  my $self=shift;
+  if($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_LIBRARY ();
+  my $core=$self->core();
+  my $types=$core->buildproducts();
+  if($types)
+  {
+    foreach my $type (keys %$types)
+    {
+      $self->set("type",$type);
+      $self->unsupportedProductType();
+    }
+  }
+  my $path=$self->get("path"); my $safepath=$self->get("safepath");my $safename=$self->get("safename");
+  my $parent=$self->get("parent");my $class=$self->get("class");
+  my $fh=$self->{FH};
+  $core->branchdata()->name($safename);
+  print $fh "ifeq (\$(strip \$($parent)),)\n",
+            "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_INIT_FUNC := \$\$(eval \$\$(call CommonProductRules,${safepath},${path},$class))\n",
+            "${safename} := self/${parent}\n",
+            "${parent} := ${safename}\n",
+            "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
+  my $iglet=$self->get("iglet_file");
+  if($iglet ne ""){print $fh "${safename}_iglet_file := $iglet\n";}
+  $self->library_template_generic();
+  print $fh "endif\n";
+  return 1;
+}
+
+sub library_template_generic ()
+{
+  my $self=shift;
+  my $fh=$self->{FH};
+  my $core=$self->core();
+  my $safename=$self->get("safename");
+  my $localbf = $self->getLocalBuildFile();
+  if($localbf ne "")
+  {
+    print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+    foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+    {
+      my $v=$core->flags($flag);
+      if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+    }
+    foreach my $data ("INCLUDE","LIB")
+    {
+      my $dataval=$self->fixData($core->value($data),$data,$localbf);
+      if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
+    }
+    foreach my $data ("USE")
+    {
+      my $dataval=$self->fixData($core->value($data),$data,$localbf);
+      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
+      if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
+      print $fh "\n";
+    }
+    my $flag=$core->flags("SKIP_FILES");
+    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
+    $flag=$self->isLibSymLoadChecking ();
+    if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
+  }
+  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  $self->processTemplate("Extra_template");
+  if ($localbf ne "")
+  {
+    my $ex=$core->data("EXPORT");
+    if(($core->publictype() == 1) && ($ex ne ""))
+    {
+      foreach my $data ("INCLUDE","LIB")
+      {
+        my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
+	if($dataval ne ""){print $fh "${safename}_EX_${data}   := ",join(" ",@$dataval),"\n";}
+      }
+      #Temp remove for now always export what ever is used to build i.e. *_LOC_USE
+      print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";
+      #foreach my $data ("USE")
+      #{
+      #  my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
+      #  if($dataval ne "")
+      #	{print $fh "${safename}_EX_${data}   := ",$self->getCacheData($data)," ",join(" ",@$dataval),"\n";}
+      #}
+    }
+    print $fh "\$(foreach x,\$(sort \$(${safename}_LOC_USE) \$(${safename}_EX_USE)),\$(eval \$(x)_USED_BY += ${safename}))\n";
+    my $mk=$core->data("MAKEFILE");
+    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
+  }
+  $self->setValidSourceExtensions();
+  my $safepath=$self->get("safepath"); my $path=$self->get("path");
+  my $store1= $self->getProductStore("scripts");
+  my $store2= $self->getProductStore("lib");
+  my $ins_script=$core->flags("INSTALL_SCRIPTS");
+  print $fh "ALL_PRODS += $safename\n",
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(SRC_FILES_SUFFIXES)))\n";
+}
+
+sub binary_template ()
+{
+  my $self=shift;
+  if($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_common2all();
+  my $core=$self->core();
+  my $safepath=$self->get("safepath"); my $path=$self->get("path");
+  my $fh=$self->{FH};
+  if ($self->get("class") eq "TEST")
+  {
+    $self->pushstash();
+    $self->set("datapath","${path}/data");
+    $self->data_template_generic();
+    $self->popstash();
+  }
+  my $types=$core->buildproducts();
+  if($types)
+  {
+    foreach my $ptype (keys %$types)
+    {
+      if ($ptype eq "LIBRARY")
+      {
+        foreach my $prod (keys %{$types->{$ptype}})
+	{
+	  my $safename=$self->fixProductName($prod);
+	  $self->set("safename",$safename);
+	  $core->thisproductdata($safename,$ptype);
+	  my $prodfiles = $core->productfiles();
+	  print $fh "ifeq (\$(strip \$($safename)),)\n",
+	            "${safename}_files := $prodfiles\n",
+                    "$safename := self/${path}\n";
+          $self->set("type",$types->{$ptype}{$prod}{TYPE});
+	  $self->pushstash();$self->library_template_generic();$self->popstash();
+	  print $fh "else\n",
+	            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
+                    "endif\n";
+        }
+      }
+      elsif($ptype eq "BIN")
+      {
+        foreach my $prod (keys %{$types->{$ptype}})
+	{
+	  my $safename=$self->fixProductName($prod);
+	  $self->set("safename",$safename);
+	  $core->thisproductdata($safename,$ptype);
+	  my $prodfiles = $core->productfiles();
+	  if ($prodfiles ne "")
+	  {
+	    print $fh "ifeq (\$(strip \$($safename)),)\n",
+	              "${safename}_files := $prodfiles\n",
+                      "$safename := self/${path}\n";
+            if ($class eq "TEST")
+	    {
+	      print $fh "${safename}_TEST_RUNNER_ARGS :=  ",$core->flags("TEST_RUNNER_ARGS"),"\n";
+	      $self->set("type","test");
+	    }
+	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}
+	    $self->pushstash();$self->binary_template_generic();$self->popstash();
+	    print $fh "else\n",
+	            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
+                    "endif\n";
+          }
+	}
+      }
+      else{$self->set("type",lc($ptype));$common->unsupportedProductType ();}
+    }
+  }
+  print $fh "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
+  return 1;
+}
+
+sub binary_template_generic()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  my $localbf=$self->getLocalBuildFile();
+  my $core=$self->core();
+  my $fh=$self->{FH};
+  print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+  foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+  {
+    my $v=$core->flags($flag);
+    if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+  }
+  foreach my $data ("INCLUDE","LIB")
+  {
+    my $dataval=$self->fixData($core->value($data),$data,$localbf);
+    if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
+  }
+  foreach my $data ("USE")
+  {
+    my $dataval=$self->fixData($core->value($data),$data,$localbf);
+    print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
+    if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
+    print $fh "\n";
+  }
+  my $mk=$core->data("MAKEFILE");
+  if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
+  $self->setValidSourceExtensions();
+  my $path=$self->get("path"); my $safepath=$self->get("safepath");my $type=$self->get("type");
+  my $store1= $self->getProductStore("scripts");
+  my $store2= $self->getProductStore($type);
+  my $store3= $self->getProductStore("logs");
+  my $ins_script=$core->flags("INSTALL_SCRIPTS");
+  print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += ${safename}))\n",
+            "ALL_PRODS += ${safename}\n",
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES),$type,\$(${store3})))\n";
+}
+
+sub src2store_copy()
+{
+  my $self=shift;
+  if($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_common2all();
+  my $filter=shift;
+  my $store=shift;
+  my $fh=$self->{FH};
+  my $core=$self->core();
+  my $safepath=$self->get("safepath");
+  my $path=$self->get("path");
+  print $fh "${safepath}_files := \$(notdir \$(wildcard \$(foreach dir,\$(LOCALTOP)/${path},\$(dir)/${filter})))\n";
+  my $flag=$core->flags("SKIP_FILES");
+  if($flag ne ""){print $fh "${safepath}_SKIP_FILES := $flag\n";}
+  print $fh "\$(eval \$(call Src2StoreCopy,${safepath},${path},${store},${filter}))\n";
+}
+
+sub html_template ()
+{
+  my $self=shift;
+  $self->src2store_copy('*',"\$(addprefix \$(".$self->getProductStore("html").")/,\$(patsubst src/%,%,".$self->get("path")."))");
+  return 1;
+}
+
+sub images_template ()
+{
+  my $self=shift;
+  $self->src2store_copy('*.*',"\$(".$self->getProductStore("images").")");
+  return 1;
+}
+
+sub ivs_template ()
+{
+  my $self=shift;
+  $self->src2store_copy('*.iv',"\$(".$self->getProductStore("ivs").")");
+  return 1;
+}
+
+sub scripts_template ()
+{
+  my $self=shift;
+  $self->src2store_copy('*',"\$(".$self->getProductStore("scripts").")");
+  return 1;
+}
+
+sub moc_template ()
+{
+  my $self=shift;
+  if ($self->shouldRunMoc())
+  {
+    my $fh=$self->{FH};
+    my $safename=$self->get("safename");
+    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call AddMOC,${safename},",$self->get("mocfiles"),",",$self->get("mocinc"),",",$self->get("mocsrc"),"))\n";
+  }
+}
+
+sub codegen_template ()
+{
+  my $self=shift;
+  my $flag=$self->core()->flags("CODEGENPATH");
+  if (($flag ne "") && ($self->isCodeGen()))
+  {
+    my $fh=$self->{FH};
+    print $fh "\$(eval \$(call CodeGen,",$self->get("safename"),",",$self->get("path"),",$flag))\n";
+  }
+  return 1;
+}
+
+sub data_install_template()
+{
+  my $self=shift;
+  if($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_common2all ();
+  $self->set("datapath",$path);
+  $self->data_template_generic();
+  my $fh=$self->{FH};
+  print $fh "\$(eval \$(call CommonDataRules,",$self->get("safepath"),",",$self->get("path"),"))\n";
+  return 1;
+}
+
+sub data_template_generic()
+{
+  my $self=shift;
+  if($self->isDataDownloadCopy())
+  {
+    my $fh=$self->{FH};
+    print $fh "\$(eval \$(call DataInstall,",$self->get("safepath"),",",$self->get("datapath"),",",$self->get("add_data_copy"),",",
+              $self->get("add_download"),",",join(" ",$self->get("downloadurls")),"))\n";
+  }
+}
+
+sub donothing_template()
+{
+  my $self=shift;
+  if ($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_common2all ();
+  my $fh=$self->{FH}; my $safepath=$self->get("safepath");
+  print $fh ".PHONY : all_${safepath} ${safepath}\n",
+            "${safepath} all_${safepath}:\n";
+  return 1;
+}
+
+sub iglet_template ()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  $self->set("plugin_name","${safename}_ExtraIglet");
+  $self->set("plugin_name_force",1);
+  $self->set("plugin_type","iglet");
+  $self->plugin_template();
+  my $fh=$self->{FH};
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call Iglet,${safename},",$self->get("iglet_file"),",\$(",$self->getProductStore("lib"),")))\n";
+  return 1;
+}
+
+sub lexyacc_template ()
+{
+  my $self=shift;
+  if ($self->searchLexYacc())
+  {
+    my $fh=$self->{FH};
+    my $safename=$self->get("safename");
+    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LexYACC,$safename,",$self->get("path"),",",$self->get("lexyacc"),",",$self->get("parseyacc"),"))\n";
+  }
+}
+
+sub plugins_template()
+{&binary_template(shift);}
+
+sub python_template()
+{
+  my $self=shift;
+  if ($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_PYTHON ();
+  
+  my $core=$self->core();
+  my $types=$core->buildproducts();
+  if($types)
+  {
+    foreach my $type (keys %$types)
+    {
+      $self->set("type",$type);
+      $self->unsupportedProductType();
+    }
+  }
+  my $path=$self->get("path"); my $safepath=$self->get("safepath");my $safename=$self->get("safename");my $class=$self->get("class");
+  my $fh=$self->{FH};
+  $core->branchdata()->name($safename);
+  print $fh "ifeq (\$(strip \$(${safename})),)\n",
+            "$safename := self/${path}\n";
+  my $localbf = $self->getLocalBuildFile();
+  if($localbf ne "")
+  {
+    print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+    foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+    {
+      my $v=$core->flags($flag);
+      if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+    }
+    foreach my $data ("INCLUDE","LIB")
+    {
+      my $dataval=$self->fixData($core->value($data),$data,$localbf);
+      if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
+    }
+    foreach my $data ("USE")
+    {
+      my $dataval=$self->fixData($core->value($data),$data,$localbf);
+      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
+      if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
+      print $fh "\n";
+    }
+    my $flag=$core->flags("SKIP_FILES");
+    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
+    $flag=$self->isLibSymLoadChecking ();
+    if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
+    my $mk=$core->data("MAKEFILE");
+    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
+    print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += $safename))\n";
+  }
+  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  print $fh "ALL_PRODS += ${safename}\n",
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
+	    "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n",
+            "else\n",
+            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
+            "endif\n",
+            "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
+  return 1;
+}
+
+sub java_template()
+{
+  my $self=shift;
+  if ($self->get("suffix") ne ""){return 1;}
+  $self->initTemplate_common2all ();
+  my $safename=$self->get("safepath");my $path=$self->get("path");
+  my $type="java";
+  $self->set("safename",$safename);$self->set("type",$type);
+  my $localbf=$self->getLocalBuildFile();
+  my $fh=$self->{FH};
+  print $fh "${safename}_SKIP_FILES   := CVS \$(SCRAM_BUILDFILE) \$(SCRAM_BUILDFILE).xml\n";
+  if($localbf ne "")
+  {
+    my $core=$self->core();
+    print $fh "${safename}_BuildFile  := \$(WORKINGDIR)/cache/bf/${localbf}\n",
+              "${safename}_SKIP_FILES += ",$core->flags("SKIP_FILES")," ",$core->flags("SKIP_SCRIPTS"),"\n";
+    my $flag=$core->flags("FILE_COMPILATION_ORDER");
+    if($flag ne ""){print $fh "${safename}_FILE_COMPILATION_ORDER := $flag\n";}
+    my $mk=$core->data("MAKEFILE");
+    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
+  }
+  print $fh "ALL_PRODS += $safename\n",
+            "${safename}_INIT_FUNC := \$\$(eval \$\$(call JavaProduct,$safename,$path,\$(",$self->getProductStore(),")))\n";
+  return 1;
+}
+
+sub test_template()
+{&binary_template(shift);}
 
 1;

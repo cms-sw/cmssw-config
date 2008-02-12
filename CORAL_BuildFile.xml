@@ -1,14 +1,14 @@
 <architecture name="slc4_ia32_gcc345">
 <makefile>
-CCcompiler:=gcc3<br/>
+CCcompiler:=gcc3
 </makefile>
 </architecture>
 
 <architecture name="slc4_ia32_gcc345_dbg">
 <flags CXXFLAGS="-O0 -g -DDEBUG"/>
 <makefile>
-CCcompiler:=gcc3<br/>
-CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))<br/>
+CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 </makefile>
 </architecture>
 

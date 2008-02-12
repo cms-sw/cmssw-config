@@ -1,4 +1,4 @@
-package SCRAM::Doc2XML;
+package SCRAM::Plugins::Doc2XML;
 require 5.004;
 
 sub new()
@@ -323,10 +323,10 @@ sub process_makefile_ ()
          {
 	 my $l=$1;
 	 $line=$2;
-	 if($l!~/^\s*$/){push @{$self->{output}},"$l<br/>";}
+	 if($l!~/^\s*$/){push @{$self->{output}},"$l\n";}
 	 last;
 	 }
-      else {push @{$self->{output}},"$line<br/>";$line="";}
+      else {push @{$self->{output}},"$line\n";$line="";}
       }
    return $line;
    }

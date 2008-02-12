@@ -1,7 +1,0 @@
-<project name="CMSSW" version="CMSSW_1_7_0_pre10-CMS1">
-  <config dir="config"/>
-  <base url="file:/build/muzaffar/xml-scram/BUILD/slc4_ia32_gcc345/cms/cmssw/CMSSW_1_7_0_pre10-CMS1/">
-    <download url="file:config" name="config"/>
-    <requirementsdoc name="config/requirements.xml"/>
-  </base>
-</project>

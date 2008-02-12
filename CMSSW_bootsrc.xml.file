@@ -1,8 +1,0 @@
-<project name="@PROJECT_NAME@" version="@PROJECT_VERSION@">
-  <config dir="config"/>
-  <base url="file:@PROJECT_BUILD_PATH@/">
-    <download url="file:config" name="config"/>
-    <download url="file:src"    name="src"/>
-    <requirementsdoc name="config/requirements.xml"/>
-  </base>
-</project>
