@@ -27,7 +27,7 @@ if((!defined $config) || ($config=~/^\s*$/))
   $dir=dirname($0);
   if($dir!~/^\//){use Cwd;$dir=getcwd()."/${dir}";}
   $dir=&fixPath($dir);
-  if($dir=~/^(.+)\/config\/SCRAM$/){$config=$1;}
+  if($dir=~/^(.+)\/config$/){$config=$1;}
   else{die "Missing config directory path which needs to be updated.";}
 }
 $dir="${config}/config";
