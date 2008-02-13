@@ -1,7 +1,7 @@
 <project name="@PROJECT_NAME@" version="@PROJECT_VERSION@">
   <config dir="config"/>
   <requirementsdoc name="config/requirements.xml"/>
-  <base url="file:@PROJECT_BUILD_PATH@/">
+  <base url="file:@PROJECT_CONFIG_BASE@/">
     <download url="file:config"                               name="config"/>
     <download url="file:src/config/scram"                     name="src/config/scram"/>
     <download url="file:src/CoralBase"                        name="src/CoralBase"/>
