@@ -210,7 +210,7 @@ define BuildClean
     regexp=$2; \
     if [ "X$$regexp" == "X" ] ; then regexp='[0-9][0-9]'; fi ;\
     find $(WORKINGDIR)/$(1) -name "AUTOCLEAN.*.clean" -type f | xargs cat | grep "^$$regexp:" | sed "s|^$$regexp:||" |sort | uniq  > $(WORKINGDIR)/$(1)/.AUTOCLEAN ; \
-    cat $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
+    if [ "X$3" == "X" ] ; then cat $(WORKINGDIR)/$(1)/.AUTOCLEAN; fi;\
     sh $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
     rm -rf $(WORKINGDIR)/$(1); \
   fi
@@ -885,7 +885,7 @@ $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@touch $($(1)_BuildFile); $$(call BuildClean,$(2),0[0-9])
+	@touch $($(1)_BuildFile); $$(call BuildClean,$(2),0[0-9],1)
 endif
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_BuildFile) $$($(1)_libdeps)
 	@touch $$@
@@ -998,7 +998,7 @@ endif
 endif
 $(1)_config += $$($(1)_objdir)/config
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2)/$(1),0[0-9]); mkdir -p $$(@D) ; touch $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
@@ -1140,7 +1140,7 @@ $($(1)_BuildFile):
 endif
 $(1)_config += $$($(1)_objdir)/config
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2)/$(1),0[0-9]); mkdir -p $$(@D) ; touch $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 ifeq ($(strip $(4)),1)
 .PHONY: $(1)_copy_python_scripts
 all_$(1) += $(1)_copy_python_scripts
@@ -1286,7 +1286,7 @@ $($(1)_BuildFile):
 endif
 $(1)_config += $$($(1)_objdir)/config
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2),0[0-9]); mkdir -p $$(@D) ; touch $$@
+	@$$(call BuildClean,$(2),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 else
 all_$(1) $(1):
 	@:
