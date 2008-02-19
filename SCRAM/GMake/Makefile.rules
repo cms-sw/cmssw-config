@@ -166,7 +166,7 @@ define ToolCPPFlags
 $(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell echo $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | tr ' ' '\n' | sort -r | sed 's|.*:||'),$(warning Calculationg ScramOrderedTools))
