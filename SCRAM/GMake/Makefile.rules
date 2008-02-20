@@ -1547,10 +1547,10 @@ $(WORKINGDIR)/cache/xlibs.backup: $(ToolTimeStamps)
 $(eval curtop:=$(shell echo $$LOCALTOP))
 ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))
   PROJECT_RENAME_TARGET:=
-  ifeq ($(strip $(MAKECMDGOALS)),projectrename)
+  ifeq ($(strip $(MAKECMDGOALS)),ProjectRename)
     PROJECT_RENAME_TARGET:=yes
   else
-    ifeq ($(strip $(MAKECMDGOALS)),ProjectRename)
+    ifeq ($(strip $(MAKECMDGOALS)),projectrename)
       PROJECT_RENAME_TARGET:=yes
     else
       ifeq ($(strip $(MAKECMDGOALS)),PROJECTRENAME)
@@ -1564,7 +1564,7 @@ ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))
     ifeq ($(strip $(wildcard $(curtop)/$(dummyfile))),)
       $(eval xxtmp:=$(shell rm -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
       $(info **** ERROR: You have moved/renamed this project area "$(curtop)" from "$(SCRAM_INIT_LOCALTOP)")
-      $(error Please first run \"scramv1 b projectrename\")
+      $(error Please first run \"scramv1 b ProjectRename\")
     endif
     $(eval xxtmp:=$(shell rm -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
   endif
