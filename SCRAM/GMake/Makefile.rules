@@ -991,16 +991,18 @@ all_$(1) += $(1)_install_scripts_rule
 endif
 $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
-$(1)_CONFIGDEPS += $($(1)_BuildFile)
 ifeq ($(filter $($(1)_BuildFile),$(ALL_BUILDFILES)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
-$($(1)_BuildFile):
+endif
+$($(1)_BuildFile):: $$($(1)_CONFIGDEPS)
 	@touch $($(1)_BuildFile)
-endif
-endif
-$(1)_config += $$($(1)_objdir)/config
+$$($(1)_objdir)/config: $($(1)_BuildFile)
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+endif
+$(1)_config += $$($(1)_objdir)/config
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
@@ -1133,16 +1135,18 @@ $(3)          += all_$(1)
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_python_dir := $(addprefix $(6)/,$(patsubst src/%/python,%,$(2)))
-$(1)_CONFIGDEPS := $(sort $(foreach u,$($(1)_LOC_USE),$(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
+$(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
-$(1)_CONFIGDEPS += $($(1)_BuildFile)
 ALL_BUILDFILES += $($(1)_BuildFile)
-$($(1)_BuildFile): 
+$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
 	@touch $($(1)_BuildFile)
-endif
-$(1)_config += $$($(1)_objdir)/config
+$$($(1)_objdir)/config: $($(1)_BuildFile)
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+endif
+$(1)_config += $$($(1)_objdir)/config
 ifeq ($(strip $(4)),1)
 .PHONY: $(1)_copy_python_scripts
 all_$(1) += $(1)_copy_python_scripts
@@ -1282,13 +1286,16 @@ $(1)_precompile += $$($(1)_workfiles1)
 $(1)_compile    += $$($(1)_workfiles2)
 $(1)_CONFIGDEPS := $(CONFIGDEPS)
 ifneq ($$(strip $($(1)_BuildFile)),)
-$(1)_CONFIGDEPS += $($(1)_BuildFile)
-$($(1)_BuildFile):
+ALL_BUILDFILES += $($(1)_BuildFile)
+$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
 	@touch $($(1)_BuildFile)
-endif
-$(1)_config += $$($(1)_objdir)/config
+$$($(1)_objdir)/config: $($(1)_BuildFile)
+	@$$(call BuildClean,$(2),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2),0[0-9],1); mkdir -p $$(@D) ; touch $$@
+endif
+$(1)_config += $$($(1)_objdir)/config
 else
 all_$(1) $(1):
 	@:
@@ -1364,7 +1371,7 @@ $(1)_ExtraIglet_CXXFLAGS     = $$($(1)_CXXFLAGS)
 $(1)_ExtraIglet_LDFLAGS      = $$($(1)_LDFLAGS)
 $(1)_ExtraIglet_libdeps     := $($(1)_libdeps)
 ifeq ($(strip $($(1)_objs)),)
-$($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.cc $($(1)_CONFIGDEPS) $(logfile_$(1))
+$($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.cc $($(1)_config) $(logfile_$(1))
 	$$(call compile_cxx,$(1),$(1))
 else
 $(1)_ExtraIglet_LDFLAGS      = $$($(1)_LDFLAGS) -l$(1)
