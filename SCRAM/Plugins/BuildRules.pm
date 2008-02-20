@@ -1179,7 +1179,7 @@ sub depsOnlyBuildFile
       print $fref "\$(foreach x,\$(sort \$(${sname}_LOC_USE) \$(${sname}_EX_USE)),\$(eval \$(x)_USED_BY += ${sname}))\n";
     }
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
-    print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname))\nendif\n\n";
+    print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname,$path))\nendif\n\n";
     close($fref);
     $cache->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
   }
