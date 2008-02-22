@@ -21,6 +21,7 @@ my @toolvar=("INCLUDE","LIB");
 
 my $skline=0;
 my %mkprocess=();
+$mkprocess{skiplines}[$skline++] = qr/.+_XDEPS\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_INIT_FUNC\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_files\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_LOC_LIB\s+[:+]=/;
