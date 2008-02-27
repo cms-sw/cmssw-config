@@ -1831,7 +1831,8 @@ sub binary_template ()
   my $core=$self->core();
   my $safepath=$self->get("safepath"); my $path=$self->get("path");
   my $fh=$self->{FH};
-  if ($self->get("class") eq "TEST")
+  my $class=$self->get("class");
+  if ($class eq "TEST")
   {
     $self->pushstash();
     $self->set("datapath","${path}/data");
