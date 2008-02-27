@@ -1840,6 +1840,7 @@ sub binary_template ()
     $self->popstash();
   }
   my $types=$core->buildproducts();
+  my $localbf = $self->getLocalBuildFile();
   if($types)
   {
     foreach my $ptype (keys %$types)
@@ -1853,7 +1854,7 @@ sub binary_template ()
 	  $core->thisproductdata($safename,$ptype);
 	  my $prodfiles = $core->productfiles();
 	  print $fh "ifeq (\$(strip \$($safename)),)\n",
-	            "${safename}_files := $prodfiles\n",
+	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
                     "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
@@ -1873,7 +1874,7 @@ sub binary_template ()
 	  if ($prodfiles ne "")
 	  {
 	    print $fh "ifeq (\$(strip \$($safename)),)\n",
-	              "${safename}_files := $prodfiles\n",
+	              "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
                       "$safename := self/${path}\n";
             if ($class eq "TEST")
 	    {
