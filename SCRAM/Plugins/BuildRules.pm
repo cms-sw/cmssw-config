@@ -1820,7 +1820,7 @@ sub library_template_generic ()
   my $store2= $self->getProductStore("lib");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(SRC_FILES_SUFFIXES)))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(if \$(${safename}_files_exts),\$(${safename}_files_exts),\$(SRC_FILES_SUFFIXES))))\n";
 }
 
 sub binary_template ()
@@ -1855,7 +1855,8 @@ sub binary_template ()
 	  my $prodfiles = $core->productfiles();
 	  print $fh "ifeq (\$(strip \$($safename)),)\n",
 	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
-                    "$safename := self/${path}\n";
+                    "${safename}_files_exts := \$(patsubst .%,%,\$(suffix \$(${safename}_files)))\n",
+		    "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
 	  print $fh "else\n",
@@ -1932,7 +1933,7 @@ sub binary_template_generic()
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += ${safename}))\n",
             "ALL_PRODS += ${safename}\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES),$type,\$(${store3})))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(patsubst .%,%,\$(suffix \$(${safename}_files))),$type,\$(${store3})))\n";
 }
 
 sub src2store_copy()
