@@ -729,12 +729,18 @@ define python_directory_link
   if [ ! -e $($(1)_python_dir) ] ; then \
     subsysdir=`dirname $($(1)_python_dir)` &&\
     mkdir -p $$subsysdir &&\
-    touch $$subsysdir/__init__.py &&\
     rellink=. &&\
     subsysdir1=$$subsysdir &&\
-    while [ "$$subsysdir1" != "." ] ; do subsysdir1=`dirname $$subsysdir1`;  rellink=$$rellink/..; done &&\
-    ln -sf $$rellink/$(4) $($(1)_python_dir) &&\
-    echo ">> Link created: $($(1)_python_dir) -> $($(1)_srcdir)" ;\
+    while [ "$$subsysdir1" != "." ] ; do touch $$subsysdir/__init__.py; subsysdir1=`dirname $$subsysdir1`;  rellink=$$rellink/..; done &&\
+    ln -s $$rellink/$(4) $($(1)_python_dir) &&\
+    echo ">> Link created: $($(1)_python_dir) -> $($(1)_srcdir)" &&\
+    for d in . `ls $($(1)_python_dir)` ; do \
+      if [ -d $($(1)_python_dir)/$$d ] ; then \
+        if [ ! -f $($(1)_python_dir)/$$d/__init__.py ] ; then \
+	  echo "#this file was automatically created by SCRAM" > $($(1)_python_dir)/$$d/__init__.py;\
+	fi ;\
+      fi ;\
+    done ;\
   fi $(endlog_$(2))
 endef
 define copy_src_scripts
