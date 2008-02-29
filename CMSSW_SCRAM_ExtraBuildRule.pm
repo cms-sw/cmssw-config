@@ -27,7 +27,7 @@ sub Project()
   my $self=shift;
   my $common=$self->{template};
   my $fh=$common->filehandle();
-  $common->symlinkPythonDirectory(0);
+  $common->symlinkPythonDirectory(1);
   $common->addPluginSupport("iglet","IGLET","IgPluginRefresh",'\/iglet$',"SCRAMSTORENAME_LIB",".iglets",'$name="${name}.iglet"',"yes");
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
   $common->setProjectDefaultPluginType ("edm");
