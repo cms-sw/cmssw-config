@@ -1,4 +1,5 @@
 package SCRAM::Plugins::Doc2XML;
+use File::Basename;
 require 5.004;
 
 sub new()
@@ -7,14 +8,17 @@ sub new()
    my $class=ref($proto) || $proto;
    my $self={};
    bless $self,$class;
-   $self->init_();
+   $self->init_(shift);
    return $self;
    }
 
 sub init_ ()
    {
    my $self=shift;
-   $self->{output}=[];
+   my $convert=shift;
+   if((!defined $convert) && (exists $ENV{SCRAM_XMLCONVERT})){$convert=1;}
+   $self->{xmlconvert}=$convert || 0;
+   $self->clean();
    foreach my $tag ("project","config","download","requirementsdoc","base",
                     "tool","client","environment","runtime","productstore","classpath",
 		    "use","flags","architecture","lib","bin","library",
@@ -36,8 +40,35 @@ sub convert()
    {
    my $self=shift;
    my $file=shift;
+   $self->clean();
    $self->{filename}=$file;
-   $self->{input}=[];
+   if ($self->{xmlconvert})
+   {
+     $self->{sections}{nonexport}[0]={};
+     $self->{sections}{export}[0]={};
+     if (!exists $self->{tools})
+     {
+       use Cache::CacheUtilities;
+       $self->{tools}={};
+       $self->{bfproduct}={};
+       my $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db");
+       foreach my $tool (keys %{$cache->{SETUP}}){$self->{tools}{$tool}=1;}
+       $cache=();
+       $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ProjectCache.db");
+       foreach my $dir (keys %{$cache->{BUILDTREE}})
+       {
+         if (($cache->{BUILDTREE}{$dir}{PUBLIC}) && (exists $cache->{BUILDTREE}{$dir}{METABF}))
+	 {
+	   foreach my $bf (@{$cache->{BUILDTREE}{$dir}{METABF}})
+	   {
+	     $bf=~s/.xml$//;
+	     $self->{bfproduct}{$bf}=$cache->{BUILDTREE}{$dir}{NAME};
+	   }
+         }
+       }
+       $cache=();
+     }
+   }
    my $fref;
    open($fref,$file) || die "Can not open file for reading: $file";
    while(my $line=<$fref>)
@@ -49,24 +80,24 @@ sub convert()
    $self->{count}=scalar(@{$self->{input}});
    $self->process_();
    $self->{input}=[];
+   if ($self->{xmlconvert}){delete $self->{sections};}
    return $self->{output};
    }
 
 sub clean ()
    {
    my $self=shift;
-   $self->{outout}=[];
+   $self->{input}=[];
+   $self->{output}=[];
    }
    
 sub lastTag ()
    {
+   my $self=shift;
    my $tags=shift;
    pop @$tags;
-   my $count=scalar(@$tags);
-   if ($count>0)
-      {
-      return $tags->[$count-1];
-      }
+   $self->{tagdepth}=$self->{tagdepth}-1;
+   if ($self->{tagdepth}>0){return $tags->[$self->{tagdepth}-1];}
    return "";
    }
    
@@ -81,6 +112,8 @@ sub process_()
    my $ltag="";
    my $pline="";
    my $err=0;
+   $self->{tagdepth}=0;
+   $self->{bfsection}="nonexport";
    while ($line || (($num<$count) && (($line=$self->{input}[$num++]) || 1)))
       {
       if ($line=~/^\s*#/){$line="";next;}
@@ -93,7 +126,6 @@ sub process_()
 	 }
       else{$err=0;}
       $pline=$line;
-      #print STDERR "LINE:$line:$num:$count:$ltag\n";
       if ($line=~/^\s*<\s*(\/\s*doc\s*|doc\s+[^>]+)>(.*)$/i){$line=$2;next;}
       if ($line=~/^(\s*<\s*\/\s*([^\s>]+)\s*>)(.*)$/)
       {
@@ -102,12 +134,13 @@ sub process_()
 	$line=$3;
 	if (exists $self->{tags}{$tag}{close})
 	   {
-	   if (scalar(@tags)>0)
+	   if ($self->{tagdepth}>0)
 	      {
+	      if ($self->{xmlconvert} && ($ltag=~/^(bin|library)$/)){$self->_pop();}
 	      if ($ltag ne $tag)
 	         {
-		 print STDERR "**** WARNING: Found tag \"$tag\" at line NO. $num of file \"$file\" while looking for \"$ltag\".\n";
-		 push @{$self->{output}},"</$ltag>";
+		 print STDERR "**** WARNING: Found closing tag \"$tag\" at line NO. $num of file \"$file\" while looking for \"$ltag\".\n";
+		 push @{$self->{output}},$self->_adjust("</$ltag>",-1);
 		 my $flag=0;
 		 foreach my $t (@tags)
 		    {
@@ -117,13 +150,14 @@ sub process_()
 		 }
 	      else
 	         {
-	         push @{$self->{output}},$nline;
+		 push @{$self->{output}},$self->_adjust($nline,1);
 		 }
-		 $ltag = &lastTag(\@tags);
+		 if ($tag eq "export"){$self->{bfsection}="nonexport";}
+		 $ltag = $self->lastTag(\@tags);
 	      }
 	   else
 	      {
-	      print STDERR "**** WARNING: Found closing tag \"$tag\" at line NO. $num without any opening tag in file \"$file\".\n";
+	      print STDERR "**** WARNING: Found closing tag \"$tag\" at line NO. $num without any opening tag for this in file \"$file\".\n";
 	      }
 	   }
 	next;
@@ -132,9 +166,11 @@ sub process_()
          {
 	 my $tag=lc($2);
 	 $line=lc($1); $line=~s/\s//g;
-	 push @{$self->{output}},$line;
+	 push @{$self->{output}},$self->_adjust($line);
 	 push @tags,$tag;
+	 $self->{tagdepth}=scalar(@tags);
 	 $ltag=$tag;
+	 if ($tag eq "export"){$self->{bfsection}="export";}
 	 $line=$self->do_tag_processing_($tag,$3,\$num);
 	 next;
 	 }
@@ -146,14 +182,15 @@ sub process_()
 	   $line="";
 	   next;
 	   }
-	 if (scalar(@tags)>0)
+	 if ($self->{tagdepth}>0)
 	    {
 	    if ((($tag  eq "bin") || ($tag  eq "library")) &&
 	        (($ltag eq "bin") || ($ltag eq "library")))
 	       {
 	       print STDERR "**** WARNING: Missing closing \"$ltag\" tag at line NO. $num of file \"$file\".\n";
-	       push @{$self->{output}},"</$ltag>";
-	       $ltag = &lastTag(\@tags);
+	       push @{$self->{output}},$self->_adjust("</$ltag>",-1);
+	       if ($self->{xmlconvert}){$self->_pop();}
+	       $ltag = $self->lastTag(\@tags);
 	       }
 	    }
 	 $line="<$tag $3";
@@ -164,17 +201,19 @@ sub process_()
 	    $line.=$nline;
 	    }
 	 if ($line!~/>/){print STDERR "**** WARNING: Missing \">\" at line NO. $num of file \"$file\".\n==>$line\n";$line.=">";}
+	 if ($self->{xmlconvert} && ($tag=~/^(bin|library)$/)){$self->_push();}
 	 $line=$self->do_tag_processing_($tag,$line,\$num);
-	 if (exists $self->{tags}{$tag}{close}){push @tags,$tag;$ltag=$tag;}
+	 if (exists $self->{tags}{$tag}{close}){push @tags,$tag;$ltag=$tag;$self->{tagdepth}=scalar(@tags);}
 	 next;
 	 }
       elsif ($ltag=~/^(project|bin|library)$/)
          {
 	 if ($line=~/^.*<\s*\/\s*$ltag\s*>(.*)/)
 	    {
-	    push @{$self->{output}},"</$ltag>";
+	    push @{$self->{output}},$self->_adjust("</$ltag>",-1);
+	    if ($self->{xmlconvert}){$self->_pop();}
 	    $line=$1;
-	    $ltag = &lastTag(\@tags);
+	    $ltag = $self->lastTag(\@tags);
 	    }
 	 else{$line="";}
 	 }
@@ -197,8 +236,9 @@ sub process_()
    while(@tags>0)
       {
       my $t=pop @tags;
+      $self->{tagdepth}--;
       print STDERR "**** WARNING: Missing closing tag \"$t\" in file \"$file\".\n";
-      push @{$self->{output}},"</$t>";
+      push @{$self->{output}},$self->_adjust("</$t>");
       }
    }
    
@@ -271,12 +311,26 @@ sub process_defaultprocessing_
    my $tag=shift;
    my $line=shift;
    my $num=shift;
+   my $nline="";
+   my $sec=$self->{bfsection};
+   $line=~/^(\s*<\s*$tag\s+)([^>]+)>(.*)$/;
+   $nline=$1;
+   $line=$3;
+   my $attrib=$2;
+   if (($self->{xmlconvert}) && ($sec eq "export"))
+   {
+     if ($tag eq "use"){return $line;}
+     elsif ($tag eq "lib")
+     {
+       my $lib=&_getname($attrib);
+       if ((exists $self->{bfproduct}{$self->{filename}}) && ($self->{bfproduct}{$self->{filename}} eq "$lib"))
+       {$attrib=~s/(name\s*=\s*.*)$lib/${1}1/;}
+       else{return $line;}
+     }
+   }
    my $close=1;
    if(exists $self->{tags}{$tag}{close}){$close=0;}
-   my $nline="";
-   $line=~/^(\s*<\s*$tag\s+)([^>]+)>(.*)$/;
-   $nline=$1; $line=$3;
-   my $attrib=$2; $attrib=~s/\s*$//;
+   $attrib=~s/\s*$//;
    while($attrib!~/^\s*$/)
       {
       my $item=&getnextattrib_(\$attrib,$num);
@@ -294,7 +348,25 @@ sub process_defaultprocessing_
       }
    if($close){$nline.="/>";}
    else{$nline.=">";}
-   push @{$self->{output}},$nline;
+   my $add=1;
+   if ($self->{xmlconvert})
+   {
+     if ($tag=~/^(use|lib)$/)
+     {
+       my $val=&_getname($nline);
+       if ($tag eq "use")
+       {
+         my $tool=lc($val);
+	 if (exists $self->{tools}{$tool})
+	 {
+	   $nline=~s/(name=.+)$val/$1$tool/;
+	   $val=$tool;
+	 }
+       }
+       $add = $self->_add("$tag:$val");
+     }
+   }
+   if ($add){push @{$self->{output}},$self->_adjust($nline);}
    return $line;
    }
 
@@ -330,5 +402,64 @@ sub process_makefile_ ()
       }
    return $line;
    }
-   
+
+sub _add ()
+  {
+  my $self=shift;
+  my $val=shift || return 0;
+  if ($self->_has($val)){return 0;}
+  my $sec=$self->{bfsection};
+  my $ind=scalar(@{$self->{sections}{$sec}})-1;
+  if($ind>=0){$self->{sections}{$sec}[$ind]{$val}=1;return 1;}
+  return 0;
+  }
+  
+sub _has ()
+  {
+  my $self=shift;
+  my $val=shift || return 0;
+  my $sec=$self->{bfsection};
+  my $ind=scalar(@{$self->{sections}{$sec}});
+  for(my $i=0;$i<$ind;$i++)
+     {
+     if(exists $self->{sections}{$sec}[$i]{$val}){return 1;}
+     }
+  return 0;
+  }
+  
+sub _push ()
+  {
+  my $self=shift;
+  my $sec=shift;
+  push @{$self->{sections}{nonexport}},{};
+  }  
+
+sub _pop ()
+  {
+  my $self=shift;
+  my $sec=shift;
+  pop @{$self->{sections}{nonexport}};
+  }
+  
+sub _adjust ()
+  {
+  my $self=shift;
+  my $line=shift;
+  if ($self->{xmlconvert})
+    {
+    my $diff=shift || 0;
+    my $c=$self->{tagdepth} || 0;$c-=$diff;
+    for(my $i=0;$i<$c;$i++){$line="  $line";}
+    }
+  return $line;
+  }
+
+sub _getname ()
+  {
+  my $str=shift;
+  $str=~s/.*\s*name\s*=\s*([^\s>\/]+).*$/$1/;
+  $str=~s/"//g;$str=~s/'//g;
+  return $str;
+  }
+  
 1;
