@@ -177,6 +177,9 @@ endef
 define FindToolDependency
 $(sort $(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL)))
 endef
+define FindUOLibDependency
+$(sort $(foreach d,$($(1)_LOC_USE) $($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
+endef
 define FindToolDepVariable
 $($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER):$(strip $(subst $(space),$(colon),$($(dep)_EX_$(2)))))),$(wordlist 2,99999,$(subst $(colon),$(space),$(var))))
 endef
@@ -200,6 +203,7 @@ ifneq ($$(strip $$($(1)_BuildFile)),)
 $$(eval $$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):99999,))
 $$(foreach type,INCLUDE LIB,$$(eval $$(call AddCachedVariable,$(1)_EX_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):EX,1)))
 $$(eval $$(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,))
+$$(eval $$(call AddCachedVariable,$(1)_EX_UOLIB,FindUOLibDependency:$(1):,))
 else
 $(1)_ORDER:=99999
 endif
@@ -888,7 +892,7 @@ runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
 	@echo ">> Tests for subsystem $(1) ran."
 endef
 define EmptyPackage
-$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_EX_LIB) $(foreach u,$($(1)_EX_USE),$($u))))
+$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_EX_LIB) $($($u)_EX_UOLIB) $(foreach u,$($(1)_EX_USE),$($u))))
 $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
@@ -986,7 +990,7 @@ $(eval $(call LogFile,$(1),$(2)))
 .PHONY: $(1) all_$(1)
 $(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
-$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB))))
+$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
 $(1)_files        := $$(filter-out $$($(1)_iglet_file) $($(1)_SKIP_FILES), $$($(1)_files))
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files))))
 ifneq ($(strip $(5)),)
@@ -1182,7 +1186,7 @@ define PythonProductFlags
 $(1)_files        += $($(1)_objdir)/$(1)_PyWrapper.cc
 $(1)_objs         := $$(addprefix $($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_files)))))
 $(1)_PY_CXXFLAGS   = $$(filter-out -pedantic-errors -ansi, $$($(1)_CXXFLAGS))
-$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE),$($u) $($($u)_EX_LIB))))
+$(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
 $(1)_objs         := $$(addprefix $($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_files)))))
 $(1)_classnames   := $$(patsubst %_boost,%,$$(filter %_boost,$$(basename $$(notdir $$($(1)_files)))))
 $(1)_CXXSharedLink = -rdynamic $$($(1)_LDFLAGS)
