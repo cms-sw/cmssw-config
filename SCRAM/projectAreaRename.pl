@@ -15,12 +15,12 @@ if(!-d "${rel}/.SCRAM"){die "$dir is not a SCRAM-based project area.";}
 
 if($olddir ne $newtop)
 {
-  foreach my $file ("ProjectCache.db","DirCache.db","ToolCache.db")
+  foreach my $file ("ProjectCache.db.gz","DirCache.db.gz","ToolCache.db.gz")
   {
     my $cache=&Cache::CacheUtilities::read("${rel}/.SCRAM/${arch}/${file}");
     if(&processbinary($cache)){&Cache::CacheUtilities::write($cache,"${rel}/.SCRAM/${arch}/${file}");}
   }
-  foreach my $file ("${arch}/MakeData","cache","InstalledTools")
+  foreach my $file ("${arch}/MakeData","InstalledTools")
   {&processtext("${rel}/.SCRAM/${file}",1);}
 }
 

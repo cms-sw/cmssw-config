@@ -1384,9 +1384,9 @@ sub initTemplate_PROJECT ()
   my $self=shift;
   my $ltop=$ENV{LOCALTOP};
   my $odir=$ltop;
-  if(-f ".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db")
+  if(-f ".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db.gz")
   {
-    $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db");
+    $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db.gz");
     my $odir1=$self->{cache}{toolcache}{topdir};
     if($odir1 ne ""){$odir=$odir1;}
   }

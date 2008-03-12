@@ -1,9 +1,8 @@
 <project name="@PROJECT_NAME@" version="@PROJECT_VERSION@">
   <config dir="config"/>
-  <requirementsdoc name="config/requirements.xml"/>
+  <toolbox dir="file:@PROJECT_TOOL_CONF@"/>
   <base url="file:@PROJECT_CONFIG_BASE@/">
     <download url="file:config"                               name="config"/>
-    <download url="file:src/config/scram"                     name="src/config/scram"/>
     <download url="file:src/CoralBase"                        name="src/CoralBase"/>
     <download url="file:src/RelationalAccess"                 name="src/RelationalAccess"/>
     <download url="file:src/CoralCommon"                      name="src/CoralCommon"/>
@@ -19,9 +18,5 @@
     <download url="file:src/MonitoringService"                name="src/MonitoringService"/>
     <download url="file:src/ConnectionService"                name="src/ConnectionService"/>
     <download url="file:src/Tests"                            name="src/Tests"/>
-  </base>
-  <base url="file:@PROJECT_TOOL_CONF@/">
-    <download url="file:configurations/SCRAMToolBox/CMSconfigs" name="config/site"/>
-    <download url="file:configurations/requirements.xml" name="config/requirements.xml"/>
   </base>
 </project>

@@ -29,6 +29,7 @@ if(&GetOptions(
 
 if(defined $help){&usage(0);}
 if(defined $all){$all=1;} else{$all=0;}
+if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
 
 foreach my $var (@link){if(($var!~/^\s*$/) && (exists $cache{validlinks}{$var})){$cache{defaultlinks}{$var}=1;}}
 foreach my $var (@nolink){if(($var!~/^\s*$/) && (exists $cache{defaultlinks}{$var})){delete $cache{defaultlinks}{$var};}}
@@ -41,11 +42,7 @@ if(!-d "${dir}/.SCRAM"){print "ERROR: Please run this script from your SCRAM-bas
 my $release=$dir;
 chdir($release);
 
-if(-f "${release}/.SCRAM/Environment")
-{
-  my $rtop=`grep '^RELEASETOP=' ${release}/.SCRAM/Environment | sed 's|RELEASETOP=||'`; chomp $rtop;
-  if($rtop eq ""){$all=1;}
-}
+if(!-f "${release}/.SCRAM/${arch}/Environment"){$all=1;}
 
 #### Ordered list of removed tools
 my %tmphash=();
@@ -81,9 +78,8 @@ for(my $i=0;$i<20;$i++)
   else{push @{$cache{extradir}},"$i";}
 }
 
-if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
-if(!-f "${dir}/.SCRAM/${arch}/ToolCache.db"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
-$cache{toolcache}=&Cache::CacheUtilities::read("${dir}/.SCRAM/${arch}/ToolCache.db");
+if(!-f "${dir}/.SCRAM/${arch}/ToolCache.db.gz"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
+$cache{toolcache}=&Cache::CacheUtilities::read("${dir}/.SCRAM/${arch}/ToolCache.db.gz");
 
 #### Read previous link info
 my $externals="external/${arch}";
@@ -118,29 +114,23 @@ if(exists $cache{toolcache}{SETUP})
 #### Remove all the links for tools passed via command-line arguments
 foreach my $t (@{$cache{updatetools}}){&removeLinks($t);}
 
-my @orderedtools=();
-foreach my $t (keys %{$cache{toolcache}{SELECTED}})
-{
-  my $index=$cache{toolcache}{SELECTED}{$t};
-  if($index>=0){
-    if(!defined $orderedtools[$index]){$orderedtools[$index]=[];}
-    push @{$orderedtools[$index]},$t;
-  }
-}
-
 ##### Ordered list of all tools
 %tmphash=();
 $cache{alltools}=[];
-for(my $i=@orderedtools-1;$i>=0;$i--)
+use BuildSystem::ToolManager;
+my @compilers=();
+foreach my $t (reverse @{$cache{toolcache}->toolsdata()})
 {
-  if(!defined $orderedtools[$i]){next;}
-  foreach my $t (@{$orderedtools[$i]})
-  {
-    if((!defined $t) || ($t=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$t}) || ($t eq "self")){next;}
-    if(!exists $tmphash{$t}){$tmphash{$t}=1;push @{$cache{alltools}},$t;}
-  }
+  my $tn=$t->toolname();
+  if ($t->scram_compiler()) {push @compilers,$tn;next;}
+  if(($tn=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$tn}) || ($tn eq "self")){next;}
+  if(!exists $tmphash{$tn}){$tmphash{$tn}=1;push @{$cache{alltools}},$tn;}
 }
-
+foreach my $tn (@compilers)
+{
+  if(($tn=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$tn}) || ($tn eq "self")){next;}
+  if(!exists $tmphash{$tn}){$tmphash{$tn}=1;push @{$cache{alltools}},$tn;}
+}
 $cache{DBLINK}={};
 foreach my $tooltype ("pretools", "alltools" , "posttools")
 {
@@ -150,7 +140,7 @@ foreach my $tooltype ("pretools", "alltools" , "posttools")
     {
       if(($tooltype eq "alltools") && (exists $cache{posttools_uniq}{$t})){next;}
       if ($t eq "self"){next;}
-      if($all || (-f "${dir}/.SCRAM/InstalledTools/$t"))
+      if($all || (-f "${dir}/.SCRAM/${arch}/InstalledTools/$t"))
       {if(!exists $cache{donetools}{$t}){$cache{donetools}{$t}=1;&updateLinks($t);}}
     }
   }

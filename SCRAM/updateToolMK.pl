@@ -5,23 +5,26 @@ use Cwd;
 use Cache::CacheUtilities;
 $|=1;
 
+my $arch     = shift     || $ENV{SCRAM_ARCH} || die "Usage: $0 <arch> [<tool> [<tool> [...]]]";
 my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
-if (!-d "${localtop}/.SCRAM"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
-my $reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;
-$reltop      = &fixPath($reltop);
+if (!-d "${localtop}/.SCRAM/${arch}"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
+my $reltop="";
+if (-f "${localtop}/.SCRAM/${arch}/Environment")
+{
+  $reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${arch}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;
+  $reltop      = &fixPath($reltop);
+}
 
-my $arch     = shift     || $ENV{SCRAM_ARCH} || die "Usage: $0 <arch> [<tool> [<tool> [...]]]";
 my %tools=();
 while(my $t=shift){$tools{lc($t)}=1;}
-my $tcache=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.db");
+my $tcache=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.db.gz");
 
 if(scalar(keys %tools)==0){foreach my $t (keys %{$tcache->{SETUP}}){$tools{$t}=1;}}
 my @toolvar=("INCLUDE","LIB");
 
 my $skline=0;
 my %mkprocess=();
-$mkprocess{skiplines}[$skline++] = qr/.+_XDEPS\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_INIT_FUNC\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_files\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_LOC_LIB\s+[:+]=/;
@@ -198,7 +201,7 @@ sub getScramProjectOrder ()
   my $order=1;
   if(exists $c->{$bvar})
   {
-    my $tcfile=$c->{$bvar}."/.SCRAM/${arch}/ToolCache.db";
+    my $tcfile=$c->{$bvar}."/.SCRAM/${arch}/ToolCache.db.gz";
     if(!-f $tcfile){die "No such file: $tcfile";}
     my $tc=&Cache::CacheUtilities::read($tcfile);
     foreach my $t (keys %{$tc->{SETUP}})

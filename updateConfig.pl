@@ -19,7 +19,7 @@ else{$project=uc($project);}
 if((!defined $version) || ($version=~/^\s*$/)){die "Missing or empty project version.";}
 if((!defined $scram) || ($scram=~/^\s*$/)){die "Missing or empty scram version.";}
 if((!defined $toolbox) || ($toolbox=~/^\s*$/)){die "Missing or empty SCRAM tool box path.";}
-if(!-d "${toolbox}/configurations"){die "Wrong toolbox directory. Missing directory ${toolbox}/configurations.";}
+if(!-d "${toolbox}/tools"){die "Wrong toolbox directory. Missing directory ${toolbox}/tools.";}
 
 my $dir="";
 if((!defined $config) || ($config=~/^\s*$/))
