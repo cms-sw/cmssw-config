@@ -34,6 +34,10 @@ PSSUFFIX                    := ps
 PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
+LD                          := ld
+LD_UNIT                     := -r -m elf_i386
+LD_UNIT_FLAGS               := -z muldefs
+BIGLIB_OBJEXT               := obj
 ###################################
 ifndef CXX
 CXX:=g++
@@ -243,6 +247,10 @@ define copy_lib_to_main_productstore
     cp $(basename $@).rootmap $(LOCALTOP)/$(1) &&\
     echo "01:rm -f $(1)/$(basename $(@F)).rootmap" > $(call AutoCleanFile,$@,rootmap);\
   fi
+endef
+
+define copy_bigobj_to_main_productstore
+  $(call copy_build_product,$(1))
 endef
 
 define copy_bin_to_main_productstore
@@ -620,6 +628,13 @@ define link_lib
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new
   @sort $@.dep.new | uniq >> $@.dep
 endef  
+# Big Object Files
+define big_obj
+  @$(startlog_$(2))echo ">> Building big object file $@" &&\
+  $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) &&\
+  ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(call copy_bigobj_to_main_productstore,$(3)) $(endlog_$(2))
+endef
 #Shared library for Python bindings
 define link_pylib
   @$(startlog_$(2))echo ">> Building Python module $($(1)_product)" && \
@@ -1025,6 +1040,11 @@ $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1))echo "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
+ifeq ($(strip $(BIGLIBS)),yes)
+all_$(1) += $($(1)_objdir)/$(1).$(BIGLIB_OBJEXT)
+$($(1)_objdir)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/compile
+	$$(call big_obj,$(1),$(1),$(patsubst %/lib,%/objs,$(patsubst lib/%,objs/%,$(3))))
+endif
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
@@ -1055,7 +1075,7 @@ $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@touch $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
 	@touch $$@
-all_$(1): $($(1)_objdir)/link $(all_$(1))
+all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
 endif
 endef
@@ -1499,13 +1519,16 @@ $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cpp $($(1)_objdir)/precompile
 endef
 ##############################################################################
 define SetTargetType
+ifneq ($(strip $(filter biglib,$(MAKECMDGOALS))),)
+  BIGLIBS:=yes
+endif
 ifeq ($(strip $(MAKECMDGOALS)),clean)
   ONLYECHOTARGETS:=yes
   FAST :=yes
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast biglib,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1756,6 +1779,8 @@ $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	done
 	@[ -d $(@D) ] || mkdir -p $(@D) &&\
 	touch -t 197001010100 $@
+biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$(MAKECMDGOALS)),all)
+	@:
 %:
 	@echo TARGET:$@
 	@var=$(call GetEchoVariable,$@);\
