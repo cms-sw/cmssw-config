@@ -154,19 +154,19 @@ define GetVariable
 $($(1))
 endef
 define ToolCXXFlags
-$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)
+$(USER_CXXFLAGS) $(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)
 endef
 define ToolFFlags
-$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)
+$(USER_FFLAGS) $(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)
 endef
 define ToolCFlags
-$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)
+$(USER_CFLAGS) $(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)
 endef
 define ToolCPPFlags
-$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(USER_CPPFLAGS) $(CPPFLAGS) $(USER_CPPDEFINE) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell echo $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | tr ' ' '\n' | sort -r | sed 's|.*:||'),$(warning Calculationg ScramOrderedTools))
