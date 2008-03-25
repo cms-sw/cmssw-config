@@ -96,6 +96,44 @@ sub Project()
             "\tglimpseindex -F -H src/.glimpse_full src; \\\n",
             "\tcd src; \\\n",
             "\t/bin/bash ../config/fixindices.sh;\n";
+#####################################################################
+# python link directory rule over ridden
+  if (!$common->isReleaseArea())
+  {
+    print $fh <<EOD;
+override define python_directory_link
+  @\$(startlog_\$(2))if [ ! -d \$(LOCALTOP)/\$(3) ]; then \\
+    mkdir -p \$(LOCALTOP)/\$(3) &&\\
+    echo "Creating product storage directory: \$(LOCALTOP)/\$(3)"; 	\\
+  fi &&\\
+  if [ ! -e \$(\$(1)_python_dir) ] ; then \\
+    subsysdir=`dirname \$(\$(1)_python_dir)` &&\\
+    mkdir -p \$\$subsysdir &&\\
+    rellink=. &&\\
+    subsysdir1=\$\$subsysdir &&\\
+    while [ "\$\$subsysdir1" != "." ] ; do \\
+      if [ ! -f \$\$subsysdir1/__init__.py ] ; then \\
+        touch \$\$subsysdir1/__init__.py ;\\
+        if [ "X\$\$subsysdir1" != "X\$3" ] ; then \\
+          echo "__path__.append(\\\"$ENV{RELEASETOP}/\$\$subsysdir1\\\")" > \$\$subsysdir1/__init__.py ;\\
+        fi ;\\
+      fi ;\\
+      subsysdir1=`dirname \$\$subsysdir1`;  \\
+      rellink=\$\$rellink/..; \\
+    done &&\\
+    ln -s \$\$rellink/\$(4) \$(\$(1)_python_dir) &&\\
+    echo ">> Link created: \$(\$(1)_python_dir) -> \$(\$(1)_srcdir)" &&\\
+    for d in . `ls \$(\$(1)_python_dir)` ; do \\
+      if [ -d \$(\$(1)_python_dir)/\$\$d ] ; then \\
+        if [ ! -f \$(\$(1)_python_dir)/\$\$d/__init__.py ] ; then \\
+          echo "#this file was automatically created by SCRAM" > \$(\$(1)_python_dir)/\$\$d/__init__.py; \\
+        fi ;\\
+      fi ;\\
+    done ;\\
+  fi \$(endlog_\$(2))
+endef
+EOD
+  }
   return 1;
 }
 
