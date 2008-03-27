@@ -1359,7 +1359,8 @@ sub updateEnvVarMK
   print $fref "############## All SCRAM ENV variables ################\n";
   foreach my $key (keys %$env)
   {
-    if($key=~/^SCRAM_(BUILDVERBOSE|NOPLUGINREFRESH|NOSYMCHECK)/){next;}
+    if($key=~/^(SCRAMV1_.+|SCRAM)$/){next;}
+    if($key=~/^SCRAM_(BUILDVERBOSE|NOPLUGINREFRESH|NOSYMCHECK|NOLOADCHECK|TOOL_HOME|VERSION|LOOKUPDB|SYMLINKS)$/){next;}
     if(!$self->shouldAddToolVariables($key)){next;}
     print $fref "$key:=".$env->{$key}."\n";
   }
