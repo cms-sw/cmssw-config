@@ -1359,7 +1359,8 @@ sub updateEnvVarMK
   print $fref "############## All SCRAM ENV variables ################\n";
   foreach my $key (keys %$env)
   {
-    if($key=~/^SCRAM_(BUILDVERBOSE|NOPLUGINREFRESH|NOSYMCHECK)/){next;}
+    if($key=~/^(SCRAMV1_.+|SCRAM)$/){next;}
+    if($key=~/^SCRAM_(BUILDVERBOSE|NOPLUGINREFRESH|NOSYMCHECK|NOLOADCHECK|TOOL_HOME|VERSION|LOOKUPDB|SYMLINKS)$/){next;}
     if(!$self->shouldAddToolVariables($key)){next;}
     print $fref "$key:=".$env->{$key}."\n";
   }
@@ -1521,6 +1522,7 @@ sub Project_template()
   # LIB/INCLUDE/USE from toplevel BuildFile
   foreach my $var ("LIB","INCLUDE","USE")
   {
+    print $fh "$var :=\n";
     my $val=$self->fixData($core->value($var),$var,"");
     if(($var eq "USE") && ($self->hasData($val,"self")==0))
     {
@@ -1535,7 +1537,16 @@ sub Project_template()
     }
   }
   
-  #Compiler tools variables
+  #Compiler tools variables initilize
+  foreach my $toolname ("CXX","C")
+  {
+    my $compiler=$self->getCompiler($toolname);
+    if($compiler ne "")
+    {
+      my $tool = $self->getTool($compiler);
+      foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
+    }
+  }
   foreach my $toolname ("CXX","C")
   {
     my $compiler=$self->getCompiler($toolname);
