@@ -154,16 +154,16 @@ define GetVariable
 $($(1))
 endef
 define ToolCXXFlags
-$(USER_CXXFLAGS) $(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)
+$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(USER_FFLAGS) $(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)
+$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(USER_CFLAGS) $(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)
+$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(USER_CPPFLAGS) $(CPPFLAGS) $(USER_CPPDEFINE) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
 $(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
@@ -502,7 +502,7 @@ define compile_lcgdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling for LCG dictionary: $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  ($(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#_rflx.o:#_rflx.cpp:#g' -e 's#_rflx.cpp #_rflx.cpp: #g' \
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
@@ -1430,10 +1430,10 @@ endef
 define LCGDictRule
 $($(1)_objdir)/$(2)_rflx.cpp: $(3) $(4) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)_ids.cc)
-$($(1)_objdir)/$(2)_ids.cc: $($(1)_objdir)/$(2)_rflx.cpp
-	@:
 $($(1)_objdir)/$(2)_rflx.$(OBJEXT): $($(1)_objdir)/$(2)_rflx.cpp
 	$$(call compile_lcgdict,$(1),$(1))
+$($(1)_objdir)/$(2)_ids.cc: $($(1)_objdir)/$(2)_rflx.$(OBJEXT)
+	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)_ids.$(OBJEXT): $($(1)_objdir)/$(2)_ids.cc
 	$$(call compile_cxx,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)_rflx.cpp.d),)
