@@ -10,11 +10,8 @@ my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
 if (!-d "${localtop}/.SCRAM/${arch}"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
 my $reltop="";
-if (-f "${localtop}/.SCRAM/${arch}/Environment")
-{
-  $reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${arch}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;
-  $reltop      = &fixPath($reltop);
-}
+if (-f "${localtop}/.SCRAM/${arch}/Environment"){$reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${arch}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;}
+$reltop      = &fixPath($reltop);
 
 my %tools=();
 while(my $t=shift){$tools{lc($t)}=1;}
