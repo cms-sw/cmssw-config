@@ -23,6 +23,8 @@ sub loadInit_ ()
   foreach my $ext ("c")
   {$self->{cache}{SourceExtensions}{c}{$ext}=1;}
   $ENV{LOCALTOP}=&fixPath($ENV{LOCALTOP});
+  if ($ENV{SCRAM_VERSION}=~/^V[2-9]/){$self->{dbext}="db.gz";}
+  else{$self->{dbext}="db";}
 }
 
 sub new()
@@ -1385,9 +1387,10 @@ sub initTemplate_PROJECT ()
   my $self=shift;
   my $ltop=$ENV{LOCALTOP};
   my $odir=$ltop;
-  if(-f ".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db.gz")
+  my $dbext=$self->{dbext};
+  if(-f ".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.${dbext}")
   {
-    $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db.gz");
+    $self->{cache}{toolcache}=&Cache::CacheUtilities::read(".SCRAM/$ENV{SCRAM_ARCH}/ToolCache.${dbext}");
     my $odir1=$self->{cache}{toolcache}{topdir};
     if($odir1 ne ""){$odir=$odir1;}
   }

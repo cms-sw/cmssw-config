@@ -13,10 +13,7 @@ my $rel=$dir;
 while((!-d "${rel}/.SCRAM") && ($rel!~/^[\.\/]$/)){$rel=dirname($rel);}
 if(!-d "${rel}/.SCRAM"){die "$dir is not a SCRAM-based project area.";}
 
-if($olddir ne $newtop)
-{
-  &process("${rel}/.SCRAM",1);
-}
+if($olddir ne $newtop){&process("${rel}/.SCRAM",1);}
 
 sub process()
 {
@@ -24,7 +21,7 @@ sub process()
   my $recursive=shift || 0;
   if(-f $file)
   {
-    if ($file=~/Cache\.db\.gz$/){return &processcache($file);}
+    if ($file=~/Cache\.db(\.gz|)$/){return &processcache($file);}
     else{return &processtext($file);}
   }
   elsif(-d $file){return &processdir($file,$recursive);}

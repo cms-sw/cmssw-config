@@ -9,13 +9,16 @@ my $arch     = shift     || $ENV{SCRAM_ARCH} || die "Usage: $0 <arch> [<tool> [<
 my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
 if (!-d "${localtop}/.SCRAM/${arch}"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
-my $reltop="";
-if (-f "${localtop}/.SCRAM/${arch}/Environment"){$reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${arch}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;}
+my $envfile="${localtop}/.SCRAM/${arch}/Environment";
+if (!-f $envfile){$envfile="${localtop}/.SCRAM/Environment";}
+my $reltop   = `grep RELEASETOP= $envfile | sed 's|RELEASETOP=||'`; chomp $reltop;
 $reltop      = &fixPath($reltop);
+my $cacheext="db";
+if(&scramVersion($localtop)=~/^V[2-9]/){$cacheext="db.gz";}
 
 my %tools=();
 while(my $t=shift){$tools{lc($t)}=1;}
-my $tcache=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.db.gz");
+my $tcache=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
 
 if(scalar(keys %tools)==0){foreach my $t (keys %{$tcache->{SETUP}}){$tools{$t}=1;}}
 my @toolvar=("INCLUDE","LIB");
@@ -173,21 +176,6 @@ sub mkprocessfile ()
   close($oref);
 }
 
-#############################################################
-sub fixPath ()
-{
-  my $dir=shift || return "";
-  my @parts=();
-  my $p="/";
-  if($dir!~/^\//){$p="";}
-  foreach my $part (split /\//, $dir)
-  {
-    if($part eq ".."){pop @parts;}
-    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
-  }
-  return "$p".join("/",@parts);
-}
-
 sub getScramProjectOrder ()
 {
   my $c=shift;
@@ -198,7 +186,7 @@ sub getScramProjectOrder ()
   my $order=1;
   if(exists $c->{$bvar})
   {
-    my $tcfile=$c->{$bvar}."/.SCRAM/${arch}/ToolCache.db.gz";
+    my $tcfile=$c->{$bvar}."/.SCRAM/${arch}/ToolCache.${cacheext}";
     if(!-f $tcfile){die "No such file: $tcfile";}
     my $tc=&Cache::CacheUtilities::read($tcfile);
     foreach my $t (keys %{$tc->{SETUP}})
@@ -216,6 +204,21 @@ sub getScramProjectOrder ()
   return $order;
 }
 
+#############################################################
+sub fixPath ()
+{
+  my $dir=shift || return "";
+  my @parts=();
+  my $p="/";
+  if($dir!~/^\//){$p="";}
+  foreach my $part (split /\//, $dir)
+  {
+    if($part eq ".."){pop @parts;}
+    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
+  }
+  return "$p".join("/",@parts);
+}
+
 sub scramReleaseTop()
 {return &checkWhileSubdirFound(shift,".SCRAM");}
 
@@ -226,4 +229,20 @@ sub checkWhileSubdirFound()
   while((!-d "${dir}/${subdir}") && ($dir ne "/")){$dir=dirname($dir);}
   if(-d "${dir}/${subdir}"){return $dir;}
   return "";
+}
+
+sub scramVersion ()
+{
+  my $dir=shift;
+  my $ver="";
+  if (-f "${dir}/config/scram_version")
+  {
+    my $ref;
+    if(open($ref,"${dir}/config/scram_version"))
+    {
+      $ver=<$ref>; chomp $ver;
+      close($ref);
+    }
+  }
+  return $ver;
 }

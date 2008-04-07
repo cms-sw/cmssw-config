@@ -1651,7 +1651,7 @@ distclean: vclean cache_clean
 
 cache_clean:
 	@echo "Resetting project timestamp cache:"; \
-	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db.gz $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db.gz
+	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db* $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db*
 
 project_clean clean_$(SCRAM_SOURCEDIR): vclean
 

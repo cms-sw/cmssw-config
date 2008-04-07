@@ -18,6 +18,8 @@ sub init_ ()
    my $convert=shift;
    if((!defined $convert) && (exists $ENV{SCRAM_XMLCONVERT})){$convert=1;}
    $self->{xmlconvert}=$convert || 0;
+   if ($ENV{SCRAM_VERSION}=~/^V[2-9]/){$self->{dbext}="db.gz";}
+   else{$self->{dbext}="db";}
    $self->clean();
    foreach my $tag ("project","config","download","requirementsdoc","base",
                     "tool","client","environment","runtime","productstore","classpath",
@@ -51,10 +53,11 @@ sub convert()
        use Cache::CacheUtilities;
        $self->{tools}={};
        $self->{bfproduct}={};
-       my $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ToolCache.db.gz");
+       my $dbext=$self->{dbext};
+       my $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ToolCache.${dbext}");
        foreach my $tool (keys %{$cache->{SETUP}}){$self->{tools}{$tool}=1;}
        $cache=();
-       $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ProjectCache.db.gz");
+       $cache=&Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ProjectCache.${dbext}");
        foreach my $dir (keys %{$cache->{BUILDTREE}})
        {
          if (($cache->{BUILDTREE}{$dir}{PUBLIC}) && (exists $cache->{BUILDTREE}{$dir}{METABF}))
