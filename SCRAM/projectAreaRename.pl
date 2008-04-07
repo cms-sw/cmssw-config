@@ -48,7 +48,7 @@ sub processdir ()
   {
     if($file=~/^\./){next;}
     if(-d "${dir}/${file}")
-    {if($recursive){process("${dir}/${file}",$recursive);}}
+    {if($recursive){&process("${dir}/${file}",$recursive);}}
     else{&process("${dir}/${file}",$recursive);}
   }
   closedir($dref);
