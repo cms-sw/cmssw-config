@@ -15,21 +15,27 @@ if(!-d "${rel}/.SCRAM"){die "$dir is not a SCRAM-based project area.";}
 
 if($olddir ne $newtop)
 {
-  foreach my $file ("ProjectCache.db.gz","DirCache.db.gz","ToolCache.db.gz")
-  {
-    my $cache=&Cache::CacheUtilities::read("${rel}/.SCRAM/${arch}/${file}");
-    if(&processbinary($cache)){&Cache::CacheUtilities::write($cache,"${rel}/.SCRAM/${arch}/${file}");}
-  }
-  foreach my $file ("${arch}/MakeData","InstalledTools")
-  {&processtext("${rel}/.SCRAM/${file}",1);}
+  &processtext("${rel}/.SCRAM",1);
 }
 
 sub processtext ()
 {
   my $file=shift;
   my $recursive=shift || 0;
-  if(-f $file){&processfile($file);}
-  elsif(-d $file){&processdir($file,$recursive);}
+  if(-f $file)
+  {
+    if ($file=~/Cache\.db\.gz$/){return &processcache($file);}
+    else{return &processfile($file);}
+  }
+  elsif(-d $file){return &processdir($file,$recursive);}
+  return 0;
+}
+
+sub processcache ()
+{
+  my $file=shift;
+  my $cache=&Cache::CacheUtilities::read($file);
+  if(&processbinary($cache)){&Cache::CacheUtilities::write($cache,$file);}
 }
 
 sub processfile ()
@@ -69,19 +75,9 @@ sub processdir ()
     if($file=~/^\./){next;}
     if(-d "${dir}/${file}")
     {if($recursive){processdir("${dir}/${file}",$recursive);}}
-    else{$flag+=&processfile("${dir}/${file}");}
+    else{$flag+=&processext("${dir}/${file}");}
   }
   closedir($dref);
-  if($flag>0)
-  {
-    if(-f "${dir}.mk")
-    {
-      my @s=stat("${dir}.mk");
-      system("cd $dir; find . -name \"*\" -type f -maxdepth 1 | xargs -n 2000 cat >> ${dir}.mk.new");
-      system("mv ${dir}.mk.new ${dir}.mk");
-      utime $s[9],$s[9],"${dir}.mk";
-    }
-  }
 }
   
 sub processbinary ()
