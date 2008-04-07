@@ -20,7 +20,7 @@ if((!defined $version) || ($version=~/^\s*$/)){die "Missing or empty project ver
 if((!defined $scram) || ($scram=~/^\s*$/)){die "Missing or empty scram version.";}
 if((!defined $toolbox) || ($toolbox=~/^\s*$/)){die "Missing or empty SCRAM tool box path.";}
 my $tooldir="configurations";
-if(&scramVersion($localtop)=~/^V[2-9]/){$tooldir="tools";}
+if($scram=~/^V[2-9]/){$tooldir="tools";}
 if(!-d "${toolbox}/${tooldir}"){die "Wrong toolbox directory. Missing directory ${toolbox}/${tooldir}.";}
 
 my $dir="";
