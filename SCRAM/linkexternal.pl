@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use File::Basename;
+use Cwd;
 use Getopt::Long;
 use Cache::CacheUtilities;
 $|=1;
@@ -45,7 +46,9 @@ if(&scramVersion($localtop)=~/^V[2-9]/){$cacheext="db.gz";$admindir=$arch;}
 
 if ($all==0)
 {
-  my $reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${admindir}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;
+  my $reltop = "";
+  if (-f "${localtop}/.SCRAM/${admindir}/Environment")
+  {$reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${admindir}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;}
   if($reltop eq ""){$all=1;}
 }
 
@@ -83,8 +86,8 @@ for(my $i=0;$i<20;$i++)
   else{push @{$cache{extradir}},"$i";}
 }
 
-if(!-f "${dir}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
-$cache{toolcache}=&Cache::CacheUtilities::read("${dir}/.SCRAM/${arch}/ToolCache.${cacheext}");
+if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
+$cache{toolcache}=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
 
 #### Read previous link info
 my $externals="external/${arch}";
@@ -131,7 +134,7 @@ foreach my $tooltype ("pretools", "alltools" , "posttools")
     {
       if(($tooltype eq "alltools") && (exists $cache{posttools_uniq}{$t})){next;}
       if ($t eq "self"){next;}
-      if($all || (-f "${dir}/.SCRAM/${admindir}/InstalledTools/$t"))
+      if($all || (-f "${localtop}/.SCRAM/${admindir}/InstalledTools/$t"))
       {if(!exists $cache{donetools}{$t}){$cache{donetools}{$t}=1;&updateLinks($t);}}
     }
   }
