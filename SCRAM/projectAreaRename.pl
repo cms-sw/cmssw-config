@@ -15,17 +15,17 @@ if(!-d "${rel}/.SCRAM"){die "$dir is not a SCRAM-based project area.";}
 
 if($olddir ne $newtop)
 {
-  &processtext("${rel}/.SCRAM",1);
+  &process("${rel}/.SCRAM",1);
 }
 
-sub processtext ()
+sub process()
 {
   my $file=shift;
   my $recursive=shift || 0;
   if(-f $file)
   {
     if ($file=~/Cache\.db\.gz$/){return &processcache($file);}
-    else{return &processfile($file);}
+    else{return &processtext($file);}
   }
   elsif(-d $file){return &processdir($file,$recursive);}
   return 0;
@@ -38,7 +38,23 @@ sub processcache ()
   if(&processbinary($cache)){&Cache::CacheUtilities::write($cache,$file);}
 }
 
-sub processfile ()
+sub processdir ()
+{
+  my $dir=shift;
+  my $recursive=shift || 0;
+  my $dref;
+  opendir($dref,$dir) || die "Can not open directory for reading: $dir";
+  foreach my $file (readdir($dref))
+  {
+    if($file=~/^\./){next;}
+    if(-d "${dir}/${file}")
+    {if($recursive){process("${dir}/${file}",$recursive);}}
+    else{&process("${dir}/${file}",$recursive);}
+  }
+  closedir($dref);
+}
+  
+sub processtext ()
 {
   my $file=shift;
   my $inref; my $outref;
@@ -63,23 +79,6 @@ sub processfile ()
   return $flag;
 }
 
-sub processdir ()
-{
-  my $dir=shift;
-  my $recursive=shift || 0;
-  my $dref;
-  my $flag=0;
-  opendir($dref,$dir) || die "Can not open directory for reading: $dir";
-  foreach my $file (readdir($dref))
-  {
-    if($file=~/^\./){next;}
-    if(-d "${dir}/${file}")
-    {if($recursive){processdir("${dir}/${file}",$recursive);}}
-    else{$flag+=&processext("${dir}/${file}");}
-  }
-  closedir($dref);
-}
-  
 sub processbinary ()
 {
   my $cache=shift;
