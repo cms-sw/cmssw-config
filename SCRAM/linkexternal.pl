@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use File::Basename;
+use Cwd;
 use Getopt::Long;
 use Cache::CacheUtilities;
 $|=1;
@@ -29,22 +30,26 @@ if(&GetOptions(
 
 if(defined $help){&usage(0);}
 if(defined $all){$all=1;} else{$all=0;}
+if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
 
 foreach my $var (@link){if(($var!~/^\s*$/) && (exists $cache{validlinks}{$var})){$cache{defaultlinks}{$var}=1;}}
 foreach my $var (@nolink){if(($var!~/^\s*$/) && (exists $cache{defaultlinks}{$var})){delete $cache{defaultlinks}{$var};}}
 if(scalar(keys %{$cache{defaultlinks}})==0){exit 0;}
 
-my $dir=`/bin/pwd`; chomp $dir;
-while ((!-d "${dir}/.SCRAM") && ($dir ne ".") && ($dir ne "/"))
-{$dir=dirname($dir);}
-if(!-d "${dir}/.SCRAM"){print "ERROR: Please run this script from your SCRAM-based project area.\n"; exit 1;}
-my $release=$dir;
-chdir($release);
+my $curdir   = cwd();
+my $localtop = &fixPath(&scramReleaseTop($curdir));
+if (!-d "${localtop}/.SCRAM/${arch}"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
+chdir($localtop);
+my $cacheext="db";
+my $admindir="";
+if(&scramVersion($localtop)=~/^V[2-9]/){$cacheext="db.gz";$admindir=$arch;}
 
-if(-f "${release}/.SCRAM/Environment")
+if ($all==0)
 {
-  my $rtop=`grep '^RELEASETOP=' ${release}/.SCRAM/Environment | sed 's|RELEASETOP=||'`; chomp $rtop;
-  if($rtop eq ""){$all=1;}
+  my $reltop = "";
+  if (-f "${localtop}/.SCRAM/${admindir}/Environment")
+  {$reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${admindir}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;}
+  if($reltop eq ""){$all=1;}
 }
 
 #### Ordered list of removed tools
@@ -81,9 +86,8 @@ for(my $i=0;$i<20;$i++)
   else{push @{$cache{extradir}},"$i";}
 }
 
-if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
-if(!-f "${dir}/.SCRAM/${arch}/ToolCache.db"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
-$cache{toolcache}=&Cache::CacheUtilities::read("${dir}/.SCRAM/${arch}/ToolCache.db");
+if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
+$cache{toolcache}=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
 
 #### Read previous link info
 my $externals="external/${arch}";
@@ -92,7 +96,7 @@ my $linksDB="${externals}/links.DB";
 
 if(exists $cache{toolcache}{SETUP})
 {
-  my %tmphash=();
+  %tmphash=();
   foreach my $t (keys %{$cache{toolcache}{SETUP}})
   {
     if(exists $cache{toolcache}{SETUP}{$t}{LIBDIR})
@@ -118,28 +122,8 @@ if(exists $cache{toolcache}{SETUP})
 #### Remove all the links for tools passed via command-line arguments
 foreach my $t (@{$cache{updatetools}}){&removeLinks($t);}
 
-my @orderedtools=();
-foreach my $t (keys %{$cache{toolcache}{SELECTED}})
-{
-  my $index=$cache{toolcache}{SELECTED}{$t};
-  if($index>=0){
-    if(!defined $orderedtools[$index]){$orderedtools[$index]=[];}
-    push @{$orderedtools[$index]},$t;
-  }
-}
-
 ##### Ordered list of all tools
-%tmphash=();
-$cache{alltools}=[];
-for(my $i=@orderedtools-1;$i>=0;$i--)
-{
-  if(!defined $orderedtools[$i]){next;}
-  foreach my $t (@{$orderedtools[$i]})
-  {
-    if((!defined $t) || ($t=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$t}) || ($t eq "self")){next;}
-    if(!exists $tmphash{$t}){$tmphash{$t}=1;push @{$cache{alltools}},$t;}
-  }
-}
+&getOrderedTools ();
 
 $cache{DBLINK}={};
 foreach my $tooltype ("pretools", "alltools" , "posttools")
@@ -150,7 +134,7 @@ foreach my $tooltype ("pretools", "alltools" , "posttools")
     {
       if(($tooltype eq "alltools") && (exists $cache{posttools_uniq}{$t})){next;}
       if ($t eq "self"){next;}
-      if($all || (-f "${dir}/.SCRAM/InstalledTools/$t"))
+      if($all || (-f "${localtop}/.SCRAM/${admindir}/InstalledTools/$t"))
       {if(!exists $cache{donetools}{$t}){$cache{donetools}{$t}=1;&updateLinks($t);}}
     }
   }
@@ -218,7 +202,7 @@ sub removeLinks ()
     {
       foreach my $l (@{$cache{toolcache}{SETUP}{$tool}{LIB}})
       {
-	my $lf="${release}/tmp/${arch}/cache/prod/lib${l}";
+	my $lf="${localtop}/tmp/${arch}/cache/prod/lib${l}";
 	if(-f "$lf"){if(open(LIBFILE,">$lf")){close(LIBFILE);}}
       }
     }
@@ -237,7 +221,7 @@ sub updateLinks ()
       {
         if(-d $dir)
         {
-          $dir=&getFixedPath($dir);
+          $dir=&fixPath($dir);
 	  my $d;
 	  opendir($d, $dir) || die "Can not open directory \"$dir\" for reading.";
 	  my @files=readdir($d);
@@ -298,16 +282,29 @@ sub createLink ()
   if(exists $cache{PREDBLINKR}{$lfile}){delete $cache{PREDBLINKR}{$lfile};}
 }
 
-sub getFixedPath ()
+sub getOrderedTools ()
 {
-  my $dir=shift;
-  my @parts=();
-  foreach my $part (split /\//, $dir)
+  my %tmphash=();
+  $cache{alltools}=[];
+  my @orderedtools=();
+  foreach my $t (keys %{$cache{toolcache}{SELECTED}})
   {
-    if($part eq ".."){pop @parts;}
-    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
+    my $index=$cache{toolcache}{SELECTED}{$t};
+    if($index>=0)
+    {
+      if(!defined $orderedtools[$index]){$orderedtools[$index]=[];}
+      push @{$orderedtools[$index]},$t;
+    }
   }
-  return "/".join("/",@parts);
+  for(my $i=@orderedtools-1;$i>=0;$i--)
+  {
+    if(!defined $orderedtools[$i]){next;}
+    foreach my $t (@{$orderedtools[$i]})
+    {
+      if((!defined $t) || ($t=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$t}) || ($t eq "self")){next;}
+      if(!exists $tmphash{$t}){$tmphash{$t}=1;push @{$cache{alltools}},$t;}
+    }
+  }
 }
 
 sub usage ()
@@ -340,4 +337,47 @@ sub usage ()
   print "                 by running \"$SCRAM_CMD arch\" command.\n";
   print "--help           Print this help message.\n";
   exit shift || 0;
+}
+
+#############################################################
+sub fixPath ()
+{
+  my $dir=shift || return "";
+  my @parts=();
+  my $p="/";
+  if($dir!~/^\//){$p="";}
+  foreach my $part (split /\//, $dir)
+  {
+    if($part eq ".."){pop @parts;}
+    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
+  }
+  return "$p".join("/",@parts);
+}
+
+sub scramReleaseTop()
+{return &checkWhileSubdirFound(shift,".SCRAM");}
+
+sub checkWhileSubdirFound()
+{
+  my $dir=shift;
+  my $subdir=shift;
+  while((!-d "${dir}/${subdir}") && ($dir ne "/")){$dir=dirname($dir);}
+  if(-d "${dir}/${subdir}"){return $dir;}
+  return "";
+}
+
+sub scramVersion ()
+{
+  my $dir=shift;
+  my $ver="";
+  if (-f "${dir}/config/scram_version")
+  {
+    my $ref;
+    if(open($ref,"${dir}/config/scram_version"))
+    {
+      $ver=<$ref>; chomp $ver;
+      close($ref);
+    }
+  }
+  return $ver;
 }

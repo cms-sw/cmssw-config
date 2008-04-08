@@ -19,7 +19,9 @@ else{$project=uc($project);}
 if((!defined $version) || ($version=~/^\s*$/)){die "Missing or empty project version.";}
 if((!defined $scram) || ($scram=~/^\s*$/)){die "Missing or empty scram version.";}
 if((!defined $toolbox) || ($toolbox=~/^\s*$/)){die "Missing or empty SCRAM tool box path.";}
-if(!-d "${toolbox}/configurations"){die "Wrong toolbox directory. Missing directory ${toolbox}/configurations.";}
+my $tooldir="configurations";
+if($scram=~/^V[2-9]/){$tooldir="tools";}
+if(!-d "${toolbox}/${tooldir}"){die "Wrong toolbox directory. Missing directory ${toolbox}/${tooldir}.";}
 
 my $dir="";
 if((!defined $config) || ($config=~/^\s*$/))
@@ -75,20 +77,6 @@ foreach my $file (keys %{$cache{FILES}})
 }
 system("rm -rf ${dir}/site; echo $scram > ${dir}/scram_version");
 
-sub fixPath ()
-{
-  my $dir=shift;
-  my @parts=();
-  my $p="/";
-  if($dir!~/^\//){$p="";}
-  foreach my $part (split /\//, $dir)
-  {
-    if($part eq ".."){pop @parts;}
-    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
-  }
-  return "$p".join("/",@parts);
-}
-
 sub usage_msg()
 {
   my $code=shift || 0;
@@ -106,4 +94,47 @@ sub usage_msg()
 	"    \@MYSTRING1\@=MYVALUE1\n",
 	"    \@MYSTRING2\@=MYVALUE2\n\n";
   exit $code;
+}
+
+#############################################################
+sub fixPath ()
+{
+  my $dir=shift || return "";
+  my @parts=();
+  my $p="/";
+  if($dir!~/^\//){$p="";}
+  foreach my $part (split /\//, $dir)
+  {
+    if($part eq ".."){pop @parts;}
+    elsif(($part ne "") && ($part ne ".")){push @parts, $part;}
+  }
+  return "$p".join("/",@parts);
+}
+
+sub scramReleaseTop()
+{return &checkWhileSubdirFound(shift,".SCRAM");}
+
+sub checkWhileSubdirFound()
+{
+  my $dir=shift;
+  my $subdir=shift;
+  while((!-d "${dir}/${subdir}") && ($dir ne "/")){$dir=dirname($dir);}
+  if(-d "${dir}/${subdir}"){return $dir;}
+  return "";
+}
+
+sub scramVersion ()
+{
+  my $dir=shift;
+  my $ver="";
+  if (-f "${dir}/config/scram_version")
+  {
+    my $ref;
+    if(open($ref,"${dir}/config/scram_version"))
+    {
+      $ver=<$ref>; chomp $ver;
+      close($ref);
+    }
+  }
+  return $ver;
 }
