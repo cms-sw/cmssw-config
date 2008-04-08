@@ -34,6 +34,10 @@ PSSUFFIX                    := ps
 PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
+LD                          := ld
+LD_UNIT                     := -r -m elf_i386
+LD_UNIT_FLAGS               := -z muldefs
+BIGLIB_OBJEXT               := obj
 ###################################
 ifndef CXX
 CXX:=g++
@@ -97,8 +101,13 @@ ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
 FORCE_BUILD_END = ) || (echo gmake: \*\*\* [$@] Error $$? ; exit 0)
 else
+ifeq ($(strip $(BUILD_LOG)),yes)
+FORCE_BUILD_START = (
+FORCE_BUILD_END = ) || (exitcode=$$?; echo gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
+else
 FORCE_BUILD_START =
 FORCE_BUILD_END =
+endif
 endif
 
 PSR_BASE_TARGET:=
@@ -154,16 +163,16 @@ define GetVariable
 $($(1))
 endef
 define ToolCXXFlags
-$(USER_CXXFLAGS) $(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)
+$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(USER_FFLAGS) $(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)
+$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(USER_CFLAGS) $(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)
+$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(USER_CPPFLAGS) $(CPPFLAGS) $(USER_CPPDEFINE) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
 $(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
@@ -208,6 +217,11 @@ else
 $(1)_ORDER:=99999
 endif
 endef
+define outputlog
+  @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
+    $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | grep -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) rm -f $$f;  $(DO_BUILD_LOG) done ;\
+  fi
+endef
 ##############################################################################
 define BuildClean
   if [ "X$(1)" != "X" ] ; then \
@@ -243,6 +257,10 @@ define copy_lib_to_main_productstore
     cp $(basename $@).rootmap $(LOCALTOP)/$(1) &&\
     echo "01:rm -f $(1)/$(basename $(@F)).rootmap" > $(call AutoCleanFile,$@,rootmap);\
   fi
+endef
+
+define copy_bigobj_to_main_productstore
+  $(call copy_build_product,$(1))
 endef
 
 define copy_bin_to_main_productstore
@@ -502,7 +520,7 @@ define compile_lcgdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling for LCG dictionary: $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  ($(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#_rflx.o:#_rflx.cpp:#g' -e 's#_rflx.cpp #_rflx.cpp: #g' \
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
@@ -620,6 +638,13 @@ define link_lib
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new
   @sort $@.dep.new | uniq >> $@.dep
 endef  
+# Big Object Files
+define big_obj
+  @$(startlog_$(2))echo ">> Building big object file $@" &&\
+  $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) &&\
+  ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(call copy_bigobj_to_main_productstore,$(3)) $(endlog_$(2))
+endef
 #Shared library for Python bindings
 define link_pylib
   @$(startlog_$(2))echo ">> Building Python module $($(1)_product)" && \
@@ -915,9 +940,7 @@ msg_$(2): $$(logfile_$(2))
 	@$(DO_BUILD_LOG) echo ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	echo ">> Entering Package $(1)"
 $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
-	@if [ -d $(WORKINGDIR)/cache/log/src/$(1) ] ; then \
-	  $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/src/$(1) -name "*" -type f | grep -v  $(WORKINGDIR)/cache/log/src/$(1)/build.log` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$$$f $$(redirectlog_$(2)) ; $(DO_BUILD_LOG) done ;\
-	fi  
+	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) echo ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) echo ">> Package $(1) built" $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) cat $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
@@ -999,7 +1022,7 @@ $(1)_install_scripts_rule: $(logfile_$(1))
 	$$(call copy_src_scripts,$(2),$(1),$(5),$(4))
 all_$(1) += $(1)_install_scripts_rule
 endif
-$(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
+$(1)_CONFIGDEPS := $(CONFIGDEPS) $(WORKINGDIR)/$(2)/productautocleanup $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
 ifeq ($(filter $($(1)_BuildFile),$(ALL_BUILDFILES)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
@@ -1025,6 +1048,11 @@ $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1))echo "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
+ifeq ($(strip $(BIGLIBS)),yes)
+all_$(1) += $($(1)_objdir)/$(1).$(BIGLIB_OBJEXT)
+$($(1)_objdir)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/compile
+	$$(call big_obj,$(1),$(1),$(patsubst %/lib,%/objs,$(patsubst lib/%,objs/%,$(3))))
+endif
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
@@ -1055,7 +1083,7 @@ $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@touch $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
 	@touch $$@
-all_$(1): $($(1)_objdir)/link $(all_$(1))
+all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
 endif
 endef
@@ -1430,10 +1458,10 @@ endef
 define LCGDictRule
 $($(1)_objdir)/$(2)_rflx.cpp: $(3) $(4) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)_ids.cc)
-$($(1)_objdir)/$(2)_ids.cc: $($(1)_objdir)/$(2)_rflx.cpp
-	@:
 $($(1)_objdir)/$(2)_rflx.$(OBJEXT): $($(1)_objdir)/$(2)_rflx.cpp
 	$$(call compile_lcgdict,$(1),$(1))
+$($(1)_objdir)/$(2)_ids.cc: $($(1)_objdir)/$(2)_rflx.$(OBJEXT)
+	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)_ids.$(OBJEXT): $($(1)_objdir)/$(2)_ids.cc
 	$$(call compile_cxx,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)_rflx.cpp.d),)
@@ -1499,13 +1527,21 @@ $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cpp $($(1)_objdir)/precompile
 endef
 ##############################################################################
 define SetTargetType
+ifneq ($(strip $(filter biglib,$(MAKECMDGOALS))),)
+  BIGLIBS:=yes
+endif
+ifeq ($(strip $(MAKECMDGOALS)),outputlog)
+  FAST :=yes
+  XFAST:=yes
+  UFAST:=yes
+endif
 ifeq ($(strip $(MAKECMDGOALS)),clean)
   ONLYECHOTARGETS:=yes
   FAST :=yes
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast biglib outputlog,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1615,7 +1651,7 @@ distclean: vclean cache_clean
 
 cache_clean:
 	@echo "Resetting project timestamp cache:"; \
-	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db
+	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db* $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db*
 
 project_clean clean_$(SCRAM_SOURCEDIR): vclean
 
@@ -1717,7 +1753,7 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),src_$(subst /,_,$
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),src_$(subst /,_,$(dir)))))
 endif
 
-.PHONY: all_% clean_% help_% runtests_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_%
+.PHONY: all_% clean_% help_% runtests_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
 all_% runtests_% help_% :
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
 	  echo ">> Nothing to be done for $(THISDIR)";\
@@ -1749,6 +1785,17 @@ ufast xfast fast:
 	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"
+$(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
+	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
+	  $(call BuildClean,$*/$$dir,0[0-9]);\
+	done
+	@[ -d $(@D) ] || mkdir -p $(@D) &&\
+	touch -t 197001010100 $@
+biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$(MAKECMDGOALS)),all)
+	@:
+outputlog:
+	$(eval DO_BUILD_LOG:=)
+	@$(call outputlog,,,)
 %:
 	@echo TARGET:$@
 	@var=$(call GetEchoVariable,$@);\
