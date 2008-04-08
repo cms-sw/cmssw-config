@@ -101,8 +101,13 @@ ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
 FORCE_BUILD_END = ) || (echo gmake: \*\*\* [$@] Error $$? ; exit 0)
 else
+ifeq ($(strip $(BUILD_LOG)),yes)
+FORCE_BUILD_START = (
+FORCE_BUILD_END = ) || (exitcode=$$?; echo gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
+else
 FORCE_BUILD_START =
 FORCE_BUILD_END =
+endif
 endif
 
 PSR_BASE_TARGET:=
@@ -211,6 +216,11 @@ $$(eval $$(call AddCachedVariable,$(1)_EX_UOLIB,FindUOLibDependency:$(1):,))
 else
 $(1)_ORDER:=99999
 endif
+endef
+define outputlog
+  @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
+    $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | grep -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) rm -f $$f;  $(DO_BUILD_LOG) done ;\
+  fi
 endef
 ##############################################################################
 define BuildClean
@@ -930,9 +940,7 @@ msg_$(2): $$(logfile_$(2))
 	@$(DO_BUILD_LOG) echo ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	echo ">> Entering Package $(1)"
 $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
-	@if [ -d $(WORKINGDIR)/cache/log/src/$(1) ] ; then \
-	  $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/src/$(1) -name "*" -type f | grep -v  $(WORKINGDIR)/cache/log/src/$(1)/build.log` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$$$f $$(redirectlog_$(2)) ; $(DO_BUILD_LOG) done ;\
-	fi  
+	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) echo ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) echo ">> Package $(1) built" $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) cat $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
@@ -1522,13 +1530,18 @@ define SetTargetType
 ifneq ($(strip $(filter biglib,$(MAKECMDGOALS))),)
   BIGLIBS:=yes
 endif
+ifeq ($(strip $(MAKECMDGOALS)),outputlog)
+  FAST :=yes
+  XFAST:=yes
+  UFAST:=yes
+endif
 ifeq ($(strip $(MAKECMDGOALS)),clean)
   ONLYECHOTARGETS:=yes
   FAST :=yes
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast biglib,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast biglib outputlog,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1638,7 +1651,7 @@ distclean: vclean cache_clean
 
 cache_clean:
 	@echo "Resetting project timestamp cache:"; \
-	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db
+	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db* $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db*
 
 project_clean clean_$(SCRAM_SOURCEDIR): vclean
 
@@ -1740,7 +1753,7 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),src_$(subst /,_,$
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),src_$(subst /,_,$(dir)))))
 endif
 
-.PHONY: all_% clean_% help_% runtests_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_%
+.PHONY: all_% clean_% help_% runtests_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
 all_% runtests_% help_% :
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
 	  echo ">> Nothing to be done for $(THISDIR)";\
@@ -1780,6 +1793,9 @@ $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	touch -t 197001010100 $@
 biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$(MAKECMDGOALS)),all)
 	@:
+outputlog:
+	$(eval DO_BUILD_LOG:=)
+	@$(call outputlog,,,)
 %:
 	@echo TARGET:$@
 	@var=$(call GetEchoVariable,$@);\
