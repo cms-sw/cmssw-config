@@ -665,7 +665,7 @@ define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
   $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(1)_CDICT_LDFLAGS) &&\
   ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(1)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
-  if [ "X$($(1)_no_lib_copy)" = X ] ; then \
+  if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
