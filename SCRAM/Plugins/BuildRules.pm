@@ -1148,14 +1148,15 @@ sub depsOnlyBuildFile
 {
   my $self=shift;
   my $stash=$self->{context}->stash();
-  my $cache=$stash->get("branch")->branchdata();
+  my $treeitem=$stash->get("branch");
+  my $sname=$stash->get("safepath");
+  my $cache=$treeitem->branchdata();
   if(defined $cache)
   {
     my $core=$self->{core};
     my $src=$ENV{SCRAM_SOURCEDIR};
     my $path=$stash->get("path");
     my $pack=$path; $pack=~s/^$src\///;
-    my $sname=$stash->get("safepath");
     my $ex=$self->{core}->data("EXPORT");
     my $fname=".SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache/${sname}.mk";
     my $fref;
@@ -1183,7 +1184,16 @@ sub depsOnlyBuildFile
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
     print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname,$path))\nendif\n\n";
     close($fref);
-    $cache->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
+    $treeitem->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
+  }
+  else
+  {
+    my $fname=".SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache/${sname}.mk";
+    if (-f $fname)
+    {
+      unlink $fname;
+      $treeitem->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
+    }
   }
   return;
 }
