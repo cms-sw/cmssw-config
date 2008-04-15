@@ -530,7 +530,10 @@ define compile_rootdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling for root dictionary: $< " &&\
   $(VERB_ECHO) $(CXX) -MMD -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
+  $(basename $@).d > $<.d &&\
+  if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
 endef
 # compiling java
 define compile_java
@@ -1433,6 +1436,7 @@ $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
 	$$(call compile_rootdict,$(1),$(1))
+-include $$(addsuffix .d,$$($(1)_LinkDef_files))
 endef
 
 #safename,rootmap,headers,hfiles,defxmlfiles,prodstore,genreflexargs
