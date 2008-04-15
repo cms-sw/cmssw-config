@@ -1381,9 +1381,11 @@ sub updateEnvVarMK
   if(ref($stores) eq "HASH")
   {
     print $fref "################ ALL SCRAM Stores #######################\n";
+    print $fref "ALL_PRODUCT_STORES:=\n";
     foreach my $store (keys %{$stores})
     {
       print $fref "$store:=".$stores->{$store}."\n";
+      print $fref "ALL_PRODUCT_STORES+=\$($store)\n";
     }
   }
   close($fref);
@@ -1630,37 +1632,6 @@ sub Project_template()
   my %pdirs=();
   foreach my $ptype ($self->getPluginTypes())
   {foreach my $dir ($self->getPluginProductDirs($ptype)){$pdirs{$dir}=1;}}
-  print $fh ".PHONY: vclean\nvclean:\n";
-  foreach my $dir (keys %pdirs)
-  {
-    if($dir ne "")
-    {
-      print $fh "\t\@if [ \"X\$($dir)\" != \"X\" ] ; then \\\n",
-                "\t  if [ -d \$(LOCALTOP)/\$($dir]) ] ; then \\\n",
-                "\t    echo \"Cleaning local working directory:\$($dir)\"; \\\n",
-	        "\t    /bin/rm -rf \$(LOCALTOP)/\$($dir) ;\\\n",
-	        "\t    mkdir -p \$(LOCALTOP)/\$($dir) ;\\\n",
-	        "\t  fi \\\n",
-	        "\tfi\n";
-    }
-  }
-  my $stores="";
-  foreach my $store ($self->allProductDirs())
-  {
-    my $dir=$self->getProductStore($store,$safepath);
-    $stores.=" \$($dir)";
-  }
-  print $fh "\t\@for store in $stores; do\\\n",
-            "\t  if [ \"X\$\$store\" != \"X\" ] ; then \\\n",
-            "\t    if [ -d \$(LOCALTOP)/\$\$store ] ; then \\\n",
-            "\t      echo \"Cleaning local directory:\$\$store\"; \\\n",
-            "\t      /bin/rm -rf \$(LOCALTOP)/\$\$store ;\\\n",
-            "\t      mkdir -p \$(LOCALTOP)/\$\$store ;\\\n",
-            "\t    fi ;\\\n",
-            "\t  fi ;\\\n",
-            "\tdone\n",
-            "\t\$(call clean_path,\$(SCRAM_INTwork)/${safepath})\n";
-
   foreach my $ptype ($self->getPluginTypes ())
   {
     my $refreshcmd=$self->getPluginData("Refresh", $ptype);

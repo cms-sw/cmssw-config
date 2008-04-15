@@ -1436,7 +1436,9 @@ $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
 	$$(call compile_rootdict,$(1),$(1))
--include $$(addsuffix .d,$$($(1)_LinkDef_files))
+ifneq ($$(wildcard $($(1)_objdir)/*LinkDef.cc.d),)
+-include $$(wildcard $($(1)_objdir)/*LinkDef.cc.d)
+endif
 endef
 
 #safename,rootmap,headers,hfiles,defxmlfiles,prodstore,genreflexargs
@@ -1648,29 +1650,24 @@ help: help_$(TARGETDIR)
 runtests: runtests_$(TARGETDIR)
 clean: clean_$(TARGETDIR)
 
-# Cleaning targets:
-distclean: vclean cache_clean
-	@echo "Cleaning ProductStore directories:"; \
+project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
+	@echo "Cleaning ProductStore directories:"
 	/bin/rm -rf $(ALL_PRODUCT_STORES)
-
-cache_clean:
-	@echo "Resetting project timestamp cache:"; \
-	/bin/rm -f $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/ProjectCache.db* $(LOCALTOP)/.SCRAM/$(SCRAM_ARCH)/DirCache.db*
-
-project_clean clean_$(SCRAM_SOURCEDIR): vclean
+	@echo "Resetting project cache:"; mkdir -p .SCRAM/$(SCRAM_ARCH)
+	@touch .SCRAM/$(SCRAM_ARCH)/ProjectCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/ProjectCache.db*
+	@touch .SCRAM/$(SCRAM_ARCH)/DirCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/DirCache.db*
+	@touch .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
+	/bin/rm -rf .SCRAM/$(SCRAM_ARCH)/MakeData
+	/bin/rm -rf $(SCRAM_INTwork)
 
 project_help help_$(SCRAM_SOURCEDIR):
 	@echo "------------ Help for Project-level Builds ------------"
 	@echo ""
-	@echo "distclean:"
-	@echo "     Clean the local working directory (tmp/) and all product storage areas (and their contents),"
-	@echo "     e.g. lib/$(SCRAM_ARCH), bin/$(SCRAM_ARCH). Also reset the project cache."	
-	@echo ""
-	@echo "vclean:"
-	@echo "     Clean the local working directory from $(LOCALTOP)/$(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)."
-	@echo ""
 	@echo "clean:"
-	@echo "     Clean the local working directory only, $(LOCALTOP)/$(SCRAM_INTwork)/$(THISDIR)."
+	@echo "     Clean the local working directory only."
 	@echo ""
 	@echo "prebuild:"
 	@echo "     Execute pre-build target for the project."
