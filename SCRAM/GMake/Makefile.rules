@@ -228,7 +228,7 @@ define BuildClean
     if [ -d $(WORKINGDIR)/$(1) ] ; then \
       regexp=$2; \
       if [ "X$$regexp" == "X" ] ; then regexp='[0-9][0-9]'; fi ;\
-      find $(WORKINGDIR)/$(1) -name "AUTOCLEAN.*.clean" -type f | xargs cat | grep "^$$regexp:" | sed "s|^$$regexp:||" |sort | uniq  > $(WORKINGDIR)/$(1)/.AUTOCLEAN ; \
+      find $(WORKINGDIR)/$(1) -name "AUTOCLEAN.*.clean" -type f | xargs cat | grep "^$$regexp:" | sort | uniq | sed "s|^$$regexp:||" > $(WORKINGDIR)/$(1)/.AUTOCLEAN ; \
       if [ "X$3" == "X" ] ; then cat $(WORKINGDIR)/$(1)/.AUTOCLEAN; fi;\
       sh $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
       rm -rf $(WORKINGDIR)/$(1); \
