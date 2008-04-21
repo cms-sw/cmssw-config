@@ -1,0 +1,11 @@
+<project name="@PROJECT_NAME@" version="@PROJECT_VERSION@">
+  <config dir="config"/>
+  <requirementsdoc name="config/requirements.xml"/>
+  <base url="file:@PROJECT_CONFIG_BASE@/">
+    <download url="file:config" name="config"/>
+  </base>
+  <base url="file:@PROJECT_TOOL_CONF@/">
+    <download url="file:configurations/SCRAMToolBox/CMSconfigs" name="config/site"/>
+    <download url="file:configurations/requirements.xml" name="config/requirements.xml"/>
+  </base>
+</project>
