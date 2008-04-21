@@ -1617,18 +1617,6 @@ sub Project_template()
 
   $self->processTemplate("Project");
 
-  print $fh ".PHONY: ${safepath} prebuild postbuild runtests_${safepath}\n",
-            "${safepath}: prebuild \$(${safepath}) \$(subdirs_${safepath})\n",
-            "prebuild: \$(prebuild)\n",
-            "\t\@echo \">> Building \$(SCRAM_PROJECTNAME) version \$(SCRAM_PROJECTVERSION) ----\"\n",
-            "\t\@if [ ! -d \$(LOCALTOP)/logs/\$(SCRAM_ARCH) ] ; then	\\\n",
-            "\t  mkdir -p \$(LOCALTOP)/logs/\$(SCRAM_ARCH) >/dev/null 2>&1; \\\n",
-            "\tfi\n",
-            "postbuild: \$(postbuild) release-check\n",
-            "\t\@echo \"Release \$(SCRAM_PROJECTNAME) version \$(SCRAM_PROJECTVERSION) build finished at `date`\"\n",
-            "runtests_${safepath}: \$(addprefix runtests_, \$(subdirs_${safepath}))\n",
-            "\t\@echo \"Test sequence completed for \$(SCRAM_PROJECTNAME) \$(SCRAM_PROJECTVERSION)\"\n\n";
-
   my %pdirs=();
   foreach my $ptype ($self->getPluginTypes())
   {foreach my $dir ($self->getPluginProductDirs($ptype)){$pdirs{$dir}=1;}}

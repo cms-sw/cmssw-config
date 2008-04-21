@@ -918,6 +918,8 @@ $(1) src/$(1) $(2) all_$(2): $(subdirs_$(2))
 	@echo ">> Subsystem $(1) built"
 runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
 	@echo ">> Tests for subsystem $(1) ran."
+runpython_$(2): $(addprefix runpython_,$(subdirs_$(2)))
+	@echo ">> Python for subsystem $(1) ran."
 endef
 define EmptyPackage
 $(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_EX_LIB) $($($u)_EX_UOLIB) $(foreach u,$($(1)_EX_USE),$($u))))
@@ -951,6 +953,8 @@ $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
 	echo ">> Package $(1) built"
 runtests_$(2): $(2) runtests_$(2)_test
 	@echo ">> Tests for package $(1) ran."
+runpython_$(2): runpython_$(2)_python
+	@echo ">> Python for package $(1) ran."
 endef
 
 define addPlugin
@@ -1172,7 +1176,7 @@ endef
 #safename,path,safepath,hasscripts,symlinkpython,pythonstore,xprodfiles,xproddirs
 define PythonProductHead
 $(3)          += all_$(1)
-.PHONY: $(1) all_$(1)
+.PHONY: $(1) all_$(1) $(1)_copy_python_scripts
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_python_dir := $(addprefix $(6)/,$(patsubst src/%/python,%,$(2)))
@@ -1188,19 +1192,18 @@ $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 endif
 $(1)_config += $$($(1)_objdir)/config
-ifeq ($(strip $(4)),1)
-.PHONY: $(1)_copy_python_scripts
 all_$(1) += $(1)_copy_python_scripts
 $(1)_copy_python_scripts: $(logfile_$(1))
+ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
 	$$(call python_directory_link,$(1),$(logfile_$(1)),$(6),$(2))
 else
 	$$(call python_script_copy,$(1),$(logfile_$(1)),$(6))
 endif
 else
-$(1)_copy_python_scripts: $(logfile_$(1))
 	@echo "No source files to compile. Nothing to be done for Python modules at $(2)."
 endif
+runpython_$(3): $(1)_copy_python_scripts
 ifneq ($(strip $(7)),)
 .PHONY: $(1)_extra_python_prod
 all_$(1) += $(all_$(1)_extra_python_prod)
@@ -1645,10 +1648,11 @@ all: all_$(TARGETDIR) ProjectPluginRefresh
 project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR) ProjectPluginRefresh
 	@:
 
-.PHONY: help runtests clean distclean cache_clean project_clean clean_$(SCRAM_SOURCEDIR) project_help help_$(SCRAM_SOURCEDIR)
+.PHONY: python help runtests clean distclean cache_clean project_clean clean_$(SCRAM_SOURCEDIR) project_help help_$(SCRAM_SOURCEDIR)
 help: help_$(TARGETDIR)
-runtests: runtests_$(TARGETDIR)
 clean: clean_$(TARGETDIR)
+runtests: runtests_$(TARGETDIR)
+python: runpython_$(TARGETDIR)
 
 project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@echo "Cleaning ProductStore directories:"
@@ -1753,9 +1757,23 @@ endif
 $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),src_$(subst /,_,$(dir)))))
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),src_$(subst /,_,$(dir)))))
 endif
+###########################################################
+PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR)
+$(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
+	@:
+prebuild: $(prebuild)
+	@echo ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
+	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || mkdir -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
+postbuild: $(postbuild) release-check
+	@echo "Release $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) build finished at `date`"
+runpython_$(SCRAM_SOURCEDIR): $(addprefix runpython_, $(subdirs_$(SCRAM_SOURCEDIR)))
+	@echo ">> Python completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)))
+	@echo ">> Test sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+###########################################################
 
-.PHONY: all_% clean_% help_% runtests_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
-all_% runtests_% help_% :
+.PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
+all_% runtests_% help_% runpython_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
 	  echo ">> Nothing to be done for $(THISDIR)";\
 	fi
