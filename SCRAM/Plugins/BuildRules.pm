@@ -2099,7 +2099,8 @@ sub python_template()
     print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += $safename))\n";
   }
   else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
-  print $fh "ALL_PRODS += ${safename}\n",
+  print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
+            "ALL_PRODS += ${safename}\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
 	    "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n",
             "else\n",

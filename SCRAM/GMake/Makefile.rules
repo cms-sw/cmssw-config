@@ -14,6 +14,7 @@ prebindeps     :=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
 ALL_PACKAGES       :=
+ALL_PYTHON_DIRS    :=
 ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_TOOLS          :=
@@ -545,9 +546,21 @@ define compile_java
 endef
 # compiling python
 define compile_python
-  @$(startlog_$(2)) echo ">> Compiling python script: $<" &&\
-  $(VERB_ECHO) python $< &&\
-  python $< $(endlog_$(2))
+  @$(startlog_$(2)) [ -d $(@D) ] || mkdir -p $(@D) ;\
+  touch -t 197001010100 $@ &&\
+  echo "01:rm -f $($(1)_python_dir)/*_cf[fi].pyc" > $(call AutoCleanFile,$@,python) &&\
+  msg=no;\
+  err=0;\
+  for mod in `ls $($(1)_python_dir)/*_cf[if].py | sed 's|^$($(1)_python_dir)/||;s|.py$$||'`; do \
+    pyc=$($(1)_python_dir)/$$mod.pyc ;\
+    py=$($(1)_python_dir)/$$mod.py ;\
+    if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then \
+      [ "X$$msg" = "Xyes" ] || echo ">> Compiling python scripts: $($(1)_python_dir)" && msg=yes ;\
+      echo ">> Compiling: $$py";\
+      $(VERB_ECHO) "python -c import $3.$$mod" &&\
+      (python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
+    fi;\
+  done $(endlog_$(2))
 endef
 
 ##############################################################################
@@ -912,20 +925,21 @@ define config_update
     touch -r $($(1)_BuildFile) $(WORKINGDIR)/cache/bf/$(1);\
   fi
 endef
+define timestamp_cmp
+  perl -e "my @s1=stat '$1'; my @s2=stat '$2';"'print $$s1[9]<=>$$s2[9];'
+endef
 define get_time_stamp
   perl -e 'my @d=stat "$(1)"; print "$$d[9]\n";'
 endef
-
-
 #############################################################################
 define SubSystem
 .PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2)
 $(1) src/$(1) $(2) all_$(2): $(subdirs_$(2))
 	@echo ">> Subsystem $(1) built"
 runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
-	@echo ">> Tests for subsystem $(1) ran."
+	@:
 runpython_$(2): $(addprefix runpython_,$(subdirs_$(2)))
-	@echo ">> Python for subsystem $(1) ran."
+	@:
 endef
 define EmptyPackage
 $(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_EX_LIB) $($($u)_EX_UOLIB) $(foreach u,$($(1)_EX_USE),$($u))))
@@ -957,10 +971,14 @@ $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
 	$(DO_BUILD_LOG) cat $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
 	echo ">> Leaving Package $(1)" &&\
 	echo ">> Package $(1) built"
+ifeq ($$(filter $(2)_test,$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@echo ">> Tests for package $(1) ran."
+endif	
+ifeq ($$(filter $(2)_python,$(subdirs_$(2))),$(2)_python)
 runpython_$(2): runpython_$(2)_python
 	@echo ">> Python for package $(1) ran."
+endif
 endef
 
 define addPlugin
@@ -1185,7 +1203,7 @@ $(3)          += all_$(1)
 .PHONY: $(1) all_$(1) $(1)_copy_python_scripts
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
-$(1)_python_dir := $(addprefix $(6)/,$(patsubst src/%/python,%,$(2)))
+$(1)_python_dir := $(addprefix $(6)/,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2)))
 $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$($($(u))_XDEPS) $(if $($($(u))_BuildFile),$($($(u))_BuildFile),$(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/$(u)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
@@ -1202,13 +1220,15 @@ all_$(1) += $(1)_copy_python_scripts
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
 ifeq ($$(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
-all_$(1) += $(addsuffix .pyc,$(basename $(wildcard $(2)/*cfi.py) $(wildcard $(2)/*cff.py)))
-$(2)/%.pyc: $(2)/%.py
-	$$(call compile_python,$1,$1)
-endif
-$(1)_copy_python_scripts: $(logfile_$(1))
-	$$(call python_directory_link,$(1),$(logfile_$(1)),$(6),$(2))
+$$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
+	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))))
+$(1)_copy_python_scripts: $$($(1)_objdir)/cmssw_python_modules
 else
+$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
+endif
+	@:
+else
+$(1)_copy_python_scripts: $(logfile_$(1))
 	$$(call python_script_copy,$(1),$(logfile_$(1)),$(6))
 endif
 else
@@ -1216,6 +1236,7 @@ $(1)_copy_python_scripts: $(logfile_$(1))
 	@echo "No source files to compile. Nothing to be done for Python modules at $(2)."
 endif
 runpython_$(3): $(1)_copy_python_scripts
+	@:
 ifneq ($(strip $(7)),)
 .PHONY: $(1)_extra_python_prod
 all_$(1) += $(all_$(1)_extra_python_prod)
@@ -1677,6 +1698,11 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@touch .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db.gz
 	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
 	/bin/rm -rf .SCRAM/$(SCRAM_ARCH)/MakeData
+	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] && [ "X$(ALL_PYTHON_DIRS)" != "X" ] ; then \
+	  for d in $(ALL_PYTHON_DIRS) ; do \
+	    $(call BuildClean,$(SCRAM_SOURCEDIR)/$$d);\
+	  done;\
+	fi
 	/bin/rm -rf $(SCRAM_INTwork)
 
 project_help help_$(SCRAM_SOURCEDIR):
@@ -1816,6 +1842,44 @@ ufast xfast fast:
 	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"
+$(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
+	@echo ">> Updating python symlinks."
+	@for d in $(ALL_PYTHON_DIRS); do \
+	  p=`dirname python/$$d`;\
+	  if [ ! -e $$p ] ; then \
+	    s=`dirname $$p`;\
+	    mkdir -p $$s;\
+	    r=.. ;\
+	    s1=$$s ;\
+	    while [ "$$s1" != "python" ] ; do \
+	      if [ "X$(RELEASETOP)" = "X" ] ; then \
+		echo "import os" > $$s1/__init__.py;\
+	        echo "__path__.insert(0,os.environ['LOCALRT']+'/$$s1')" >> $$s1/__init__.py;\
+	      else \
+		echo "__path__.append('$(RELEASETOP)/$$s1')" > $$s1/__init__.py;\
+	      fi;\
+	      s1=`dirname $$s1`;\
+	      r=$$r/..;\
+	    done ;\
+	    touch $$s1/__init__.py;\
+	    ln -s $$r/$(SCRAM_SOURCEDIR)/$$d $$p ;\
+	    echo "   python/$$d -> $(SCRAM_SOURCEDIR)/$$d" ;\
+	  fi;\
+	done
+	@for d in $(ALL_PYTHON_DIRS); do \
+	  for dir in `find $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | grep -v '/CVS$$\|/CVS/'`; do \
+	    if [ ! -f $$dir/__init__.py ] ; then \
+	      echo "#Automatically created by SCRAM" > $$dir/__init__.py;\
+	      [ -d $(WORKINGDIR)/$$dir ] || mkdir -p $(WORKINGDIR)/$$dir ;\
+	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
+	      echo "01:rm -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
+	    fi;\
+	  done;\
+	done
+	@for l in `find python -name "*" -type l`; do \
+	  if [ ! -f $$l/__init__.py ] ; then rm -f $$l; fi;\
+	done
+	@[ -f $@ ] || (mkdir -p $(@D) ; touch -t 197001010100 $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
 	  $(call BuildClean,$*/$$dir,0[0-9]);\
