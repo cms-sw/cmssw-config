@@ -47,8 +47,9 @@ $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self\/(.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}/${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1}\$(wildcard ${2}) ${base}/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
+$mkprocess{editlines}[$skline]{reg}     = qr/^.+_EX_INCLUDE\s+:=\s+.*\$\(LOCALTOP\)/;
+$mkprocess{editlines}[$skline++]{value} = '$line=~s/\$\(LOCALTOP\)/\$(RELEASETOP)/g';
 $mkprocess{editcount}=$skline;
-
 
 my $tooldir=".SCRAM/${arch}/MakeData/Tools";
 my $stooldir="${tooldir}/SCRAMBased";
