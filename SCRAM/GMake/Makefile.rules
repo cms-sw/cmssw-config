@@ -249,7 +249,7 @@ define copy_build_product
   fi &&\
   echo "Copying $@ to productstore area:" &&\
   echo "01:rm -f $(1)/$(@F)" > $(call AutoCleanFile,$@,prod) &&\
-  cp $@ $(LOCALTOP)/$(1)
+  cp $@ $(LOCALTOP)/$(1) || (rm -f $@ && echo ">> Deleted: $@" && exit 1)
 endef
 
 define copy_lib_to_main_productstore
@@ -273,14 +273,6 @@ define copy_test_to_main_productstore
 endef
 
 define copy_py_to_main_productstore
-  $(call copy_build_product,$(1))
-endef
-
-define copy_doc_to_main_productstore
-  $(call copy_build_product,$(1))
-endef
-
-define copy_scripts_to_main_productstore
   $(call copy_build_product,$(1))
 endef
 
@@ -1891,6 +1883,8 @@ biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$
 outputlog:
 	$(eval DO_BUILD_LOG:=)
 	@$(call outputlog,,,)
+runtime:
+	@echo ">> Runtime environment:"; env
 %:
 	@echo TARGET:$@
 	@var=$(call GetEchoVariable,$@);\
