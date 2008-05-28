@@ -543,7 +543,7 @@ define compile_python
   echo "01:rm -f $($(1)_python_dir)/*_cf[fi].pyc" > $(call AutoCleanFile,$@,python) &&\
   msg=no;\
   err=0;\
-  for mod in `ls $($(1)_python_dir)/*_cf[if].py | sed 's|^$($(1)_python_dir)/||;s|.py$$||'`; do \
+  for mod in `find $($(1)_python_dir) -name '*_cf[if].py' -type f -maxdepth 1 | sed 's|^$($(1)_python_dir)/||;s|.py$$||'`; do \
     pyc=$($(1)_python_dir)/$$mod.pyc ;\
     py=$($(1)_python_dir)/$$mod.py ;\
     if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then \
