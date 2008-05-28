@@ -1,0 +1,8 @@
+<project name="@PROJECT_NAME@" version="@PROJECT_VERSION@">
+  <config dir="config"/>
+  <toolbox dir="file:@PROJECT_TOOL_CONF@"/>
+  <base url="file:@PROJECT_CONFIG_BASE@/">
+    <download url="file:config" name="config"/>
+    <download url="file:src"    name="src"/>
+  </base>
+</project>
