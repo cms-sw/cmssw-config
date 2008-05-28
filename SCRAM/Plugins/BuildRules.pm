@@ -1553,7 +1553,7 @@ sub Project_template()
   }
   
   #Compiler tools variables initilize
-  foreach my $toolname ("CXX","C")
+  foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);
     if($compiler ne "")
@@ -1562,7 +1562,7 @@ sub Project_template()
       foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
     }
   }
-  foreach my $toolname ("CXX","C")
+  foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);
     if($compiler ne "")
@@ -1570,7 +1570,8 @@ sub Project_template()
       my $tool = $self->getTool($compiler);
       foreach my $flag (keys %{$tool->{FLAGS}})
       {
-        if($self->shouldAddCompilerFlag($flag))
+	if (($toolname eq "F77") && ($flag!~/^FC.+/)){next;}
+	if($self->shouldAddCompilerFlag($flag))
 	{
 	  my $addtype="+";
 	  if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
