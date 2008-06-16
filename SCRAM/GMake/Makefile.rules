@@ -540,17 +540,23 @@ endef
 define compile_python
   @$(startlog_$(2)) [ -d $(@D) ] || mkdir -p $(@D) ;\
   touch -t 197001010100 $@ &&\
-  echo "01:rm -f $($(1)_python_dir)/*_cf[fi].pyc" > $(call AutoCleanFile,$@,python) &&\
+  echo "01:find $(4)/ -name '*_cf[if].pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
   msg=no;\
   err=0;\
-  for mod in `find $($(1)_python_dir) -name '*_cf[if].py' -type f -maxdepth 1 | sed 's|^$($(1)_python_dir)/||;s|.py$$||'`; do \
-    pyc=$($(1)_python_dir)/$$mod.pyc ;\
-    py=$($(1)_python_dir)/$$mod.py ;\
+  for mod in `find $(4)/ -name '*_cf[if].py' -type f | sed 's|^$(4)/*||;s|.py$$||'`; do \
+    pyc=$(4)/$$mod.pyc ;\
+    py=$(4)/$$mod.py ;\
     if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then \
-      [ "X$$msg" = "Xyes" ] || echo ">> Compiling python scripts: $($(1)_python_dir)" && msg=yes ;\
+      [ "X$$msg" = "Xyes" ] || echo ">> Compiling python scripts: $(4)" && msg=yes ;\
       echo ">> Compiling: $$py";\
-      $(VERB_ECHO) "python -c import $3.$$mod" &&\
-      (python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
+      if [ "`echo $$mod | grep '/'`X" == "X" ] ; then \
+        $(VERB_ECHO) "python -c import $3.$$mod";\
+	(python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
+      else \
+        moddir=`dirname $$mod`; mod=`basename $$mod`;\
+        $(VERB_ECHO) "python -c import $$mod";\
+        ((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
+      fi;\
     fi;\
   done $(endlog_$(2))
 endef
@@ -1213,7 +1219,7 @@ ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
 ifeq ($$(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 $$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
-	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))))
+	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))),$(2))
 $(1)_copy_python_scripts: $$($(1)_objdir)/cmssw_python_modules
 else
 $(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
@@ -1859,14 +1865,12 @@ $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	  fi;\
 	done
 	@for d in $(ALL_PYTHON_DIRS); do \
-	  for dir in `find $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | grep -v '/CVS$$\|/CVS/'`; do \
-	    if [ ! -f $$dir/__init__.py ] ; then \
-	      echo "#Automatically created by SCRAM" > $$dir/__init__.py;\
-	      [ -d $(WORKINGDIR)/$$dir ] || mkdir -p $(WORKINGDIR)/$$dir ;\
-	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
-	      echo "01:rm -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
-	    fi;\
-	  done;\
+	  if [ ! -f $(SCRAM_SOURCEDIR)/$$d/__init__.py ] ; then \
+	    echo "#Automatically created by SCRAM" > $(SCRAM_SOURCEDIR)/$$d/__init__.py;\
+	    [ -d $(WORKINGDIR)/$$d ] || mkdir -p $(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$d ;\
+	    cf=$(call AutoCleanFile,$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$d/__init__.py,python) ;\
+	    echo "01:rm -f $(SCRAM_SOURCEDIR)/$$d/__init__.py $(SCRAM_SOURCEDIR)/$$d/__init__.pyc" > $$cf;\
+	  fi;\
 	done
 	@for l in `find python -name "*" -type l`; do \
 	  if [ ! -f $$l/__init__.py ] ; then rm -f $$l; fi;\
