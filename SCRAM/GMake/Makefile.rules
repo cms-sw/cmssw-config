@@ -1852,7 +1852,9 @@ $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	    while [ "$$s1" != "python" ] ; do \
 	      if [ "X$(RELEASETOP)" = "X" ] ; then \
 		echo "import os" > $$s1/__init__.py;\
-	        echo "__path__.insert(0,os.environ['LOCALRT']+'/$$s1')" >> $$s1/__init__.py;\
+		echo "localrt=os.getenv('LOCALRT', None)" >> $$s1/__init__.py;\
+		echo "if localrt != None:" >> $$s1/__init__.py;\
+	        echo "  __path__.insert(0,localrt+'/$$s1')" >> $$s1/__init__.py;\
 	      else \
 		echo "__path__.append('$(RELEASETOP)/$$s1')" > $$s1/__init__.py;\
 	      fi;\
