@@ -1709,6 +1709,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@echo "clean:"
 	@echo "     Clean the local working directory only."
 	@echo ""
+	@echo "python:"
+	@echo "     To just build python i.e. creating sym-links and compiling python modules."
+	@echo ""
 	@echo "prebuild:"
 	@echo "     Execute pre-build target for the project."
 	@echo ""
@@ -1809,6 +1812,19 @@ runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)
 ###########################################################
 
 .PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
+.PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
+help_%_python:
+	@echo "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
+help_%_src:
+	@echo "Running \"scram build\" here normally build a shared library."
+help_%_plugins:
+	@echo "Running \"scram build\" here normally build EDM-plugins."
+help_%_bin:
+	@echo "Running \"scram build\" here normally build public executables and shared libs (if any)."
+help_%_test:
+	@echo "Running \"scram build\" here normally build test executables and shared libs (if any)."
+help_$(SCRAM_SOURCEDIR)_%:
+	@echo "Doing \"scram build\" here will build every thing exist under this directory."
 all_% runtests_% help_% runpython_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
 	  echo ">> Nothing to be done for $(THISDIR)";\
