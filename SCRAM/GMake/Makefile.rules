@@ -1422,8 +1422,9 @@ $(1)_FILE_MOC_SRC := $$(filter %_cc_moc.cc %_cpp_moc.cc %_cxx_moc.cc, $$($(1)_FI
 $(1)_FILE_MOC_INC := $(filter-out $$($(1)_FILE_MOC_SRC),$$($(1)_FILE_MOC))
 $(1)_files        += $$($(1)_FILE_MOC_INC)
 $(1)_objs         += $$(addprefix $($(1)_objdir)/moc/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_FILE_MOC_INC)))))
-$(1)_MOC_FILE     := $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
-$(1)_precompile   += $$($(1)_MOC_FILE)
+$(1)_precompile   += $($(1)_objdir)/moc/run_moc
+$($(1)_objdir)/moc/run_moc: $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
+	@[ -f $$@ ] || touch $$@
 $($(1)_objdir)/moc/%.$(OBJEXT):  $($(1)_objdir)/moc/%.cc
 	$$(call compile_cxx,$(1),$(1))
 $($(1)_objdir)/moc/%_h_moc.cc:   $(3)/%.h   $($(1)_config)
