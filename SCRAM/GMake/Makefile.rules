@@ -1884,12 +1884,14 @@ $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	  fi;\
 	done
 	@for d in $(ALL_PYTHON_DIRS); do \
-	  if [ ! -f $(SCRAM_SOURCEDIR)/$$d/__init__.py ] ; then \
-	    echo "#Automatically created by SCRAM" > $(SCRAM_SOURCEDIR)/$$d/__init__.py;\
-	    [ -d $(WORKINGDIR)/$$d ] || mkdir -p $(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$d ;\
-	    cf=$(call AutoCleanFile,$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$d/__init__.py,python) ;\
-	    echo "01:rm -f $(SCRAM_SOURCEDIR)/$$d/__init__.py $(SCRAM_SOURCEDIR)/$$d/__init__.pyc" > $$cf;\
-	  fi;\
+	  for dir in `find $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | grep -v '/CVS$$\|/CVS/'`; do \
+	    if [ ! -f $$dir/__init__.py ] ; then \
+	      echo "#Automatically created by SCRAM" > $$dir/__init__.py;\
+	      [ -d $(WORKINGDIR)/$$dir ] || mkdir -p $(WORKINGDIR)/$$dir ;\
+	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
+	      echo "01:rm -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
+	    fi;\
+	  done;\
 	done
 	@for l in `find python -name "*" -type l`; do \
 	  if [ ! -f $$l/__init__.py ] ; then rm -f $$l; fi;\
