@@ -400,7 +400,8 @@ define edm_register_plugin
     cp -f $< $(<D)/$$plugin &&\
     echo "module $$plugin" > $(<D)/$(@F) &&\
     (cp -f $(@D)/$($(1)_plugincache) $(<D) || touch $(<D)/$($(1)_plugincache)) &&\
-    ($($(1)_pluginrefresh) $(<D)/$$plugin || (rm -f $< && exit 1)) &&\
+    ($($(1)_pluginrefresh) $(<D)/$$plugin || (rm -f $< $(<D)/$$plugin && exit 1)) &&\
+    rm -f $(<D)/$$plugin &&\
     cp -f $< $(@D)/$$plugin &&\
     cp -f $(<D)/$(@F) $@ &&\
     echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
@@ -657,6 +658,7 @@ define link_lib
   @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new
   @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef  
 # Big Object Files
 define big_obj
@@ -679,6 +681,7 @@ define link_pylib
   @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new 
   @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef  
 #Shared Capabilities library
 define link_capabilities
@@ -706,6 +709,7 @@ define build_bin
   @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new 
   @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef
 # Test executable building
 define build_test
