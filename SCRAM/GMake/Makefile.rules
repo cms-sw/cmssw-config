@@ -1698,8 +1698,9 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
 	/bin/rm -rf .SCRAM/$(SCRAM_ARCH)/MakeData
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] && [ "X$(ALL_PYTHON_DIRS)" != "X" ] ; then \
+	  echo "Cleaning up the compiled .pyc files in the $(SCRAM_SOURCEDIR) directory.";\
 	  for d in $(ALL_PYTHON_DIRS) ; do \
-	    $(call BuildClean,$(SCRAM_SOURCEDIR)/$$d);\
+	    $(call BuildClean,$(SCRAM_SOURCEDIR)/$$d,,no);\
 	  done;\
 	fi
 	/bin/rm -rf $(SCRAM_INTwork)
