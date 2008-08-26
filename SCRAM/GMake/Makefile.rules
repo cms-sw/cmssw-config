@@ -447,7 +447,6 @@ define edm_register_plugin
   if [ -f $< ] ; then \
     [ -d $(@D) ] || mkdir -p $(@D) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    cp -f $< $(<D)/$$plugin &&\
     echo "module $$plugin" > $(<D)/$(@F) &&\
     cp -f $< $(@D)/$$plugin &&\
     cp -f $(<D)/$(@F) $@ &&\
