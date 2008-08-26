@@ -39,6 +39,7 @@ LD                          := ld
 LD_UNIT                     := -r -m elf_i386
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
+OLD_TIMESTAMP:=198001010100
 ###################################
 ifndef CXX
 CXX:=g++
@@ -540,7 +541,7 @@ endef
 # compiling python
 define compile_python
   @$(startlog_$(2)) [ -d $(@D) ] || mkdir -p $(@D) ;\
-  touch -t 197001010100 $@ &&\
+  touch -t $(OLD_TIMESTAMP) $@ &&\
   echo "01:find $(4)/ -name '*_cf[if].pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
   msg=no;\
   err=0;\
@@ -1634,12 +1635,12 @@ $(WORKINGDIR)/cache/log/%: FORCE_TARGET
 	else \
 	  [ -d $(@D) ] || mkdir -p $(@D) ;\
 	fi
-	@touch -t 197001010100 $@
+	@touch -t $(OLD_TIMESTAMP) $@
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
 $(WORKINGDIR)/cache/xlibs: $(WORKINGDIR)/cache/xlibs.backup
-	@touch -t 197001010100 $@
+	@touch -t $(OLD_TIMESTAMP) $@
 $(WORKINGDIR)/cache/xlibs.backup: $(ToolTimeStamps)
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH);\
 	touch $@
@@ -1901,13 +1902,13 @@ $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	@for l in `find python -name "*" -type l`; do \
 	  if [ ! -f $$l/__init__.py ] ; then rm -f $$l; fi;\
 	done
-	@[ -f $@ ] || (mkdir -p $(@D) ; touch -t 197001010100 $@)
+	@[ -f $@ ] || (mkdir -p $(@D) ; touch -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
 	  $(call BuildClean,$*/$$dir,0[0-9]);\
 	done
 	@[ -d $(@D) ] || mkdir -p $(@D) &&\
-	touch -t 197001010100 $@
+	touch -t $(OLD_TIMESTAMP) $@
 biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$(MAKECMDGOALS)),all)
 	@:
 outputlog:
