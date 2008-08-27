@@ -1,0 +1,12 @@
+<tool name="SELF" version="SELF">
+ <client>
+  <environment name="LIBDIR"  value="$LOCALTOP/$SCRAM_ARCH/lib"/>
+  <environment name="LIBDIR"  value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
+  <environment name="INCLUDE" value="$LOCALTOP/include"/>
+ </client>
+ <runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path"/>
+ <runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
+ <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
+ <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
+ <runtime name="SEAL_PLUGINS"    default="$LOCALTOP/$SCRAM_ARCH/lib/modules" type="path"/>
+</tool>
