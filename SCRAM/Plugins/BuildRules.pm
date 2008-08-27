@@ -66,7 +66,7 @@ sub core()
 sub error()
 {
   my $self=shift;
-  return "CustomPlugin Error\n";
+  return "$@\n";
 }
 
 ##################### Stash Interface ###############
