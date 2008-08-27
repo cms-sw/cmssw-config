@@ -1618,7 +1618,7 @@ define PathToPack
 $(if $(strip $(2)),$(call GetPathToPack,$(firstword $(2)),$(1),$(wordlist 2,100,$(2))),$(1))
 endef
 define GetUsedByDep
-$(if $(strip $($(1)_USED_BY_DONE)),,$(eval $(1)_USED_BY_DONE:=1)$(foreach x,$(filter-out self/$(SCRAM_SOURCEDIR)/%,$(foreach u,$($(1)_USED_BY),$($(u)))),\
+$(if $(strip $($(1)_USED_BY_DONE)),,$(eval $(1)_USED_BY_DONE:=1)$(foreach x,$(foreach u,$($(1)_USED_BY),$($(u))),\
 $(foreach p,$(call GetPathToPack,self,$(x),$(2)),$(sort $(x) $(call GetUsedByDep,$(p))))))
 endef
 $(eval $(call UpdateMakeGoalTypes))
@@ -1853,12 +1853,12 @@ ufast xfast fast:
 %_USED_BY:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  echo "$$var = $(sort $(call GetUsedByDep,$(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)),$(ALL_SCRAM_PROJECTS)))";\
+	  echo "$$var = $(sort $(patsubst self/$(SCRAM_SOURCEDIR)/%,self/%,$(call GetUsedByDep,$(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)),$(ALL_SCRAM_PROJECTS))))";\
 	fi
 %_USED_BY_LOC:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  echo "$$var = $(sort $(call GetUsedByDep,$(patsubst %_USED_BY_LOC,%,$(call GetEchoVariable,$@)),))";\
+	  echo "$$var = $(sort $(patsubst self/$(SCRAM_SOURCEDIR)/%,self/%,$(call GetUsedByDep,$(patsubst %_USED_BY_LOC,%,$(call GetEchoVariable,$@)),)))";\
 	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"
