@@ -1611,16 +1611,6 @@ endef
 define GetEchoVariable
 $(if $(strip $(filter echo_%,$(1))),$(patsubst echo_%,%,$(1)),)
 endef
-define GetPathToPack
-$(if $(strip $(filter $(1)/%,$(2))),$(patsubst $(1)/%,%,$(2)),$(call PathToPack,$(2),$(3)))
-endef
-define PathToPack
-$(if $(strip $(2)),$(call GetPathToPack,$(firstword $(2)),$(1),$(wordlist 2,100,$(2))),$(1))
-endef
-define GetUsedByDep
-$(if $(strip $($(1)_USED_BY_DONE)),,$(eval $(1)_USED_BY_DONE:=1)$(foreach x,$(foreach u,$($(1)_USED_BY),$($(u))),\
-$(foreach p,$(call GetPathToPack,self,$(x),$(2)),$(sort $(x) $(call GetUsedByDep,$(p))))))
-endef
 $(eval $(call UpdateMakeGoalTypes))
 ##############################################################################
 .PHONY: FORCE_TARGET ToolUpdated_% ToolUpdated ExternalLinks
@@ -1817,7 +1807,7 @@ runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)
 	@echo ">> Test sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 ###########################################################
 
-.PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USED_BY_LOC echo_% outputlog
+.PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
 help_%_python:
 	@echo "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
@@ -1853,12 +1843,12 @@ ufast xfast fast:
 %_USED_BY:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  echo "$$var = $(sort $(patsubst self/$(SCRAM_SOURCEDIR)/%,self/%,$(call GetUsedByDep,$(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)),$(ALL_SCRAM_PROJECTS))))";\
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) USED_BY $(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
-%_USED_BY_LOC:
+%_USES:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  echo "$$var = $(sort $(patsubst self/$(SCRAM_SOURCEDIR)/%,self/%,$(call GetUsedByDep,$(patsubst %_USED_BY_LOC,%,$(call GetEchoVariable,$@)),)))";\
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) USES $(patsubst %_USES,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"

@@ -1179,7 +1179,6 @@ sub depsOnlyBuildFile
 	  print $fref "${sname}_EX_${type} := $value\n";
 	}
       }
-      print $fref "\$(foreach x,\$(sort \$(${sname}_LOC_USE) \$(${sname}_EX_USE)),\$(eval \$(x)_USED_BY += ${sname}))\n";
     }
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
     print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname,$path))\nendif\n\n";
@@ -1800,7 +1799,6 @@ sub library_template_generic ()
       #	{print $fh "${safename}_EX_${data}   := ",$self->getCacheData($data)," ",join(" ",@$dataval),"\n";}
       #}
     }
-    print $fh "\$(foreach x,\$(sort \$(${safename}_LOC_USE) \$(${safename}_EX_USE)),\$(eval \$(x)_USED_BY += ${safename}))\n";
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
@@ -1921,8 +1919,7 @@ sub binary_template_generic()
   my $store2= $self->getProductStore($type);
   my $store3= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
-  print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += ${safename}))\n",
-            "ALL_PRODS += ${safename}\n",
+  print $fh "ALL_PRODS += ${safename}\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(patsubst .%,%,\$(suffix \$(${safename}_files))),$type,\$(${store3})))\n";
 }
 
@@ -2103,7 +2100,6 @@ sub python_template()
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-    print $fh "\$(foreach x,\$(${safename}_LOC_USE),\$(eval \$(x)_USED_BY += $safename))\n";
   }
   else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
