@@ -16,7 +16,7 @@ if (!-f $envfile){$envfile="${localtop}/.SCRAM/Environment";}
 my $reltop   = `grep RELEASETOP= $envfile | sed 's|RELEASETOP=||'`; chomp $reltop;
 my $cacheext="db";
 if(&scramVersion($localtop)=~/^V[2-9]/){$cacheext="db.gz";}
-my $cfile="${localtop}/.SCRAM/${arch}/ToolsDepsInfo.${cacheext}";
+my $cfile="${localtop}/.SCRAM/${arch}/ToolsDepsCache.${cacheext}";
 my $cache=undef;
 my $tools={};
 if (-f $cfile)
