@@ -1850,6 +1850,11 @@ ufast xfast fast:
 	if [ "X$$var" != "X" ] ; then \
 	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) USES $(patsubst %_USES,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
+%_ORIGIN:
+	@var=$(call GetEchoVariable,$@);\
+	if [ "X$$var" != "X" ] ; then \
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) ORIGIN $(patsubst %_ORIGIN,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
+	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"
 $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET

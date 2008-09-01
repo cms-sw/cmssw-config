@@ -7,7 +7,7 @@ $|=1;
 
 my $localtop = shift || &usage();
 my $cmd      = uc(shift) || &usage();
-if ($cmd!~/^(USES|USED_BY)$/){&usage();}
+if ($cmd!~/^(USES|USED_BY|ORIGIN)$/){&usage();}
 my $pack     = shift || &usage();
 my $arch     = shift || $ENV{SCRAM_ARCH} || &usage();
 
@@ -65,6 +65,7 @@ sub updateExternals ()
     $data->{DATA}{$t}{TYPE}="tool";
     my $tc=$tools->{SETUP}{$t};
     if (exists $tc->{USE}){foreach my $d (@{$tc->{USE}}){$data->{DATA}{$t}{USES}{&FixToolName($d)}=1;}}
+    if (exists $tc->{LIB}){foreach my $l (@{$tc->{LIB}}){$data->{PROD}{$l}{ORIGIN}{$t}="tool";}}
   }
   if (-f "${localtop}/.SCRAM/${arch}/MakeData/Tools/SCRAMBased/order")
   {
@@ -121,11 +122,29 @@ sub updateSCRAMTool ()
     if ((exists $dc->{RAWDATA}) && ($dc->{RAWDATA}{DEPENDENCIES}))
     {
       my $class=$dc->{CLASS};
-      if($class=~/^(LIBRARY|CLASSLIB|SEAL_PLATFORM)$/){$dir=$dc->{PARENT};}
+      my $prod=undef;
+      if($class=~/^(LIBRARY|CLASSLIB|SEAL_PLATFORM)$/){$dir=$dc->{PARENT};$prod=$dc->{NAME};}
       $data->{DATA}{$dir}{USES}={};
       $data->{DATA}{$dir}{TYPE}=$tool;
       $dc=$dc->{RAWDATA}{DEPENDENCIES};
       foreach my $d (keys %{$dc}){$data->{DATA}{$dir}{USES}{&FixToolName($d)}=1;}
+      if (defined $prod){$data->{PROD}{$prod}{ORIGIN}{$dir}=$tool;}
+      else
+      {
+        $dc=$c->{BUILDTREE}{$dir}{RAWDATA};
+        if (exists $dc->{content}{BUILDPRODUCTS})
+        {
+          $dc=$dc->{content}{BUILDPRODUCTS};
+          foreach my $type ("LIBRARY", "BIN")
+          {
+            if(exists $dc->{$type})
+            {
+              foreach my $prod (keys %{$dc->{$type}})
+              {$data->{PROD}{$prod}{ORIGIN}{$dir}=$tool;}
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -143,11 +162,29 @@ sub process_USES ()
   my $data=shift;
   my $pack=shift;
   my @packs=();
+  my $str = "${pack}_USES = ";
   if (exists $data->{DEPS}{$pack}{USES})
   {
     foreach my $d (keys %{$data->{DEPS}{$pack}{USES}}){push @packs,$data->{DEPS}{$d}{TYPE}."/${d}";}
-    print "${pack}_USES = ",join(" ",sort  @packs),"\n";
+    $str.=join(" ",sort  @packs);
   }
+  print "$str\n";
+}
+
+sub process_ORIGIN ()
+{
+  my $data=shift;
+  my $prod=shift;
+  my $str="${prod}_ORIGIN = ";
+  if (exists $data->{PROD}{$prod}{ORIGIN})
+  {
+    foreach my $dir (keys %{$data->{PROD}{$prod}{ORIGIN}})
+    {
+      my $tool=$data->{PROD}{$prod}{ORIGIN}{$dir};
+      $str.="$tool/$dir ";
+    }
+  }
+  print "$str\n";
 }
 
 sub process_USED_BY ()
@@ -155,14 +192,16 @@ sub process_USED_BY ()
   my $data=shift;
   my $pack=shift;
   my @packs=();
+  my $str="${pack}_USED_BY = ";
   if (exists $data->{DEPS}{$pack}{USED_BY})
   {
     foreach my $d (keys %{$data->{DEPS}{$pack}{USED_BY}}){push @packs,$data->{DEPS}{$d}{TYPE}."/${d}";}
-    print "${pack}_USED_BY = ",join(" ",sort  @packs),"\n";
+    $str.=join(" ",sort  @packs);
   }
+  print "$str\n";
 }
 
-sub usage(){die "Usage: $0 <localtop> <USES|USED_BY> <tool|package> [<arch>]\n";}
+sub usage(){die "Usage: $0 <localtop> <USES|USED_BY|ORIGIN> <tool|package> [<arch>]\n";}
 
 sub scramVersion ()
 {
