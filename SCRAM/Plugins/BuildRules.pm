@@ -1843,7 +1843,7 @@ sub binary_template ()
 	  my $prodfiles = $core->productfiles();
 	  print $fh "ifeq (\$(strip \$($safename)),)\n",
 	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
-                    "${safename}_files_exts := \$(patsubst .%,%,\$(suffix \$(${safename}_files)))\n",
+                    "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n",
 		    "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
@@ -1920,7 +1920,7 @@ sub binary_template_generic()
   my $store3= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "ALL_PRODS += ${safename}\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(patsubst .%,%,\$(suffix \$(${safename}_files))),$type,\$(${store3})))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files)))),$type,\$(${store3})))\n";
 }
 
 sub src2store_copy()
