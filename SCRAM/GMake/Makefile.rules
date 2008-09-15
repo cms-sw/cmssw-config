@@ -102,7 +102,11 @@ endif
 ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
 FORCE_BUILD_END = ) || (echo gmake: \*\*\* [$@] Error $$? ; exit 0)
+IGNORE_BUILD_ERR_START = $(FORCE_BUILD_START)
+IGNORE_BUILD_ERR_END = $(FORCE_BUILD_END)
 else
+IGNORE_BUILD_ERR_START =
+IGNORE_BUILD_ERR_END =
 ifeq ($(strip $(BUILD_LOG)),yes)
 FORCE_BUILD_START = (
 FORCE_BUILD_END = ) || (exitcode=$$?; echo gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
