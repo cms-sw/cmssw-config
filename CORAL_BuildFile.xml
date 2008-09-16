@@ -1,0 +1,29 @@
+<architecture name="slc4_ia32_gcc345">
+<makefile>
+CCcompiler:=gcc3
+</makefile>
+</architecture>
+
+<architecture name="slc4_ia32_gcc345_dbg">
+<flags CXXFLAGS="-O0 -g -DDEBUG"/>
+<makefile>
+CCcompiler:=gcc3
+CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
+</makefile>
+</architecture>
+
+<productstore name="lib" type="arch"/>
+<productstore name="python" type="arch"/>
+<productstore name="include"/>
+<productstore name="lib/modules" type="arch"/>
+<productstore name="tests/lib/modules" type="arch"/>
+<productstore name="tests/bin" type="arch"/>
+<productstore name="tests/lib" type="arch"/>
+
+<classpath path="+Project/+Package/src+library"/>
+<classpath path="+Project/+Package/tests+binary"/>
+<classpath path="+Project/+Package/python+python"/>
+<classpath path="+Project/Tests+SubSystem/Library+Package/Connectivity+binary"/>
+<classpath path="+Project/Tests+Package/+binary"/>
+
+<use name="self"/>
