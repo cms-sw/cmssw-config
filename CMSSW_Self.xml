@@ -13,7 +13,6 @@
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"           type="path"/>
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
  <runtime name="PATH"                  value="$CMSSW_BINDIR"                       type="path"/>
- <runtime name="SEAL_PLUGINS"          value="$LOCALTOP/module/$SCRAM_ARCH"        type="path"/>
  <runtime name="PYTHONPATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"           type="path"/>
  <runtime name="PYTHONPATH"            value="$LOCALTOP/python"                    type="path"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                       type="path" handler="warn"/>

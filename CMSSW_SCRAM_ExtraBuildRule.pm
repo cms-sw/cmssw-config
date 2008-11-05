@@ -27,6 +27,8 @@ sub Project()
   my $self=shift;
   my $common=$self->{template};
   my $fh=$common->filehandle();
+  my $hasseal=$common->isToolAvailable("seal");
+  if (!$hasseal){$common->removePluginSupport("seal");}
   $common->symlinkPythonDirectory(1);
   $common->addPluginSupport("iglet","IGLET","IgPluginRefresh",'\/iglet$',"SCRAMSTORENAME_LIB",".iglets",'$name="${name}.iglet"',"yes");
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
@@ -143,7 +145,11 @@ sub Extra_template()
   my $common=$self->{template};
   $common->pushstash();$common->moc_template();$common->popstash();
   if ($common->get("iglet_file") ne ""){$common->iglet_template();}
-  else{$common->set("plugin_name",$common->core()->flags("SEAL_PLUGIN_NAME"));$common->plugin_template();}
+  else
+  {
+    if ($common->isToolAvailable("seal")){$common->set("plugin_name",$common->core()->flags("SEAL_PLUGIN_NAME"));}
+    $common->plugin_template();
+  }
   $common->pushstash();$common->lexyacc_template();$common->popstash();
   $common->pushstash();$common->codegen_template();$common->popstash();
   $common->pushstash();$common->dict_template();   $common->popstash();
