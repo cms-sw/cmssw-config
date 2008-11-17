@@ -187,7 +187,7 @@ sub Classlib_template ()
             "${safename}_INIT_FUNC += \$\$(eval \$\$(call ClassLib,${safename},\$(SCRAM_SOURCEDIR)/${parent},${safepath}))\n",
             "endif\n";
   
-  my $confstr="./configure -C CPPFLAGS=\"\$\$(\$(1)_CPPFLAGS)\" ".
+  my $confstr="\$(LOCALTOP)/\$(SCRAM_SOURCEDIR)/${parent}/configure -C CPPFLAGS=\"\$\$(\$(1)_CPPFLAGS)\" ".
             "CC=\"\$\$(strip \$(CC))\" CXX=\"\$\$(strip \$(CXX))\" CFLAGS=\"\$\$(strip \$\$(\$(1)_LOC_FLAGS_CFLAGS_ALL))\" ".
             "CXXFLAGS=\"\$\$(\$(1)_CXXFLAGS)\" LIBS=\"\$\$(\$(1)_LOC_LIB_ALL:%=-l%)\" LDFLAGS=\"\$\$(\$(1)_LOC_LIBDIR_ALL:%=-L%)\" ".
             "--prefix=\$(LOCALTOP) --libdir=\$(LOCALTOP)/\$(SCRAMSTORENAME_LIB) ".
@@ -208,31 +208,27 @@ sub Classlib_template ()
             "all_\$(3) all_\$(1) \$(1) \$(3): \$(WORKINGDIR)/\$(2)/\$(1).installed\n",
             "\$(WORKINGDIR)/cache/prod/lib\$(1): \$(WORKINGDIR)/\$(2)/\$(1).installed\n",
             "\t\@if [ ! -f \$\$@ ] ; then touch \$\$@; fi\n",
-            "\$(WORKINGDIR)/\$(2)/configure: \$(CONFIGDEPS) \$(logfile_\$(1)) \$(\$(1)_BuildFile) \$(LOCALTOP)/\$(2)/configure\n",
-	    "\t\@\$(startlog_\$(1))mkdir -p \$\$(dir \$(WORKINGDIR)/\$(2)) &&\\\n",
-            "\tif [ -d \$(WORKINGDIR)/\$(2) ] ; then \\\n",
-            "\t  rm -rf \$(WORKINGDIR)/\$(2) ;\\\n",
-            "\tfi &&\\\n",
-            "\tcp -r \$(LOCALTOP)/\$(2) \$\$(dir \$(WORKINGDIR)/\$(2)) \$(endlog_\$(1))\n",
-            "\$(WORKINGDIR)/\$(2)/\$(1).configured: \$(WORKINGDIR)/\$(2)/configure\n",
+            "\$(WORKINGDIR)/\$(2)/\$(1).configured: \$(CONFIGDEPS) \$(logfile_\$(1)) \$(\$(1)_BuildFile) \$(LOCALTOP)/\$(2)/configure\n",
             "\t\@echo \">> Configuring \$2\"\n",
 	    "\t\@\$(startlog_\$(1))mkdir -p \$\$(\@D);\\\n",
-            "\tcd \$\$(<D); \\\n",
+            "\tcd \$\$(\@D); \\\n",
 	    "\techo $confstr &&\\\n",
 	    "\t$confstr &&\\\n",
             "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
             "\$(WORKINGDIR)/\$(2)/\$(1).made: \$(WORKINGDIR)/\$(2)/\$(1).configured\n",
             "\t\@echo \">> Compiling \$2\"\n",
-	    "\t\@\$(startlog_\$(1))cd \$(WORKINGDIR)/\$(2); \$\$(MAKE) &&\\\n",
+	    "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) &&\\\n",
             "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
             "\$(WORKINGDIR)/\$(2)/\$(1).installed: \$(WORKINGDIR)/\$(2)/\$(1).made \$(WORKINGDIR)/\$(2)/\$(1).headers\n",
             "\t\@echo \">> Installing library \$2\"\n",
-	    "\t\@\$(startlog_\$(1))cd \$(WORKINGDIR)/\$(2); \$\$(MAKE) install-exec &&\\\n",
+	    "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) install-exec &&\\\n",
             "\tcd \$(LOCALTOP) && rm -f \$(SCRAMSTORENAME_LIB)/lib\$(1).la && touch \$\$@ \$(endlog_\$(1))\n",
+	    "\t\@echo \"01:rm -f \$(LOCALTOP)/\$(SCRAMSTORENAME_LIB)/lib\$(1).so\" > \$(call AutoCleanFile,\$\$(\@D)/\$(1),prod)\n",
             "\$(WORKINGDIR)/\$(2)/\$(1).headers: \$(WORKINGDIR)/\$(2)/\$(1).configured\n",
             "\t\@echo \">> Installing headers \$2\"\n",
-            "\t\@\$(startlog_\$(1))cd \$(WORKINGDIR)/\$(2); \$\$(MAKE) install-data &&\\\n",
+            "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) install-data &&\\\n",
             "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
+	    "\t\@echo \"01:rm -rf \$(LOCALTOP)/\$(SCRAMSTORENAME_INCLUDE)/\$(1)\" > \$(call AutoCleanFile,\$\$(\@D)/\$(1),include)\n",
             "endef\n";
   close($xfh);
   return 1;
