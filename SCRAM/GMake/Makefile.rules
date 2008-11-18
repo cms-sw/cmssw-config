@@ -1475,13 +1475,25 @@ ifneq ($$(wildcard $($(1)_objdir)/*LinkDef.cc.d),)
 endif
 endef
 
-#safename,libname,prodpath
+
+#safename,prodpath
 define RootMap
+$($(1)_objdir)/$(1).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
+	@$(startlog_$(1))echo ">> Generating RootMap file: $$(@F)" &&\
+	genmap -i $$< -o $$@ $(endlog_$(1))
+$(2)/$(1).rootmap: $($(1)_objdir)/$(1).rootmap
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
+	@mkdir -p $$(@D); cp $$< $$@
+all_$(1) += $(2)/$(1).rootmap
+endef
+
+#safename,libname,prodpath
+define LcgDictRootMap
 $(2)_GENREFLEX_ARGS += --rootmap=$(2).rootmap --rootmap-lib=$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
 $($(1)_objdir)/$(2).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
 	@touch $$@
 $(3)/$(2).rootmap: $($(1)_objdir)/$(2).rootmap
-	@echo "01:rm -f $$@ $$<" > $$(call AutoCleanFile,$$<,rootmap)
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
 	@mkdir -p $$(@D); cp $$< $$@
 all_$(1) += $(3)/$(2).rootmap
 endef
@@ -1492,7 +1504,7 @@ $(1)Capabilities_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
 $(1)Capabilities_GENREFLEX_ARGS := $(7)
 $(eval $(call AddLCGDictRule,$(1),$(4),$(5),$(1)Capabilities,a/))
 ifeq ($(strip $(2)),1)
-$$(eval $$(call RootMap,$1,$(1)Capabilities,$6))
+$$(eval $$(call LcgDictRootMap,$1,$(1)Capabilities,$6))
 endif
 all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX)
 $($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX): $$($(1)Capabilities_ids) $(WORKINGDIR)/cache/prod/lib$(1)

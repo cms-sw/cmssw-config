@@ -61,6 +61,7 @@ sub Extra_template()
     $common->set("plugin_name",$common->core()->flags("SEAL_PLUGIN_NAME"));
     $common->plugin_template();
   }
+  $common->pushstash();$common->rootmap($common->core()->flags("ROOTMAP"));$common->popstash();
   return 1;
 }
 
