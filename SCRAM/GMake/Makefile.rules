@@ -1480,7 +1480,7 @@ endef
 define RootMap
 $($(1)_objdir)/$(1).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 	@$(startlog_$(1))echo ">> Generating RootMap file: $$(@F)" &&\
-	genmap -i $$< -o $$@ $(endlog_$(1))
+	cd $$(<D); genmap -i $$(<F) -o $$(@F) $(endlog_$(1))
 $(2)/$(1).rootmap: $($(1)_objdir)/$(1).rootmap
 	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
 	@mkdir -p $$(@D); cp $$< $$@
