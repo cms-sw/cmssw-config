@@ -899,6 +899,9 @@ sub searchLCGRootDict ()
   my @x=();
   foreach my $f (split /\s+/,$hfile){if(-f "${path}/${f}"){$h1.="$f ";push @h,"\$(LOCALTOP)/${path}/${f}";$flag|=1;}}
   foreach my $f (split /\s+/,$xfile){if(-f "${path}/${f}"){$x1.="$f ";push @x,"\$(LOCALTOP)/${path}/${f}";$flag|=2;}}
+  $rootmap = $core->flags("ROOTMAP");
+  if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
+  else{$rootmap=0;}
   if ((scalar(@h) == scalar(@x)) && ($flag==3))
   {
     for(my $i=0;$i<scalar(@h);$i++)
@@ -908,9 +911,7 @@ sub searchLCGRootDict ()
       push @$lcgheader,$h[$i];
       push @$lcgxml,$x[$i];
     }
-    my $tmp = $core->flags("ROOTMAP");
-    if($tmp=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
-    $tmp = $core->flags("GENREFLEX_ARGS");
+    my $tmp = $core->flags("GENREFLEX_ARGS");
     if($tmp=~/^\s*\-\-\s*$/){$genreflex_args="";}
     elsif($tmp!~/^\s*$/){$genreflex_args=$tmp;}
     $tmp = $core->flags("GENREFLEX_FAILES_ON_WARNS");
@@ -1668,6 +1669,18 @@ sub plugin_template ()
   return;
 }
 
+sub rootmap ()
+{
+  my $self=shift;
+  my $rootmap=shift || 0;
+  if ($rootmap=~/^\s*(1|yes)\s*$/i)
+  {
+    my $sname=$self->get("safename");
+    my $fh=$self->{FH};
+    print $fh "${sname}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootMap,$sname,\$(",$self->getProductStore("lib"),")))\n";
+  }
+}
+
 sub dict_template()
 {
   my $self=shift;
@@ -1679,6 +1692,7 @@ sub dict_template()
     $self->lcgdict_template();
     $self->popstash();
   }
+  else{$self->rootmap($self->get("rootmap"));}
   if ($self->get("rootdictfile") ne "")
   {
     $self->pushstash();

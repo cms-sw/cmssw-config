@@ -254,11 +254,7 @@ define copy_build_product
 endef
 
 define copy_lib_to_main_productstore
-  $(call copy_build_product,$(1)) &&\
-  if [ -f $(basename $@).rootmap ] ; then \
-    cp $(basename $@).rootmap $(LOCALTOP)/$(1) &&\
-    echo "01:rm -f $(1)/$(basename $(@F)).rootmap" > $(call AutoCleanFile,$@,rootmap);\
-  fi
+  $(call copy_build_product,$(1))
 endef
 
 define copy_bigobj_to_main_productstore
@@ -512,12 +508,11 @@ endef
 # Dictionary compilation
 define compile_lcgdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
-  echo ">> Compiling for LCG dictionary: $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  ($(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
-  @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#_rflx.o:#_rflx.cpp:#g' -e 's#_rflx.cpp #_rflx.cpp: #g' \
-  $(basename $@).d > $<.d &&\
-  if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
+  echo ">> Compiling for LCG dictionary: $<" &&\
+  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) `echo "$($(1)_CXXFLAGS)" | tr ' ' '\n' | grep -v '^-O[0-9s]*$$' | tr '\n' ' '` -Os $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  ((cd $($(1)_objdir)/..; $(CXX) -MMD  -c $($(1)_CPPFLAGS) `echo "$($(1)_CXXFLAGS)" | tr ' ' '\n' | grep -v '^-O[0-9s]*$$' | tr '\n' ' '` -Os $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || (rm -f $< && exit 1)) $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | grep -v '^ *\\$$' > $<.d &&\
+  if [ -f $<.d ] ; then sed -i -e 's|$(LOCALTOP)/||' $<.d ; rm -f $(basename $@).d; fi $(endlog_$(2))
 endef
 # Root Dictionary compilation
 define compile_rootdict
@@ -597,10 +592,10 @@ endef
 #LCG dictionary generation
 define generate_lcgdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
-  echo ">> Building LCG reflex dict from header file $< " &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(1)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(5) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) &&\
-  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(1)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(5) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) || (rm -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
-endef  
+  echo ">> Building LCG reflex dict from header file $4" &&\
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) &&\
+  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) || (rm -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
+endef
 # ROOt dictionary generation
 define generate_rootdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
@@ -686,8 +681,8 @@ endef
 #Shared Capabilities library
 define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
-  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(1)_CDICT_LDFLAGS) &&\
-  ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(1)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) &&\
+  ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -1480,37 +1475,63 @@ ifneq ($$(wildcard $($(1)_objdir)/*LinkDef.cc.d),)
 endif
 endef
 
+
+#safename,prodpath
+define RootMap
+$($(1)_objdir)/$(1).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
+	@$(startlog_$(1))echo ">> Generating RootMap file: $$(@F)" &&\
+	cd $$(<D); genmap -i $$(<F) -o $$(@F) $(endlog_$(1))
+$(2)/$(1).rootmap: $($(1)_objdir)/$(1).rootmap
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
+	@mkdir -p $$(@D); cp $$< $$@
+all_$(1) += $(2)/$(1).rootmap
+endef
+
+#safename,libname,prodpath
+define LcgDictRootMap
+$(2)_GENREFLEX_ARGS += --rootmap=$(2).rootmap --rootmap-lib=$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
+$($(1)_objdir)/$(2).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
+	@touch $$@
+$(3)/$(2).rootmap: $($(1)_objdir)/$(2).rootmap
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
+	@mkdir -p $$(@D); cp $$< $$@
+all_$(1) += $(3)/$(2).rootmap
+endef
+
 #safename,rootmap,headers,hfiles,defxmlfiles,prodstore,genreflexargs
 define LCGDict
-$(1)_files          += $(foreach h,$(3),$($(1)_objdir)/$(h)_rflx.cpp)
-$(1)_objs           += $(foreach h,$(3),$($(1)_objdir)/$(h)_rflx.$(OBJEXT))
-$(1)_id_dictobj     += $(foreach h,$(3),$($(1)_objdir)/$(h)_ids.$(OBJEXT))
-$(1)_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
-$(1)_GENREFLEX_ARGS := $(7)
+$(1)Capabilities_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
+$(1)Capabilities_GENREFLEX_ARGS := $(7)
+$(eval $(call AddLCGDictRule,$(1),$(4),$(5),$(1)Capabilities,a/))
 ifeq ($(strip $(2)),1)
-$(1)_GENREFLEX_ARGS += --rootmap=$(MODULE_PREFIX)$(1)Capabilities.rootmap --rootmap-lib=$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX)
+$$(eval $$(call LcgDictRootMap,$1,$(1)Capabilities,$6))
 endif
 all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX)
-$($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX): $$($(1)_id_dictobj) $(WORKINGDIR)/cache/prod/lib$(1)
+$($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX): $$($(1)Capabilities_ids) $(WORKINGDIR)/cache/prod/lib$(1)
 	$$(call link_capabilities,$(1),$(1),$(6),$(1)Capabilities)
-$(eval $(call AddLCGDictRule,$(1),$(4),$(5)))
 endef
 
 define AddLCGDictRule
-$(if $(2),$(eval $(call LCGDictRule,$(1),$(basename $(notdir $(firstword $(2)))),$(firstword $(2)),$(firstword $(3))))$(eval $$(call AddLCGDictRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)))),)
+$(if $(2),$(eval rflx_name:=$(rflx_name)x)$(eval $(call LCGDictRule,$(1),$(5)$(rflx_name),$(firstword $(2)),$(firstword $(3)),$(4)))$(eval $$(call AddLCGDictRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)),$(4),$(5)))$(eval rflx_name:=),)
 endef
 
 define LCGDictRule
-$($(1)_objdir)/$(2)_rflx.cpp: $(3) $(4) $($(1)_config)
-	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)_ids.cc)
-$($(1)_objdir)/$(2)_rflx.$(OBJEXT): $($(1)_objdir)/$(2)_rflx.cpp
-	$$(call compile_lcgdict,$(1),$(1))
-$($(1)_objdir)/$(2)_ids.cc: $($(1)_objdir)/$(2)_rflx.$(OBJEXT)
+$(1)_files  += $($(1)_objdir)/$(2)r.cc
+$(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
+$(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
+$($(1)_objdir)/$(2).h: $(3) $($(1)_config)
+	@mkdir -p $$(@D); grep '^ *# *include' $(3) > $$@ || touch $$@
+$($(1)_objdir)/$(2)r.cc: $(4) $($(1)_objdir)/$(2).h
+	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
+	@sed -i -e "s|$(3)|$(LOCALTOP)/$($(1)_objdir)/$(2).h|;s|operator_|op_|g;s|method_|me_|g;s|constructor_|ct_|g;s|destructor_|de_|g" $$@
+$($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
+	$$(call compile_lcgdict,$(1),$(1),$(2)r)
+$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.$(OBJEXT)
 	@[ -f $$< ] || rm -f $$@
-$($(1)_objdir)/$(2)_ids.$(OBJEXT): $($(1)_objdir)/$(2)_ids.cc
+$($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxx,$(1),$(1))
-ifneq ($$(wildcard $($(1)_objdir)/$(2)_rflx.cpp.d),)
--include $($(1)_objdir)/$(2)_rflx.cpp.d
+ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
+-include $($(1)_objdir)/$(2)r.cc.d
 endif
 endef
 
