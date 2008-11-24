@@ -5,6 +5,7 @@
     <download url="file:config"                               name="config"/>
     <download url="file:src/CoralKernel"                      name="src/CoralKernel"/>
     <download url="file:src/CoralBase"                        name="src/CoralBase"/>
+    <download url="file:src/CoralBricks"                      name="src/CoralBricks"/>
     <download url="file:src/RelationalAccess"                 name="src/RelationalAccess"/>
     <download url="file:src/CoralCommon"                      name="src/CoralCommon"/>
     <download url="file:src/OracleAccess"                     name="src/OracleAccess"/>
@@ -19,5 +20,6 @@
     <download url="file:src/MonitoringService"                name="src/MonitoringService"/>
     <download url="file:src/ConnectionService"                name="src/ConnectionService"/>
     <download url="file:src/Tests"                            name="src/Tests"/>
+    <download url="file:src/UnitTests"                        name="src/UnitTests"/>
   </base>
 </project>
