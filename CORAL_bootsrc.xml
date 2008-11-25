@@ -19,7 +19,6 @@
     <download url="file:src/EnvironmentAuthenticationService" name="src/EnvironmentAuthenticationService"/>
     <download url="file:src/MonitoringService"                name="src/MonitoringService"/>
     <download url="file:src/ConnectionService"                name="src/ConnectionService"/>
-    <download url="file:src/Tests"                            name="src/Tests"/>
     <download url="file:src/UnitTests"                        name="src/UnitTests"/>
   </base>
 </project>
