@@ -165,6 +165,24 @@ sub doTheTemplateProcessing ()
   return $ret;
 }
 
+sub getProjectPlugin ()
+{
+  my $self=shift;
+  return $self->{cache}{ProjectPlugin} || undef;
+}
+
+sub getProjectPluginTemplate ()
+{
+  my $self=shift;
+  my $ret=undef;
+  if (defined $self->{cache}{ProjectPlugin})
+  {
+    if (exists $self->{cache}{ProjectPlugin}->{template})
+    {$ret=$self->{cache}{ProjectPlugin}->{template};}
+  }
+  return $ret;
+}
+
 sub unsupportedProductType ()
 {
   my $self=shift;
@@ -317,7 +335,7 @@ sub setLCGCapabilitiesPluginType ()
 {
   my $self=shift;
   my $type=lc(shift) || $self->{cache}{DefaultPluginType};
-  if(!exists $self->{cache}{SupportedPlugins}{$type})
+  if($type && (!exists $self->{cache}{SupportedPlugins}{$type}))
   {
     print STDERR "****ERROR: LCG Capabilities Plugin type \"$type\" not supported.\n";
     print STDERR "           Currently available plugins are:",join(",",sort keys %{$self->{cache}{SupportedPlugins}}),".\n";
@@ -387,6 +405,8 @@ sub removePluginSupport ()
   my $self=shift;
   my $type=lc(shift) || return;
   delete $self->{cache}{SupportedPlugins}{$type};
+  if ($self->{cache}{LCGCapabilitiesPlugin} eq $type){$self->{cache}{LCGCapabilitiesPlugin}="";}
+  if ($self->{cache}{DefaultPluginType} eq $type){$self->{cache}{DefaultPluginType}="";}
   return;
 }
 
@@ -410,7 +430,7 @@ sub getPluginData ()
   my $key=shift || return "";
   my $type=lc(shift) || $self->getDefaultPluginType ();
   my $val="";
-  if(exists $self->{cache}{SupportedPlugins}{$type} && exists $self->{cache}{SupportedPlugins}{$type}{$key}){$val=$self->{cache}{SupportedPlugins}{$type}{$key};}
+  if($type && (exists $self->{cache}{SupportedPlugins}{$type}) && exists $self->{cache}{SupportedPlugins}{$type}{$key}){$val=$self->{cache}{SupportedPlugins}{$type}{$key};}
   return $val;
 }
 
@@ -424,7 +444,7 @@ sub setProjectDefaultPluginType ()
 {
   my $self=shift;
   my $type=lc(shift) || $self->{cache}{DefaultPluginType};
-  if(!exists $self->{cache}{SupportedPlugins}{$type})
+  if($type && (!exists $self->{cache}{SupportedPlugins}{$type}))
   {
     print STDERR "****ERROR: Invalid plugin type \"$type\". Currently supported plugins are:",join(",",sort keys %{$self->{cache}{SupportedPlugins}}),".\n";
     return;
@@ -437,7 +457,7 @@ sub setDefaultPluginType ()
 {
   my $self=shift;
   my $type=lc(shift) || $self->{cache}{DefaultPluginType};
-  if(!exists $self->{cache}{SupportedPlugins}{$type})
+  if($type && (!exists $self->{cache}{SupportedPlugins}{$type}))
   {
     my $core=$self->{core};
     my @bf=keys %{$core->bfdeps()};
@@ -1521,10 +1541,14 @@ sub Project_template()
   my $safepath=$self->get("safepath");
   my $fh=$self->{FH};
   $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
-  #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
-  $self->addPluginSupport("seal","SEALPLUGIN:SEAL_PLUGIN_NAME","SealPluginRefresh",'\/sealplugins$',"SCRAMSTORENAME_MODULE",".cache",'$name="${name}.reg"',"");
-  $self->setProjectDefaultPluginType ("seal");
-  $self->setLCGCapabilitiesPluginType ("seal");
+  my $common=$self->getProjectPluginTemplate();
+  if ((defined $common) && ($common->isToolAvailable("seal")))
+  {
+    #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
+    $self->addPluginSupport("seal","SEALPLUGIN:SEAL_PLUGIN_NAME","SealPluginRefresh",'\/sealplugins$',"SCRAMSTORENAME_MODULE",".cache",'$name="${name}.reg"',"");
+    $self->setProjectDefaultPluginType ("seal");
+    $self->setLCGCapabilitiesPluginType ("seal");
+  }
   #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
   foreach my $type ("lib","bin","test","python","java","logs","include")
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
@@ -1717,15 +1741,21 @@ sub lcgdict_template()
   my $self=shift;
   my $safename=$self->get("safename");
   my $fh=$self->{FH};
-  $self->set("plugin_name","${safename}Capabilities");
-  $self->pushstash();
-  $self->set("plugin_name_force",1);
-  $self->set("plugin_type",$self->getLCGCapabilitiesPluginType());
-  $self->plugin_template();
-  $self->popstash();
+  my $ptype=$self->getLCGCapabilitiesPluginType();
+  my $capabilities="";
+  if ($ptype ne "")
+  {
+    $self->set("plugin_name","${safename}Capabilities");
+    $self->pushstash();
+    $self->set("plugin_name_force",1);
+    $self->set("plugin_type",$self->getLCGCapabilitiesPluginType());
+    $self->plugin_template();
+    $self->popstash();
+    $capabilities="Capabilities";
+  }    
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
 	    join(" ",@{$self->get("headers")}),",",join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
-	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),"))\n";
+	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
 }
 
 sub library_template ()

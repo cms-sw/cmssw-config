@@ -36,8 +36,9 @@ sub Project ()
   else{$common->removePluginSupport("seal");}
   $common->addProductDirMap("bin",'\/tests$',"SCRAMSTORENAME_TESTS_BIN",1);
   $common->addProductDirMap("bin",'^src\/Tests\/.+',"SCRAMSTORENAME_TESTS_BIN",1);
+  $common->addProductDirMap("lib",'^src\/Tests\/Libraries\/.+',"SCRAMSTORENAME_LIB",1);
   $common->addProductDirMap("lib",'\/tests$',"SCRAMSTORENAME_TESTS_LIB",1);
-  $common->addProductDirMap("lib",'^src\/Tests\/.+',"SCRAMSTORENAME_TESTS_LIB",1);
+  $common->addProductDirMap("lib",'^src\/Tests\/.+',"SCRAMSTORENAME_TESTS_LIB",2);
   print $fh "CONFIGDEPS += \$(WORKINGDIR)/cache/project_includes\n",
             "\$(WORKINGDIR)/cache/project_includes: FORCE_TARGET\n",
             "\t\@for f in \$(SCRAM_SOURCEDIR)/*; do        \\\n",
@@ -61,7 +62,7 @@ sub Extra_template()
     $common->set("plugin_name",$common->core()->flags("SEAL_PLUGIN_NAME"));
     $common->plugin_template();
   }
-  $common->pushstash();$common->rootmap($common->core()->flags("ROOTMAP"));$common->popstash();
+  $common->pushstash();$common->dict_template();   $common->popstash();
   return 1;
 }
 

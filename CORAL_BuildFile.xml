@@ -18,10 +18,10 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <productstore name="tests/bin" type="arch"/>
 <productstore name="tests/lib" type="arch"/>
 
+<classpath path="+Project/Tests+SubSystem/Libraries+Package/+Package/src+library"/>
 <classpath path="+Project/+Package/src+library"/>
 <classpath path="+Project/+Package/tests+binary"/>
 <classpath path="+Project/+Package/python+python"/>
-<classpath path="+Project/Tests+SubSystem/Library+Package/Connectivity+binary"/>
 <classpath path="+Project/Tests+Package/+binary"/>
 
 <use name="self"/>

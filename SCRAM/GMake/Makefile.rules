@@ -1498,17 +1498,19 @@ $(3)/$(2).rootmap: $($(1)_objdir)/$(2).rootmap
 all_$(1) += $(3)/$(2).rootmap
 endef
 
-#safename,rootmap,headers,hfiles,defxmlfiles,prodstore,genreflexargs
+#safename,rootmap,headers,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
 define LCGDict
-$(1)Capabilities_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
-$(1)Capabilities_GENREFLEX_ARGS := $(7)
-$(eval $(call AddLCGDictRule,$(1),$(4),$(5),$(1)Capabilities,a/))
+$(1)$(8)_GENREFLEX_ARGS := $(7)
+$(eval $(call AddLCGDictRule,$(1),$(4),$(5),$(1)$(8),a/))
 ifeq ($(strip $(2)),1)
-$$(eval $$(call LcgDictRootMap,$1,$(1)Capabilities,$6))
+$$(eval $$(call LcgDictRootMap,$1,$(1)$(8),$6))
 endif
-all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX)
-$($(1)_objdir)/$(MODULE_PREFIX)$(1)Capabilities.$(SHAREDSUFFIX): $$($(1)Capabilities_ids) $(WORKINGDIR)/cache/prod/lib$(1)
-	$$(call link_capabilities,$(1),$(1),$(6),$(1)Capabilities)
+ifneq ($(strip $8),)
+$(1)$(8)_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
+all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX)
+$($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX): $$($(1)$(8)_ids) $(WORKINGDIR)/cache/prod/lib$(1)
+	$$(call link_capabilities,$(1),$(1),$(6),$(1)$(8))
+endif
 endef
 
 define AddLCGDictRule
@@ -1518,20 +1520,19 @@ endef
 define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
-$(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
-$($(1)_objdir)/$(2).h: $(3) $($(1)_config)
-	@mkdir -p $$(@D); grep '^ *# *include' $(3) > $$@ || touch $$@
-$($(1)_objdir)/$(2)r.cc: $(4) $($(1)_objdir)/$(2).h
+$($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
-	@sed -i -e "s|$(3)|$(LOCALTOP)/$($(1)_objdir)/$(2).h|;s|operator_|op_|g;s|method_|me_|g;s|constructor_|ct_|g;s|destructor_|de_|g" $$@
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
+ifneq ($1,$5)
+$(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.$(OBJEXT)
 	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxx,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
 -include $($(1)_objdir)/$(2)r.cc.d
+endif
 endif
 endef
 
