@@ -617,7 +617,7 @@ endef
 define generate_moc
   @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Running moc for $<" &&\
-  $(QTMOC) -o $@ $< $(endlog_$(2))
+  $(3) -o $@ $< $(endlog_$(2))
 endef
 # Flex Generaton
 define generate_lex
@@ -1427,15 +1427,15 @@ $($(1)_objdir)/moc/run_moc: $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
 $($(1)_objdir)/moc/%.$(OBJEXT):  $($(1)_objdir)/moc/%.cc
 	$$(call compile_cxx,$(1),$(1))
 $($(1)_objdir)/moc/%_h_moc.cc:   $(3)/%.h   $($(1)_config)
-	$$(call generate_moc,$(1),$(1))
+	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 $($(1)_objdir)/moc/%_h_moc.cc:   $(4)/%.h   $($(1)_config)
-	$$(call generate_moc,$(1),$(1))
+	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 $($(1)_objdir)/moc/%_cc_moc.cc:  $(4)/%.cc  $($(1)_config)
-	$$(call generate_moc,$(1),$(1))
+	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 $($(1)_objdir)/moc/%_cpp_moc.cc: $(4)/%.cpp $($(1)_config)
-	$$(call generate_moc,$(1),$(1))
+	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 $($(1)_objdir)/moc/%_cxx_moc.cc: $(4)/%.cxx $($(1)_config)
-	$$(call generate_moc,$(1),$(1))
+	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 endef
 
 #safename,igletfile,prodstore

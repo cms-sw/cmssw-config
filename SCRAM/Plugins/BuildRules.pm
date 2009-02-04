@@ -642,7 +642,7 @@ sub shouldRunMoc ()
 {
   my $self=shift;
   my $hasmoc=0;
-  if($self->isDependentOnTool(["qt","soqt"]))
+  if($self->isDependentOnTool(["qt","qt3","soqt"]))
   {
     my $stash=$self->{context}->stash();
     my $src=$stash->get('path');
@@ -678,7 +678,12 @@ sub shouldRunMoc ()
 	 closedir($dref);
       }
     }
-    $stash->set(mocfiles => "$mocfiles");
+    if ($hasmoc)
+    {
+      $stash->set(mocfiles => "$mocfiles");
+      if ($self->isDependentOnTool(["qt3"])){$stash->set(mocbase => "QT3_BASE");}
+      else{$stash->set(mocbase => "QT_BASE");}
+    }
   }
   return $hasmoc;
 }
@@ -2019,7 +2024,7 @@ sub moc_template ()
   {
     my $fh=$self->{FH};
     my $safename=$self->get("safename");
-    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call AddMOC,${safename},",$self->get("mocfiles"),",",$self->get("mocinc"),",",$self->get("mocsrc"),"))\n";
+    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call AddMOC,${safename},",$self->get("mocfiles"),",",$self->get("mocinc"),",",$self->get("mocsrc"),",",$self->get("mocbase"),"))\n";
   }
 }
 
