@@ -616,7 +616,7 @@ endef
 # MOC generation
 define generate_moc
   @$(startlog_$(2))mkdir -p $(@D) &&\
-  echo ">> Running moc for $<" &&\
+  echo ">> Running moc ( $(3) ) for $<" &&\
   $(3) -o $@ $< $(endlog_$(2))
 endef
 # Flex Generaton

@@ -681,7 +681,7 @@ sub shouldRunMoc ()
     if ($hasmoc)
     {
       $stash->set(mocfiles => "$mocfiles");
-      if ($self->isDependentOnTool(["qt3"])){$stash->set(mocbase => "QT3_BASE");}
+      if ($self->isDependentOnTool(["qt3","soqt"])){$stash->set(mocbase => "QT3_BASE");}
       else{$stash->set(mocbase => "QT_BASE");}
     }
   }
