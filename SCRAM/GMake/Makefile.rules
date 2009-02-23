@@ -11,6 +11,8 @@ prebuild       :=
 postbuild      :=
 prelibdeps     :=
 prebindeps     :=
+precompile     :=
+compile        :=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
 ALL_PACKAGES       :=
@@ -1102,11 +1104,13 @@ ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
 endif
 endif
+precompile += $($(1)_objdir)/precompile
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 	@mkdir -p $$(@D) ; touch $$@
 ifeq ($$(strip $(4)),lib)
 	@$(startlog_$(1))echo "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
+compile += $($(1)_objdir)/compile
 $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@touch $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
@@ -1445,6 +1449,7 @@ $(1)_ExtraIglet_libcheck    := $($(1)_libcheck)
 $(1)_ExtraIglet_CXXFLAGS     = $$($(1)_CXXFLAGS)
 $(1)_ExtraIglet_LDFLAGS      = $$($(1)_LDFLAGS)
 $(1)_ExtraIglet_libdeps     := $($(1)_libdeps)
+$(1)_compile += $$($(1)_ExtraIglet_objs)
 ifeq ($(strip $($(1)_objs)),)
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.cc $($(1)_config) $(logfile_$(1))
 	$$(call compile_cxx,$(1),$(1))
@@ -1466,6 +1471,7 @@ $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
 $(1)_files                  += $$($(1)_LinkDef_files)
 $(1)_objs                   += $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.$(OBJEXT),$(3)))
 .PRECIOUS: $$($(1)_LinkDef_files)
+$(1)_precompile += $$($(1)_LinkDef_files)
 $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
@@ -1520,6 +1526,7 @@ endef
 define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
+$(1)_precompile += $($(1)_objdir)/$(2)r.cc
 $($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
@@ -1831,6 +1838,11 @@ runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)
 
 .PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
+.PHONT: precompile compile
+precompile: $(precompile)
+	@:
+compile: $(compile)
+	@:	
 help_%_python:
 	@echo "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
 help_%_src:
