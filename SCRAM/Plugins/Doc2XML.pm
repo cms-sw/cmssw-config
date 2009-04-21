@@ -269,6 +269,7 @@ sub getnextattrib_()
    {
    my $attr=shift;
    my $num=shift;
+   my $self=shift;
    my $line=${$attr};
    my $ret="";
    if ($line=~/^\s*([^\s=]+)\s*=\s*(.*)/)
@@ -336,7 +337,7 @@ sub process_defaultprocessing_
    $attrib=~s/\s*$//;
    while($attrib!~/^\s*$/)
       {
-      my $item=&getnextattrib_(\$attrib,$num);
+      my $item=&getnextattrib_(\$attrib,$num,$self);
       my ($key,$value)=split /=/,$item,2;
       if ($value!~/^\"[^\"]*\"$/)
          {
