@@ -1982,7 +1982,7 @@ sub src2store_copy()
   my $core=$self->core();
   my $safepath=$self->get("safepath");
   my $path=$self->get("path");
-  print $fh "${safepath}_files := \$(filter-out \\#%,\$(notdir \$(wildcard \$(foreach dir,\$(LOCALTOP)/${path},\$(dir)/${filter}))))\n";
+  print $fh "${safepath}_files := \$(filter-out \\#% %\\#,\$(notdir \$(wildcard \$(foreach dir,\$(LOCALTOP)/${path},\$(dir)/${filter}))))\n";
   my $flag=$core->flags("SKIP_FILES");
   if($flag ne ""){print $fh "${safepath}_SKIP_FILES := $flag\n";}
   print $fh "\$(eval \$(call Src2StoreCopy,${safepath},${path},${store},${filter}))\n";
