@@ -34,6 +34,7 @@ sub Project()
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
+  print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "CPPDEFINES+=-DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
   my $g4magic="$ENV{LOCALTOP}/src/SimG4Core/Packaging/g4magic";

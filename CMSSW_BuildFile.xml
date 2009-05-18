@@ -10,6 +10,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <productstore name="test"    type="arch" swap="true"/>
 <productstore name="logs"    type="arch" swap="true"/>
 <productstore name="include" type="arch" swap="true"/>
+<productstore name="cfipython" type="arch" swap="true"/>
 <productstore name="doc"/>
 <productstore name="python"/>
 <productstore name="share/ivs"/>

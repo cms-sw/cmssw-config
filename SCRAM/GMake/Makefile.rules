@@ -375,6 +375,23 @@ define check_missing_symbols
 endef
 endif
 
+ifndef SCRAM_NOEDMWRITECONFIG
+define edm_write_config
+  rm -rf $(<D)/edm_write_config && mkdir -p $(<D)/edm_write_config &&\
+  echo "@@@@ Running $(EDM_WRITE_CONFIG) for $(2)" &&\
+  (cd $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) $(1)) &&\
+  for file in `ls $(<D)/edm_write_config`; do \
+    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ] || mkdir -p $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package)) ;\
+    cp -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ;\
+    echo "01:rm -f $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
+  done
+endef
+else
+define edm_write_config
+  echo "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(2) due to SCRAM_NOEDMWRITECONFIG"
+endef
+endif
+
 ifndef SCRAM_NOPLUGINREFRESH
 define iglet_register_plugin
   @$(startlog_$(2))touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
@@ -406,6 +423,7 @@ define edm_register_plugin
     echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     (mv $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
+    $(call edm_write_config,$$plugin,$(1)) &&\
     echo "--- Registered EDM Plugin: $(1)"; \
   else \
     rm -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
@@ -991,7 +1009,15 @@ $(1)_plugincache   := $(7)
 $(1)_pluginprod    := $(5)/$(8)
 $(1)_pluginlib     := $($(2)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 all_$(2)           += $(5)/$(8)
-$(5)/$(8): $$($(1)_pluginlib) $(WORKINGDIR)/cache/prod/$(6)
+$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(6) 
+ifndef SCRAM_NOEDMWRITECONFIG
+ifeq ($$(strip $(3)),edm)
+$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG)
+$(1)_package       := $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(patsubst self/%,%,$($(1))))
+$(1)_package       := $$(if $$(strip $$(filter $$($(1)_package),$(ALL_PACKAGES))),$$($(1)_package),$$(dir  $$($(1)_package)))
+endif
+endif
+$(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
 endef
 define sealPlugin
@@ -1891,6 +1917,7 @@ ufast xfast fast:
 	fi
 echo_%:
 	@echo "$* = $(subst ",\",$($*))"
+
 $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	@echo ">> Updating python symlinks."
 	@for d in $(ALL_PYTHON_DIRS); do \
@@ -1921,6 +1948,14 @@ $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
 	  for dir in `find $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | grep -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      echo "#Automatically created by SCRAM" > $$dir/__init__.py;\
+	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
+	        pkgdir=`echo $$dir| sed 's|^$(SCRAM_SOURCEDIR)/||;s|/python$$||'`; \
+		echo "import os" >> $$dir/__init__.py;\
+	        echo "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
+	        echo "arch=os.getenv('SCRAM_ARCH', None)" >> $$dir/__init__.py;\
+	        echo "if localrt != None:" >> $$dir/__init__.py;\
+	        echo "  __path__.append(localrt+'/cfipython/'+arch+'/$$pkgdir')"  >> $$dir/__init__.py;\
+	      fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || mkdir -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      echo "01:rm -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
