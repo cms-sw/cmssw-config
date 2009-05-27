@@ -19,4 +19,5 @@
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/share"                     type="path" handler="warn"/>
  <runtime name="IGUANA_IVS"            value="$LOCALTOP/share/ivs"                 type="path" handler="warn"/>
  <runtime name="IGUANA_PATH"           value="$LOCALTOP"                           type="path"/>
+ <runtime name="LANG"                  value="C"/>
 </tool>
