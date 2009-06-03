@@ -466,6 +466,7 @@ define edm_register_plugin
     echo "module $$plugin" > $(<D)/$(@F) &&\
     cp -f $< $(@D)/$$plugin &&\
     cp -f $(<D)/$(@F) $@ &&\
+    $(call edm_write_config,$$plugin,$(1)) &&\
     echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     echo "--- Registered EDM Plugin: $(1)"; \
