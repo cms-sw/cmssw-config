@@ -1590,6 +1590,7 @@ sub Project_template()
       foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
     }
   }
+  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPDEFINES","CPPFLAGS","LDFLAGS"){print $fh "EDM_${flag}:=\n";}
   foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);

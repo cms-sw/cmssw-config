@@ -149,6 +149,9 @@ define get_uniq_cached_var_
 $(if $(subst undefined,,$(origin cached_var_$(1))),$(cached_var_$(1)),$(eval $(call set_cached_var_,$(1)))$(eval cached_var_$(1):=$(call Uniq,$(cached_var_$(1))))$(cached_var_$(1)))
 endef
 ##############################################################################
+define ProductTypeFlags
+$(if $(strip $(filter $1,$(ALL_edm_PLUGINS))),$(EDM_$2),)
+endef
 define GetTimeStamp
 perl -e '@d=stat "$(1)"; print "$$d[9]\n";'
 endef
@@ -167,19 +170,19 @@ define GetVariable
 $($(1))
 endef
 define ToolCXXFlags
-$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
+$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(call ProductTypeFlags,$1,CXXFLAGS) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
+$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(call ProductTypeFlags,$1,FFLAGS) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
+$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(call ProductTypeFlags,$1,CFLAGS) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(call ProductTypeFlags,$1,CPPDEFINES) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(call ProductTypeFlags,$1,CPPFLAGS) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(call ProductTypeFlags,$1,LDFLAGS)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell echo $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | tr ' ' '\n' | sort -r | sed 's|.*:||'),$(warning Calculationg ScramOrderedTools))
@@ -494,8 +497,8 @@ endif
 define compile_cxx
 @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $(3) $($(1)_CXXFLAGS) $(4) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $(3) $($(1)_CXXFLAGS) $(4) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef  
 # C compilation
 define compile_c
@@ -702,8 +705,8 @@ endef
 #Shared Capabilities library
 define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
-  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) &&\
-  ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) &&\
+  ($(CXX) $($(1)_CXXFLAGS) $(EDM_CXXFLAGS) $(EDM_LDFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -1563,7 +1566,7 @@ $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.$(OBJEXT)
 	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
-	$$(call compile_cxx,$(1),$(1))
+	$$(call compile_cxx,$(1),$(1),$(EDM_CPPFLAGS),$(EDM_CXXFLAGS))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
 -include $($(1)_objdir)/$(2)r.cc.d
 endif
