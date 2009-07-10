@@ -382,7 +382,7 @@ ifndef SCRAM_NOEDMWRITECONFIG
 define edm_write_config
   rm -rf $(<D)/edm_write_config && mkdir -p $(<D)/edm_write_config &&\
   echo "@@@@ Running $(EDM_WRITE_CONFIG) for $(2)" &&\
-  (cd $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) $(1)) &&\
+  (cd $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   for file in `ls $(<D)/edm_write_config`; do \
     ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ] || mkdir -p $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package)) ;\
     cp -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ;\
