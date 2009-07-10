@@ -150,7 +150,7 @@ $(if $(subst undefined,,$(origin cached_var_$(1))),$(cached_var_$(1)),$(eval $(c
 endef
 ##############################################################################
 define ProductTypeFlags
-$(if $(strip $(filter $1,$(ALL_edm_PLUGINS))),$(EDM_$2),)
+$(if $(strip $(filter $1,$(ALL_edm_PLUGINS))),$(EDM_$2),$(NON_EDM_$2))
 endef
 define GetTimeStamp
 perl -e '@d=stat "$(1)"; print "$$d[9]\n";'
@@ -494,11 +494,17 @@ endif
 ##############################################################################
 #Compilation Rules
 # CXX compilation
+define compile_cxxI
+@$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
+  $(VERB_ECHO) $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+               $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+endef
 define compile_cxx
 @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $(3) $($(1)_CXXFLAGS) $(4) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $(3) $($(1)_CXXFLAGS) $(4) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef  
 # C compilation
 define compile_c
@@ -705,8 +711,8 @@ endef
 #Shared Capabilities library
 define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
-  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) &&\
-  ($(CXX) $($(1)_CXXFLAGS) $(EDM_CXXFLAGS) $(EDM_LDFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $($(4)_CDICT_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
+  (            $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -1566,7 +1572,7 @@ $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.$(OBJEXT)
 	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
-	$$(call compile_cxx,$(1),$(1),$(EDM_CPPFLAGS),$(EDM_CXXFLAGS))
+	$$(call compile_cxxI,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
 -include $($(1)_objdir)/$(2)r.cc.d
 endif
