@@ -602,23 +602,33 @@ sub addAllVariables ()
 {
   my $self=shift;
   my @keys=();
+  my $selfbase="$ENV{SCRAM_PROJECTNAME}_BASE";
+  $self->shouldAddToolVariables($selfbase);
+  push @keys,"$ENV{SCRAM_PROJECTNAME}_BASE:=$ENV{LOCALTOP}";
+  $self->addVariables("self",\@keys,1);
   if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
   {
-    foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}})
+    foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}}){if ($t ne "self"){$self->addVariables($t,\@keys,0);}}
+  }
+  return @keys;
+}
+
+sub addVariables ()
+{
+  my $self=shift;
+  my $t=shift;
+  my $keys=shift;
+  my $force=shift || 0;
+  if(exists $self->{cache}{toolcache}{SETUP}{$t}{VARIABLES})
+  {
+    foreach my $v (@{$self->{cache}{toolcache}{SETUP}{$t}{VARIABLES}})
     {
-      if(exists $self->{cache}{toolcache}{SETUP}{$t}{VARIABLES})
+      if(exists $self->{cache}{toolcache}{SETUP}{$t}{$v})
       {
-        foreach my $v (@{$self->{cache}{toolcache}{SETUP}{$t}{VARIABLES}})
-	{
-	  if(exists $self->{cache}{toolcache}{SETUP}{$t}{$v})
-	  {
-	    if($self->shouldAddToolVariables($v)){push @keys, "$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
-	  }
-	}
+	if(($force) || ($self->shouldAddToolVariables($v))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
       }
     }
   }
-  return @keys;
 }
 
 sub shouldAddToolVariables()
