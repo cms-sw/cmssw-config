@@ -1461,7 +1461,7 @@ $(1)_FILE_MOC_SRC := $$(filter %_cc_moc.cc %_cpp_moc.cc %_cxx_moc.cc, $$($(1)_FI
 $(1)_FILE_MOC_INC := $(filter-out $$($(1)_FILE_MOC_SRC),$$($(1)_FILE_MOC))
 $(1)_files        += $$($(1)_FILE_MOC_INC)
 $(1)_objs         += $$(addprefix $($(1)_objdir)/moc/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_FILE_MOC_INC)))))
-$(1)_precompile   += $($(1)_objdir)/moc/run_moc
+precompile        += $($(1)_objdir)/moc/run_moc
 $($(1)_objdir)/moc/run_moc: $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
 	@[ -f $$@ ] || touch $$@
 $($(1)_objdir)/moc/%.$(OBJEXT):  $($(1)_objdir)/moc/%.cc
@@ -1507,7 +1507,7 @@ $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
 $(1)_files                  += $$($(1)_LinkDef_files)
 $(1)_objs                   += $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.$(OBJEXT),$(3)))
 .PRECIOUS: $$($(1)_LinkDef_files)
-$(1)_precompile += $$($(1)_LinkDef_files)
+precompile += $$($(1)_LinkDef_files)
 $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
@@ -1562,14 +1562,16 @@ endef
 define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
-$(1)_precompile += $($(1)_objdir)/$(2)r.cc
+precompile  += $($(1)_objdir)/$(2)r.cc
 $($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
 ifneq ($1,$5)
+precompile  += $($(1)_objdir)/$(2)i.cc
+compile     += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
-$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.$(OBJEXT)
+$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
 	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxxI,$(1),$(1))
@@ -1877,7 +1879,7 @@ runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)
 .PHONT: precompile compile
 precompile: $(precompile)
 	@:
-compile: $(compile)
+compile: $(compile) precompile
 	@:	
 help_%_python:
 	@echo "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
