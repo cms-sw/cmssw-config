@@ -583,6 +583,10 @@ define compile_python
         $(VERB_ECHO) "python -c import $$mod";\
         ((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
       fi;\
+      if [ "X$$err" == "X1" ] ; then \
+        echo "Error: $$py: Python compilation error. Please fix it."; \
+        [ "X$RELEASETOP" != "X" ] && exit 1 ;\
+      fi;\
     fi;\
   done $(endlog_$(2))
 endef
