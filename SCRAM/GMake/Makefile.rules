@@ -229,6 +229,14 @@ define outputlog
     $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | grep -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) rm -f $$f;  $(DO_BUILD_LOG) done ;\
   fi
 endef
+define checklibs
+  $(eval xliberr:=)$(foreach x,$($(1)_LOC_LIB),$(if $(strip $(filter-out $($(1)_BUILD_FROM),$($(x)_BUILD_FROM))),$(eval xliberr+=$x:$($(x)_BUILD_FROM)),)) \
+  if [ "X$(xliberr)" != "X" ] ; then \
+    echo "****ERROR: Skipping build of $1 generated from $($(1)_BUILD_FROM) as it is explicitly linking following library/libraries." ;\
+    for x in $(xliberr) ; do echo "    -> $$x" | sed 's|:self/| from src/|';  done;\
+    false;\
+  fi
+endef
 ##############################################################################
 define BuildClean
   if [ "X$(1)" != "X" ] ; then \
@@ -675,7 +683,7 @@ define link_lib
   @$(startlog_$(2))echo ">> Building shared library $@" &&\
   touch $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS) &&\
-  ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -701,7 +709,7 @@ define link_pylib
   @$(startlog_$(2))echo ">> Building Python module $($(1)_product)" && \
   touch $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO) $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) &&\
-  ($(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
   @$(startlog_$(2))rm -f $@.dep && touch $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \
@@ -716,7 +724,7 @@ endef
 define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
   $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
-  (            $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -729,7 +737,7 @@ endef
 define build_bin
   @$(startlog_$(2))echo ">> Building binary $(1)" &&\
   $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
-  ($(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@  || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(startlog_$(2))rm -f $@.dep && touch $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \

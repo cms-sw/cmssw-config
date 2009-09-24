@@ -129,13 +129,45 @@ foreach my $t (keys %tools)
     }
   }
 }
-open(OFALL,">${stooldir}/all.mk") || die "Can not open for writing: ${stooldir}/all.mk";
+
+my $ref;
+open($ref,">${stooldir}/all.mk") || die "Can not open for writing: ${stooldir}/all.mk";
 foreach my $line (`sort -r ${stooldir}/order | sed 's|.*:||'`)
 {
   chomp $line;
-  print OFALL "include ${stooldir}/${line}.mk\n";
+  print $ref "include ${stooldir}/${line}.mk\n";
 }
-close(OFALL);
+if ($reltop ne ""){print $ref "include ${stooldir}/self_libs_def.mk\n";}
+close($ref);
+
+if (($reltop ne "") && (exists $tools{self}))
+{
+  my $pcache="${reltop}/.SCRAM/${arch}/ProjectCache.${cacheext}";
+  if (-f $pcache)
+  {
+    my $ref;
+    open($ref,">${stooldir}/self_libs_def.mk") || die "Can not open for writing: ${stooldir}/self_libs_def.mk";
+    my $pc=&Cache::CacheUtilities::read($pcache);
+    foreach my $dir (keys %{$pc->{BUILDTREE}})
+    {      
+      if (exists $pc->{BUILDTREE}{$dir}{RAWDATA})
+      {
+        my $c=$pc->{BUILDTREE}{$dir}{RAWDATA};
+	if ($pc->{BUILDTREE}{$dir}{CLASS} eq "LIBRARY"){print $ref $pc->{BUILDTREE}{$dir}{NAME}."_BUILD_FROM := self/$dir\n";}
+	elsif ((exists $c->{content}) && (exists $c->{content}{BUILDPRODUCTS}))
+	{
+	  $c = $pc->{BUILDTREE}{$dir}{RAWDATA}{content}{BUILDPRODUCTS};
+	  foreach my $t (keys %{$c})
+	  {
+	    foreach my $n (keys %{$c->{$t}}){print $ref "${n}_BUILD_FROM := self/$dir\n";}
+	  }
+	}
+      }
+    }
+    close($ref);
+  }
+}
+
 ##############################################################
 sub mkprocessfile ()
 {
