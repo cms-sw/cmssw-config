@@ -36,6 +36,7 @@ $mkprocess{skiplines}[$skline++] = qr/.+_SKIP_FILES\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_libcheck\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_iglet_file\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/ALL_COMMONRULES\s+\+=/;
+$mkprocess{skiplines}[$skline++] = qr/.+_PACKAGE\s+:=\s+self\//;
 $mkprocess{skiplines}[$skline++] = qr/\$\(call\s+(RootDict|LCGDict|LexYACC|CodeGen|Iglet|AddMOC|.+Plugin),/;
 $mkprocess{skipcount}=$skline; $skline = 0;
 
@@ -137,7 +138,6 @@ foreach my $line (`sort -r ${stooldir}/order | sed 's|.*:||'`)
   chomp $line;
   print $ref "include ${stooldir}/${line}.mk\n";
 }
-if ($reltop ne ""){print $ref "include ${stooldir}/self_libs_def.mk\n";}
 close($ref);
 
 if (($reltop ne "") && (exists $tools{self}))
@@ -153,13 +153,13 @@ if (($reltop ne "") && (exists $tools{self}))
       if (exists $pc->{BUILDTREE}{$dir}{RAWDATA})
       {
         my $c=$pc->{BUILDTREE}{$dir}{RAWDATA};
-	if ($pc->{BUILDTREE}{$dir}{CLASS} eq "LIBRARY"){print $ref $pc->{BUILDTREE}{$dir}{NAME}."_BUILD_FROM := self/$dir\n";}
+	if ($pc->{BUILDTREE}{$dir}{CLASS} eq "LIBRARY"){print $ref $pc->{BUILDTREE}{$dir}{NAME}."_PACKAGE := self/$ENV{SCRAM_SOURCEDIR}/$dir\n";}
 	elsif ((exists $c->{content}) && (exists $c->{content}{BUILDPRODUCTS}))
 	{
 	  $c = $pc->{BUILDTREE}{$dir}{RAWDATA}{content}{BUILDPRODUCTS};
 	  foreach my $t (keys %{$c})
 	  {
-	    foreach my $n (keys %{$c->{$t}}){print $ref "${n}_BUILD_FROM := self/$dir\n";}
+	    foreach my $n (keys %{$c->{$t}}){print $ref "${n}_PACKAGE := self/$ENV{SCRAM_SOURCEDIR}/$dir\n";}
 	  }
 	}
       }

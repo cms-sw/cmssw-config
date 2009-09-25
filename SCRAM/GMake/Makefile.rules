@@ -230,10 +230,10 @@ define outputlog
   fi
 endef
 define checklibs
-  $(eval xliberr:=)$(foreach x,$($(1)_LOC_LIB),$(if $(strip $(filter-out $($(1)_BUILD_FROM),$($(x)_BUILD_FROM))),$(eval xliberr+=$x:$($(x)_BUILD_FROM)),)) \
+  $(eval xliberr:=)$(foreach x,$($(1)_LOC_LIB),$(if $(strip $(filter-out $($(1)_PACKAGE),$($(x)_PACKAGE))),$(eval xliberr+=$x:$($(x)_PACKAGE)),)) \
   if [ "X$(xliberr)" != "X" ] ; then \
-    echo "****ERROR: Skipping build of $1 generated from $($(1)_BUILD_FROM) as it is explicitly linking following library/libraries." ;\
-    for x in $(xliberr) ; do echo "    -> $$x" | sed 's|:self/| from src/|';  done;\
+    echo "****ERROR: Skipping build of $1 generated from $($(1)_PACKAGE) as it is explicitly linking following library/libraries." ;\
+    for x in $(xliberr) ; do echo "    -> $$x" | sed 's|:self/| from |';  done;\
     false;\
   fi
 endef
@@ -1193,7 +1193,7 @@ endef
 
 define UseError
 ifeq ($(strip $(ONLYECHOTARGETS)),)
-$$(call $$(wrongtool),****WARNING: Invalid tool $(1). Please fix $$(call FindBuildFile,$$(subst tmp/slc4_ia32_gcc345/cache/bf/,,$2)) file.)
+$$(call $$(wrongtool),****WARNING: Invalid tool $(1). Please fix $$(call FindBuildFile,$$(subst tmp/$(SCRAM_ARCH)/cache/bf/,,$2)) file.)
 endif
 endef
 
@@ -1839,6 +1839,7 @@ endif
 PLUGIN_REFRESH_CMDS :=
 ###############################################################################
 -include $(TOOLS_MKDIR).mk
+-include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk

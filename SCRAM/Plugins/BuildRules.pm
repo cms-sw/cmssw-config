@@ -1426,17 +1426,6 @@ sub updateEnvVarMK
   return;
 }
 
-sub addBuildFromInfo ()
-{
-  my ($self,$name,$fh,$path)=@_;
-  if(!$self->isReleaseArea())
-  {
-    my $src=$ENV{SCRAM_SOURCEDIR};
-    $path=~s/^$src\///;
-    print $fh "${name}_BUILD_FROM    := self/${path}\n";
-  }
-}
-
 ######################################
 # Template initialization for different levels
 sub initTemplate_PROJECT ()
@@ -1868,20 +1857,13 @@ sub library_template_generic ()
 	    foreach my $l (@$dataval)
 	    {
 	      if ($l eq $safename){$xdata=$l;}
-	      else{print STDERR "***ERROR: You can not export library \"$l\" from the export section of $localbf file.\n";}
+	      else{print STDERR "***ERROR: Exporting library \"$l\" from $localbf is wrong. Please remove this lib from export section of this BuildFile.\n";}
 	    }
 	  }
 	  print $fh "${safename}_EX_${data}   := $xdata\n";
 	}
       }
-      #Temp remove for now always export what ever is used to build i.e. *_LOC_USE
       print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";
-      #foreach my $data ("USE")
-      #{
-      #  my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
-      #  if($dataval ne "")
-      #	{print $fh "${safename}_EX_${data}   := ",$self->getCacheData($data)," ",join(" ",@$dataval),"\n";}
-      #}
     }
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
@@ -1891,7 +1873,7 @@ sub library_template_generic ()
   my $store1= $self->getProductStore("scripts");
   my $store2= $self->getProductStore("lib");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
-  $self->addBuildFromInfo($safename,$fh,$path);
+  print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += $safename\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(if \$(${safename}_files_exts),\$(${safename}_files_exts),\$(SRC_FILES_SUFFIXES))))\n";
 }
@@ -2004,7 +1986,7 @@ sub binary_template_generic()
   my $store2= $self->getProductStore($type);
   my $store3= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
-  $self->addBuildFromInfo($safename,$fh,$path);
+  print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += ${safename}\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files)))),$type,\$(${store3})))\n";
 }
