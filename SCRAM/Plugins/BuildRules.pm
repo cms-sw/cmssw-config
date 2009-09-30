@@ -1192,28 +1192,28 @@ sub depsOnlyBuildFile
     my $src=$ENV{SCRAM_SOURCEDIR};
     my $path=$stash->get("path");
     my $pack=$path; $pack=~s/^$src\///;
-    my $ex=$self->{core}->data("EXPORT");
+    my $localbf = $self->getLocalBuildFile();
     my $fname=".SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache/${sname}.mk";
     my $fref;
     open($fref,">$fname") || die "Can not open file for writing: $fname";
     print $fref "ifeq (\$(strip \$($pack)),)\n";
     print $fref "$sname := self/${pack}\n";
     print $fref "$pack  := $sname\n";
-    print $fref "${sname}_BuildFile    := \$(WORKINGDIR)/cache/bf/${path}/",$self->{cache}{BuildFile},"\n";
-    if (defined $ex)
+    print $fref "${sname}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+    my $ex=$self->{core}->data("EXPORT");
+    foreach my $data ("INCLUDE", "USE")
     {
-      foreach my $type ("INCLUDE", "LIB", "USE")
+      my %udata=();
+      foreach my $d (split ' ',$self->getCacheData($data)){$udata{$d}=1;}
+      my $dataval=$self->fixData($core->value($data),$data,$localbf) || [];
+      foreach my $d (@$dataval){$udata{$d}=1;}
+      if (defined $ex)
       {
-        my $value="";
-	my $data=$self->getCacheData($type) || [];
-	$value=join(" ",@$data)." ";
-	$data=$self->fixData($self->{core}->value($type,$ex),$type,"${path}/".$self->{cache}{BuildFile},1) || [];
-	$value.=join(" ",@$data);
-	if($value!~/^\s*$/)
-	{
-	  print $fref "${sname}_EX_${type} := $value\n";
-	}
+	$dataval=$self->fixData($self->{core}->value($data,$ex),$data,$localbf,1) || [];
+	foreach my $d (@$dataval){$udata{$d}=1;}
       }
+      $dataval=join(" ",keys %udata);
+      if ($dataval!~/^\s*$/){print $fref "${sname}_EX_${data} := $dataval\n";}
     }
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
     print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname,$path))\nendif\n\n";
