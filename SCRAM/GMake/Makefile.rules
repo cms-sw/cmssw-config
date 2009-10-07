@@ -585,18 +585,17 @@ define compile_python
       echo ">> Compiling: $$py";\
       if [ "`echo $$mod | grep '/'`X" == "X" ] ; then \
         $(VERB_ECHO) "python -c import $3.$$mod";\
-	(python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
+	((python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "Error: $$py: Python compilation error. Please fix it." && err=1)) ;\
       else \
         moddir=`dirname $$mod`; mod=`basename $$mod`;\
         $(VERB_ECHO) "python -c import $$mod";\
-        ((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || err=1 ;\
-      fi;\
-      if [ "X$$err" == "X1" ] ; then \
-        echo "Error: $$py: Python compilation error. Please fix it."; \
-        [ "X$RELEASETOP" != "X" ] && exit 1 ;\
+        (((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "Error: $$py: Python compilation error. Please fix it." && err=1)) ;\
       fi;\
     fi;\
-  done $(endlog_$(2))
+  done; \
+  if [ "X$$err" == "X1" ] ; then \
+    [ "X$(RELEASETOP)" = "X" ] || exit 1 ;\
+  fi $(endlog_$(2))
 endef
 
 ##############################################################################
