@@ -593,7 +593,7 @@ define compile_python
       fi;\
       if [ "X$$err" == "X1" ] ; then \
         echo "Error: $$py: Python compilation error. Please fix it."; \
-        [ "X$RELEASETOP" != "X" ] && exit 1 ;\
+        [ "X$(RELEASETOP)" != "X" ] && exit 1 ;\
       fi;\
     fi;\
   done $(endlog_$(2))
