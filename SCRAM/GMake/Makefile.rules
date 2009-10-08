@@ -576,7 +576,7 @@ define compile_python
   touch -t $(OLD_TIMESTAMP) $@ &&\
   echo "01:find $(4)/ -name '*_cf[if].pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
   msg=no;\
-  err=0;\
+  rm -f  $($(1)_objdir)/py.errors;\
   for mod in `find $(4)/ -name '*_cf[if].py' -type f | sed 's|^$(4)/*||;s|.py$$||'`; do \
     pyc=$(4)/$$mod.pyc ;\
     py=$(4)/$$mod.py ;\
@@ -585,16 +585,17 @@ define compile_python
       echo ">> Compiling: $$py";\
       if [ "`echo $$mod | grep '/'`X" == "X" ] ; then \
         $(VERB_ECHO) "python -c import $3.$$mod";\
-	((python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "Error: $$py: Python compilation error. Please fix it." && err=1)) ;\
+	((python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors)) ;\
       else \
         moddir=`dirname $$mod`; mod=`basename $$mod`;\
         $(VERB_ECHO) "python -c import $$mod";\
-        (((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "Error: $$py: Python compilation error. Please fix it." && err=1)) ;\
+        (((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors));\
       fi;\
     fi;\
   done; \
-  if [ "X$$err" == "X1" ] ; then \
-    [ "X$(RELEASETOP)" = "X" ] || exit 1 ;\
+  if [ -f $($(1)_objdir)/py.errors ] ; then \
+    rm -f $($(1)_objdir)/py.errors ;\
+    ([ "X$(RELEASETOP)" == "X" ] || exit 1) ;\
   fi $(endlog_$(2))
 endef
 
