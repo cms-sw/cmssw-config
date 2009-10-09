@@ -1104,9 +1104,9 @@ $(1)_CONFIGDEPS := $(CONFIGDEPS) $(WORKINGDIR)/$(2)/productautocleanup $(sort $(
 ifneq ($$(strip $($(1)_BuildFile)),)
 ifeq ($(filter $($(1)_BuildFile),$(ALL_BUILDFILES)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
-endif
-$($(1)_BuildFile):: $$($(1)_CONFIGDEPS)
+$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
 	@touch $($(1)_BuildFile)
+endif
 $$($(1)_objdir)/config: $($(1)_BuildFile)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 else
