@@ -556,8 +556,8 @@ endef
 define compile_rootdict
   @$(startlog_$(2))mkdir -p $(@D) &&\
   echo ">> Compiling for root dictionary: $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
