@@ -389,17 +389,17 @@ endif
 ifndef SCRAM_NOEDMWRITECONFIG
 define edm_write_config
   rm -rf $(<D)/edm_write_config && mkdir -p $(<D)/edm_write_config &&\
-  echo "@@@@ Running $(EDM_WRITE_CONFIG) for $(2)" &&\
+  echo "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
   (cd $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   for file in `ls $(<D)/edm_write_config`; do \
-    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ] || mkdir -p $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package)) ;\
-    cp -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package) ;\
-    echo "01:rm -f $(SCRAMSTORENAME_CFIPYTHON)/$($(2)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
+    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] || mkdir -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)) ;\
+    cp -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ;\
+    echo "01:rm -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
   done
 endef
 else
 define edm_write_config
-  echo "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(2) due to SCRAM_NOEDMWRITECONFIG"
+  echo "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
 endef
 endif
 
@@ -423,6 +423,7 @@ define edm_register_plugin
   if [ -f $< ] ; then \
     [ -d $(@D) ] || mkdir -p $(@D) &&\
     (touch $(@D)/$($(1)_plugincache) || true) &&\
+    ($(call edm_write_config,$(1)) || (rm -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     cp -f $< $(<D)/$$plugin &&\
     echo "module $$plugin" > $(<D)/$(@F) &&\
@@ -434,7 +435,6 @@ define edm_register_plugin
     echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     (mv $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
-    $(call edm_write_config,$$plugin,$(1)) &&\
     echo "--- Registered EDM Plugin: $(1)"; \
   else \
     rm -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
@@ -473,11 +473,11 @@ define edm_register_plugin
   @$(startlog_$(2)) touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || mkdir -p $(@D) &&\
+    ($(call edm_write_config,$(1)) || (rm -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     echo "module $$plugin" > $(<D)/$(@F) &&\
     cp -f $< $(@D)/$$plugin &&\
     cp -f $(<D)/$(@F) $@ &&\
-    $(call edm_write_config,$$plugin,$(1)) &&\
     echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     echo "--- Registered EDM Plugin: $(1)"; \
