@@ -96,7 +96,7 @@ sub Project()
             "gindices:\n",
             "\t\@cd \$(LOCALTOP); \\\n",
             "\tmkdir src/.glimpse_full; \\\n",
-            "\tglimpseindex -F -H src/.glimpse_full src; \\\n",
+            "\tglimpseindex -F -H src/.glimpse_full src/*; \\\n",
             "\tcd src; \\\n",
             "\t/bin/bash ../config/fixindices.sh;\n";
 #####################################################################
