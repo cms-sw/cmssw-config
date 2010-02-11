@@ -329,6 +329,7 @@ sub process_defaultprocessing_
        my $lib=&_getname($attrib);
        if ((exists $self->{bfproduct}{$self->{filename}}) && ($self->{bfproduct}{$self->{filename}} eq "$lib"))
        {$attrib=~s/(name\s*=\s*.*)$lib/${1}1/;}
+       elsif ($lib eq "1"){$attrib=~s/(name\s*=\s*.*)$lib/${1}1/;}
        else{return $line;}
      }
    }
@@ -352,25 +353,7 @@ sub process_defaultprocessing_
       }
    if($close){$nline.="/>";}
    else{$nline.=">";}
-   my $add=1;
-   if ($self->{xmlconvert})
-   {
-     if ($tag=~/^(use|lib)$/)
-     {
-       my $val=&_getname($nline);
-       if ($tag eq "use")
-       {
-         my $tool=lc($val);
-	 if (exists $self->{tools}{$tool})
-	 {
-	   $nline=~s/(name=.+)$val/$1$tool/;
-	   $val=$tool;
-	 }
-       }
-       $add = $self->_add("$tag:$val");
-     }
-   }
-   if ($add){push @{$self->{output}},$self->_adjust($nline);}
+   push @{$self->{output}},$self->_adjust($nline);
    return $line;
    }
 
@@ -461,7 +444,8 @@ sub _adjust ()
 sub _getname ()
   {
   my $str=shift;
-  $str=~s/.*\s*name\s*=\s*([^\s>\/]+).*$/$1/;
+  $str=~s/.*\s*name\s*=\s*([^\s>]+).*$/$1/;
+  $str=~s/\/$//;
   $str=~s/"//g;$str=~s/'//g;
   return $str;
   }
