@@ -1665,7 +1665,7 @@ ifeq ($(strip $(MAKECMDGOALS)),clean)
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out echo_% clean_% fast xfast ufast biglib outputlog,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out productmap gindices echo_% clean_% fast xfast ufast biglib outputlog,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
