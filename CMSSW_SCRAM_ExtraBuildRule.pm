@@ -99,6 +99,12 @@ sub Project()
             "\tglimpseindex -F -H src/.glimpse_full src/*; \\\n",
             "\tcd src; \\\n",
             "\t/bin/bash ../config/fixindices.sh;\n";
+######################################################################
+  print $fh ".PHONY: productmap\n",
+            "productmap:\n",
+            "\t\@cd \$(LOCALTOP); \\\n",
+            "\tmkdir -p src; rm -f src/ReleaseProducts.list; echo \">> Generating Product Map in src/ReleaseProducts.list.\";\\\n",
+            "\t(RelProducts.pl \$(LOCALTOP) > \$(LOCALTOP)/src/ReleaseProducts.list || exit 0)\n";
 #####################################################################
 # python link directory rule over ridden
   if (!$common->isReleaseArea())
