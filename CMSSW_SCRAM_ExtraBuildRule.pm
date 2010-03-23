@@ -105,6 +105,10 @@ sub Project()
             "\t\@cd \$(LOCALTOP); \\\n",
             "\tmkdir -p src; rm -f src/ReleaseProducts.list; echo \">> Generating Product Map in src/ReleaseProducts.list.\";\\\n",
             "\t(RelProducts.pl \$(LOCALTOP) > \$(LOCALTOP)/src/ReleaseProducts.list || exit 0)\n";
+######################################################################
+  print $fh ".PHONY: depscheck\n",
+            "depscheck:\n",
+            "\t\@ReleaseDepsChecks.pl --detail\n";
 #####################################################################
 # python link directory rule over ridden
   if (!$common->isReleaseArea())
