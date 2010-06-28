@@ -94,11 +94,12 @@ sub Project()
 ######################################################################
   print $fh ".PHONY: gindices\n",
             "gindices:\n",
-            "\t\@cd \$(LOCALTOP); \\\n",
-            "\tmkdir src/.glimpse_full; \\\n",
-            "\tglimpseindex -F -H src/.glimpse_full src/*; \\\n",
-            "\tcd src; \\\n",
-            "\t/bin/bash ../config/fixindices.sh;\n";
+            "\t\@cd \$(LOCALTOP)/src; \\\n",
+            "\trm -rf  \$(LOCALTOP)/src/.glimpse_full; mkdir  \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\tls -d \$(LOCALTOP)/src/*/*  | glimpseindex -F -H \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\tfor  x in `ls -A1 .glimpse_full` ; do \\\n",
+            "\t  ln -s .glimpse_full/\$\$x \$\$x; \\\n",
+            "\tdone\n";
 ######################################################################
   print $fh ".PHONY: productmap\n",
             "productmap:\n",
