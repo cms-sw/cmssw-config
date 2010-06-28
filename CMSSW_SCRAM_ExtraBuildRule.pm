@@ -96,10 +96,12 @@ sub Project()
             "gindices:\n",
             "\t\@cd \$(LOCALTOP)/src; \\\n",
             "\trm -rf  \$(LOCALTOP)/src/.glimpse_full; mkdir  \$(LOCALTOP)/src/.glimpse_full; \\\n",
-            "\tls -d \$(LOCALTOP)/src/*/*  | glimpseindex -F -H \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\tls -d \$(LOCALTOP)/src/*/*/*  | glimpseindex -F -H \$(LOCALTOP)/src/.glimpse_full; \\\n",
             "\tfor  x in `ls -A1 .glimpse_full` ; do \\\n",
             "\t  ln -s .glimpse_full/\$\$x \$\$x; \\\n",
-            "\tdone\n";
+            "\tdone; \\\n",
+            "\trm .glimpse_filenames; cp .glimpse_full/.glimpse_filenames .glimpse_filenames; \\\n",
+            "\tsed -i -e 's|\$(LOCALTOP)/src/||g' .glimpse_filenames\n";
 ######################################################################
   print $fh ".PHONY: productmap\n",
             "productmap:\n",
