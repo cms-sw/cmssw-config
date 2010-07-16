@@ -38,7 +38,11 @@ PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
 LD                          := ld
+ifeq ($(findstring ia32,$(subst _, ,$(SCRAM_ARCH))),ia32)
 LD_UNIT                     := -r -m elf_i386
+else
+LD_UNIT                     := -r -m elf_x86_64
+endif
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP:=198001010100
@@ -1136,7 +1140,7 @@ $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1))echo "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
-$$(eval $$(call BigObject,$1,$1,$($(1)_objdir)/compile))
+$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
