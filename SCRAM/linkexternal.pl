@@ -7,8 +7,11 @@ use Cache::CacheUtilities;
 $|=1;
 my $SCRAM_CMD="scramv1";
 my %cache=();
-$cache{validlinks}{INCLUDE}="include";
 $cache{validlinks}{LIBDIR}="lib";
+$cache{validlinks}{BINDIR}="bin";
+$cache{validlinks}{PYTHONPATH}="python";
+$cache{validlinks}{CMSSW_SEARCH_PATH}="data";
+
 
 $cache{defaultlinks}{LIBDIR}=1;
 
@@ -16,13 +19,16 @@ $cache{ignorefiles}{LIBDIR}{"python.+"}="d";
 $cache{ignorefiles}{LIBDIR}{"modules"}="d";
 $cache{ignorefiles}{LIBDIR}{"pkgconfig"}="d";
 $cache{ignorefiles}{LIBDIR}{"archive"}="d";
+$cache{ignorefiles}{PYTHONPATH}{"CVS"}="d";
+$cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
+
+$cache{runtime_map}{LIBDIR}="LD_LIBRARY_PATH";
+$cache{runtime_map}{BINDIR}="PATH";
 
 if(&GetOptions(
                "--update=s",\@update,
 	       "--pre=s",\@pre,
 	       "--post=s",\@post,
-	       "--nolink=s",\@nolink,
-	       "--link=s",\@link,
 	       "--arch=s",\$arch,
 	       "--all",\$all,
 	       "--help",\$help,
@@ -30,11 +36,8 @@ if(&GetOptions(
 
 if(defined $help){&usage(0);}
 if(defined $all){$all=1;} else{$all=0;}
-if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
 
-foreach my $var (@link){if(($var!~/^\s*$/) && (exists $cache{validlinks}{$var})){$cache{defaultlinks}{$var}=1;}}
-foreach my $var (@nolink){if(($var!~/^\s*$/) && (exists $cache{defaultlinks}{$var})){delete $cache{defaultlinks}{$var};}}
-if(scalar(keys %{$cache{defaultlinks}})==0){exit 0;}
+if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
 
 my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
@@ -45,13 +48,47 @@ my $cacheext="db";
 my $admindir="";
 if($scramver=~/^V[2-9]/){$cacheext="db.gz";$admindir=$arch;}
 
-if ($all==0)
+my %projdata=&readProjectData($localtop,$admindir);
+if (!exists $projdata{SCRAM_PROJECTNAME}){die "ERROR: Can not find project name.\n";}
+
+if (($all==0) && (!exists $projdata{RELEASETOP})){$all=1;}
+
+if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
+$cache{toolcache}=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
+
+$cache{skipTools}{self}=1;
+$cache{skipTools}{lc($projdata{SCRAM_PROJECTNAME})}=1;
+if (exists $cache{toolcache}{SETUP}{self}{FLAGS})
 {
-  my $reltop = "";
-  if (-f "${localtop}/.SCRAM/${admindir}/Environment")
-  {$reltop   = `grep RELEASETOP= ${localtop}/.SCRAM/${admindir}/Environment | sed 's|RELEASETOP=||'`; chomp $reltop;}
-  if($reltop eq ""){$all=1;}
+  my $flags=$cache{toolcache}{SETUP}{self}{FLAGS};
+  if (exists $flags->{EXTERNAL_SYMLINK})
+  {
+    $cache{defaultlinks}={};
+    foreach my $x (@{$flags->{EXTERNAL_SYMLINK}})
+    {
+      my $ux=uc($x);
+      if (exists $cache{validlinks}{$ux}){$cache{defaultlinks}{$ux}=1;}
+    }
+  }
+  if (exists $flags->{SKIP_TOOLS_SYMLINK})
+  {
+    foreach my $t (@{$flags->{SKIP_TOOLS_SYMLINK}}){$cache{skipTools}{lc($t)}=1;}
+  }
+  foreach my $f (keys %{$flags})
+  {
+    if ($f=~/^SYMLINK_DEPTH_(.+)$/)
+    {
+      if (exists $cache{validlinks}{$1})
+      {
+        my $dep=$flags->{$f}[0];
+	if ($dep<1){$dep=1;}
+	$cache{sym_depth}{$1}=$dep;
+      }
+    }
+  }
 }
+
+if(scalar(keys %{$cache{defaultlinks}})==0){exit 0;}
 
 #### Ordered list of removed tools
 my %tmphash=();
@@ -87,9 +124,6 @@ for(my $i=0;$i<20;$i++)
   else{push @{$cache{extradir}},"$i";}
 }
 
-if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
-$cache{toolcache}=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
-
 #### Read previous link info
 my $externals="external/${arch}";
 my $linksDB="${externals}/links.DB";
@@ -100,16 +134,50 @@ if(exists $cache{toolcache}{SETUP})
   %tmphash=();
   foreach my $t (keys %{$cache{toolcache}{SETUP}})
   {
-    if(exists $cache{toolcache}{SETUP}{$t}{LIBDIR})
+    if (exists $cache{skipTools}{$t})
     {
-      if(exists $cache{BASES}{$t})
+      &removeLinks($t);
+      delete $cache{BASES}{$t};
+      next;
+    }
+    my %nbases=();
+    my $tc=$cache{toolcache}{SETUP}{$t};
+    foreach my $x (keys %{$cache{defaultlinks}})
+    {
+      if (exists $tc->{$x})
       {
-        foreach my $dir (@{$cache{toolcache}{SETUP}{$t}{LIBDIR}})
-        {if(!exists $cache{BASES}{$t}{$dir}){$tmphash{$t}=1;last;}}
+	foreach my $dir (@{$tc->{$x}})
+        {
+	  $nbases{$dir}=1;
+	  $cache{"${x}_BASES"}{$t}{$dir}=1;
+        }
       }
-      $cache{BASES}{$t}={};
-      foreach my $dir (@{$cache{toolcache}{SETUP}{$t}{LIBDIR}})
-      {$cache{BASES}{$t}{$dir}=1;}
+      if (exists $tc->{RUNTIME})
+      {
+	my $y=$cache{runtime_map}{$x} || $x;
+	if(exists $tc->{RUNTIME}{"PATH:${y}"})
+        {
+	  foreach my $dir (@{$tc->{RUNTIME}{"PATH:${y}"}})
+	  {
+	    $nbases{$dir}=1;
+	    $cache{"${x}_BASES"}{$t}{$dir}=1;
+	  }
+        }
+      }
+    }
+    foreach my $dir (keys %nbases)
+    {
+      if (!exists $cache{BASES}{$t}{$dir}){$tmphash{$t}=1;}
+      $cache{BASES}{$t}{$dir}=2;
+    }
+    foreach my $dir (keys %{$cache{BASES}{$t}})
+    {
+      if ($cache{BASES}{$t}{$dir} == 2){$cache{BASES}{$t}{$dir}=1;}
+      else
+      {
+        $tmphash{$t}=1;
+	delete $cache{BASES}{$t}{$dir};
+      }
     }
   }
   if(scalar(keys %tmphash)>0)
@@ -133,8 +201,8 @@ foreach my $tooltype ("pretools", "alltools" , "posttools")
   {
     foreach my $t (@{$cache{$tooltype}})
     {
+      if (exists $cache{skipTools}{$t}){next;}
       if(($tooltype eq "alltools") && (exists $cache{posttools_uniq}{$t})){next;}
-      if ($t eq "self"){next;}
       if($all || (-f "${localtop}/.SCRAM/${admindir}/InstalledTools/$t"))
       {if(!exists $cache{donetools}{$t}){$cache{donetools}{$t}=1;&updateLinks($t);}}
     }
@@ -215,35 +283,36 @@ sub updateLinks ()
 {
   my $t=shift;
   foreach my $type (sort keys %{$cache{defaultlinks}})
+  {    
+    my $dep=$cache{sym_depth}{$type} || 1;
+    foreach my $dir (keys %{$cache{"${type}_BASES"}{$t}}){&processBase($t,$dir,$type,$dep,"");}
+  }
+}
+
+sub processBase()
+{
+  my ($t,$dir,$type,$dep,$rpath)=@_;
+  if(-d $dir)
   {
-    if(exists $cache{toolcache}{SETUP}{$t}{$type})
+    $dir=&fixPath($dir);
+    my $d;
+    opendir($d, $dir) || die "Can not open directory \"$dir\" for reading.";
+    my @files=readdir($d);
+    closedir($d);
+    foreach my $f (@files)
     {
-      foreach my $dir (@{$cache{toolcache}{SETUP}{$t}{$type}})
-      {
-        if(-d $dir)
-        {
-          $dir=&fixPath($dir);
-	  my $d;
-	  opendir($d, $dir) || die "Can not open directory \"$dir\" for reading.";
-	  my @files=readdir($d);
-	  closedir($d);
-	  foreach my $f (@files)
-	  {
-	    if($f=~/^\.+$/){next;}
-	    &createLink ($t, "${dir}/${f}", $type);
-	  }
-        }
-      }
+      if($f=~/^\.+$/){next;}
+      my $ff="${dir}/${f}";
+      if (&isIgnoreLink($type,$ff,$f)){next;}
+      if (($dep>1) && (-d $ff)){&processBase($t,$ff,$type,$dep-1,"${rpath}${f}/");}
+      else{&createLink ($t,$ff,$type,"${rpath}${f}");}
     }
   }
 }
 
-sub createLink ()
+sub isIgnoreLink()
 {
-  my $tool=shift || die "Missing tool name";
-  my $srcfile=shift || die "Missing source file name";
-  my $type=shift || die "Missing type of source file";
-  my $file=basename($srcfile);
+  my ($type,$srcfile,$file)=@_;
   if(exists $cache{ignorefiles}{$type})
   {
     foreach my $reg (keys %{$cache{ignorefiles}{$type}})
@@ -251,16 +320,22 @@ sub createLink ()
       my $ftype=$cache{ignorefiles}{$type}{$reg};
       if($file=~/^${reg}$/)
       {
-        if((-d $srcfile) && ($ftype=~/^[da]$/i)){return;}
-        elsif((-f $srcfile) && ($ftype=~/^[fa]$/i)){return;}
-        elsif($ftype=~/^a$/i){return;}
+        if((-d $srcfile) && ($ftype=~/^[da]$/i)){return 1;}
+        elsif((-f $srcfile) && ($ftype=~/^[fa]$/i)){return 1;}
+        elsif($ftype=~/^a$/i){return 1;}
       }
     }
   }
+  return 0;
+}
+
+sub createLink ()
+{
+  my ($tool,$srcfile,$type,$file)=@_;
   my $lfile="";
-  if(exists $cache{links}{$srcfile})
+  if(exists $cache{links}{$type}{$srcfile})
   {
-    $lfile=$cache{links}{$srcfile};
+    $lfile=$cache{links}{$type}{$srcfile};
     $cache{DBLINK}{$tool}{$lfile}=1;
     $cache{DBLINKR}{$lfile}=1;
     return;
@@ -271,13 +346,14 @@ sub createLink ()
   {
     $ldir="${externals}/${type}${s}";
     $lfile="${ldir}/${file}";
-    if(!-d "$ldir"){system("mkdir -p $ldir");}
-    if(!-l "$lfile"){system("cd $ldir;ln -s $srcfile .");last;}
+    my $xdir=dirname($lfile);
+    if(!-d "$xdir"){system("mkdir -p $xdir");}
+    if(!-l "$lfile"){system("cd $xdir;ln -s $srcfile .");last;}
     elsif(readlink("$lfile") eq "$srcfile"){last;}
-    elsif(!exists $cache{DBLINKR}{$lfile}){system("rm -f $lfile; cd $ldir;ln -s $srcfile .");last;}
+    elsif(!exists $cache{DBLINKR}{$lfile}){system("rm -f $lfile; cd $xdir;ln -s $srcfile .");last;}
   }
   $cache{dirused}{$ldir}=1;
-  $cache{links}{$srcfile}=$lfile;
+  $cache{links}{$type}{$srcfile}=$lfile;
   $cache{DBLINK}{$tool}{$lfile}=1;
   $cache{DBLINKR}{$lfile}=1;
   if(exists $cache{PREDBLINKR}{$lfile}){delete $cache{PREDBLINKR}{$lfile};}
@@ -304,7 +380,7 @@ sub getOrderedToolsV2 ()
   }
   foreach my $tn (@compilers)
   {
-    if(($tn=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$tn}) || ($tn eq "self")){next;}
+    if(($tn=~/^\s*$/) || (!exists $cache{toolcache}{SETUP}{$tn})){next;}
     if(!exists $tmphash{$tn}){$tmphash{$tn}=1;push @{$cache{alltools}},$tn;}
   }
 }
@@ -338,8 +414,6 @@ sub usage ()
   print "Usage: $0    [--update <tool>  [--update <tool>  [...]]]\n";
   print "             [--pre    <tool>  [--pre    <tool>  [...]]]\n";
   print "             [--post   <tool>  [--post   <tool>  [...]]]\n";
-  print "             [--nolink <value> [--nolink <value> [...]]]\n";
-  print "             [--link   <value> [--link   <value> [...]]]\n";
   print "             [--all] [--arch <arch>] [--help]\n\n";
   print "--update <tool>  Name of tool(s) for which you want to\n";
   print "                 update the links.\n";
@@ -347,14 +421,6 @@ sub usage ()
   print "                 create links before any other tool.\n";
   print "--post   <tool>  Name of tool(s) for which you want to\n";
   print "                 create links at the end\n";
-  print "--nolink <value> Name of the link(s) type which you do\n";
-  print "                 not want. Currently available value(s) is(are)\n";
-  print "                 \"",join(", ",sort keys %{$cache{validlinks}}),"\" while by default\n";
-  print "                 \"",join(", ",sort keys %{$cache{defaultlinks}}),"\" is(are) selected.\n";
-  print "--link   <value> Name of the link(s) type which you want to create.\n";
-  print "                 Currently available value(s) is(are)\n";
-  print "                 \"",join(", ",sort keys %{$cache{validlinks}}),"\" while by default \n";
-  print "                 \"",join(", ",sort keys %{$cache{defaultlinks}}),"\" is(are) selected.\n";
   print "--all            By default links for tools setup in\n";
   print "                 your project area will be added. Adding\n";
   print "                 this option will force to create links for\n";
@@ -406,4 +472,27 @@ sub scramVersion ()
     }
   }
   return $ver;
+}
+
+sub readProjectData()
+{
+  my ($dir,$arch)=@_;
+  my @files=("${dir}/.SCRAM/Environment");
+  if ($arch ne ""){push @files,"${dir}/.SCRAM/${arch}/Environment";}
+  my %data=();
+  my $ref;
+  foreach my $file (@files)
+  {
+    if(open($ref,$file))
+    {
+      while(my $l=<$ref>)
+      {
+        chomp $l;
+        my ($k,$v)=split("=",$l,2);
+        $data{$k}=$v;
+      }
+      close($ref);
+    }
+  }
+  return %data;
 }
