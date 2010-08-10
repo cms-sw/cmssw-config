@@ -21,6 +21,7 @@ $cache{ignorefiles}{LIBDIR}{"pkgconfig"}="d";
 $cache{ignorefiles}{LIBDIR}{"archive"}="d";
 $cache{ignorefiles}{PYTHONPATH}{"CVS"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
+$cache{ignorefiles}{CMSSW_SEARCH_PATH}{".package-checksum"}="f";
 
 $cache{runtime_map}{LIBDIR}="LD_LIBRARY_PATH";
 $cache{runtime_map}{BINDIR}="PATH";
