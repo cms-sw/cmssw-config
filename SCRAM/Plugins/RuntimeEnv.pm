@@ -411,7 +411,7 @@ sub toolenv_ ()
 	    $gmake=$_."/";
 	    $self->{env}{rtstring}{xenv}{SCRAM_GMAKE_PATH}=$gmake;
 	  }
-	  elsif ((!exists $self->{skip_runtime}{$1}) || (exists $self->{force_tools_env}{$tname}))
+	  if ((!exists $self->{skip_runtime}{$1}) || (exists $self->{force_tools_env}{$tname}))
 	  {
 	    if (! exists ($self->{env}{paths}{$1}{$_}))
 	    {
