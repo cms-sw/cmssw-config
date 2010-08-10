@@ -3,9 +3,16 @@
   <environment name="LIBDIR"  value="$LOCALTOP/$SCRAM_ARCH/lib"/>
   <environment name="LIBDIR"  value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE" value="$LOCALTOP/include"/>
+  <flags SKIP_TOOLS_SYMLINK="cxxcompiler f77compiler ccompiler"/>
+  <flags EXTERNAL_SYMLINK="BINDIR"/>
+  <flags EXTERNAL_SYMLINK="LIBDIR"/>
+  <flags NO_EXTERNAL_RUNTIME="LD_LIBRARY_PATH"/>
+  <flags NO_EXTERNAL_RUNTIME="PATH"/>
  </client>
  <runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path"/>
  <runtime name="LD_LIBRARY_PATH" value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
  <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
  <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
+ <runtime name="PATH"            value="$LOCALTOP/$SCRAM_ARCH/bin"           type="path" handler="warn"/>
+ <runtime name="PATH"            value="$LOCALTOP/external/$SCRAM_ARCH/bin"  type="path" handler="warn"/>
 </tool>

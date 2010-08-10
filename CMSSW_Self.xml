@@ -2,22 +2,31 @@
  <client>
   <environment name="LIBDIR"        value="$LOCALTOP/lib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
-  <environment name="CMSSW_BINDIR"  value="$LOCALTOP/bin/$SCRAM_ARCH"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
   <environment name="INCLUDE"       value="$LOCALTOP/include/$SCRAM_ARCH"      handler="warn"/>
+  <flags SKIP_TOOLS_SYMLINK="cxxcompiler f77compiler ccompiler"/>
+  <flags EXTERNAL_SYMLINK="BINDIR"/>
+  <flags EXTERNAL_SYMLINK="LIBDIR"/>
+  <flags EXTERNAL_SYMLINK="CMSSW_SEARCH_PATH"/>
+  <flags NO_EXTERNAL_RUNTIME="LD_LIBRARY_PATH"/>
+  <flags NO_EXTERNAL_RUNTIME="PATH"/>
+  <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
+  <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
  </client>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
  <runtime name="LOCALRT"               value="$LOCALTOP"/>
  <runtime name="CMSSW_VERSION"         value="$SCRAM_PROJECTVERSION"/>
- <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"           type="path"/>
- <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
- <runtime name="PATH"                  value="$CMSSW_BINDIR"                       type="path"/>
- <runtime name="PYTHONPATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"           type="path"/>
- <runtime name="PYTHONPATH"            value="$LOCALTOP/python"                    type="path"/>
- <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                       type="path" handler="warn"/>
- <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/share"                     type="path" handler="warn"/>
- <runtime name="IGUANA_IVS"            value="$LOCALTOP/share/ivs"                 type="path" handler="warn"/>
- <runtime name="IGUANA_PATH"           value="$LOCALTOP"                           type="path"/>
+ <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
+ <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
+ <runtime name="PATH"                  value="$LOCALTOP/bin/$SCRAM_ARCH"             type="path"/>
+ <runtime name="PATH"                  value="$LOCALTOP/external/$SCRAM_ARCH/bin"    type="path" handler="warn"/>
+ <runtime name="PYTHONPATH"            value="$LOCALTOP/python"                      type="path"/>
+ <runtime name="PYTHONPATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
+ <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
+ <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/external/$SCRAM_ARCH/data"   type="path" handler="warn"/>
+ <runtime name="IGUANA_IVS"            value="$LOCALTOP/share/ivs"                   type="path" handler="warn"/>
+ <runtime name="IGUANA_PATH"           value="$LOCALTOP"                             type="path"/>
  <runtime name="LANG"                  value="C"/>
+ <runtime name="TEST_SRTOPT_PATH"      value="$LOCALTOP/test/$SCRAM_ARCH"           type="path"/>
 </tool>
