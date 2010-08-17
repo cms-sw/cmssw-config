@@ -605,7 +605,7 @@ define compile_python
     $(CMD_echo) ">> Compiling cfi/cff python modules: $4";\
     modules=`$(CMD_echo) $(3).$$pymods | $(CMD_sed) 's|/|.|g;s| |,$(3).|g'`;\
     $(VERB_ECHO) "$(CMD_python) -c 'import $$modules'";\
-    (($(CMD_python) -c "import $$modules" && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
+    (($(CMD_python) -c "import $$modules" > /dev/null 2>&1 && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
   fi $(endlog_$(2))
 endef
 
