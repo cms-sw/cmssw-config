@@ -39,10 +39,12 @@ PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
 LD                          := ld
+ifndef LD_UNIT
 ifeq ($(findstring ia32,$(subst _, ,$(SCRAM_ARCH))),ia32)
 LD_UNIT                     := -r -m elf_i386
 else
 LD_UNIT                     := -r -m elf_x86_64
+endif
 endif
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
@@ -74,13 +76,17 @@ endif
 SHELL                       := $(CMD_sh)
 UNAME                       := $(CMD_uname)
 ###################################
+ifndef SHAREDSUFFIX
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
 SHAREDSUFFIX                := dylib
 else
 SHAREDSUFFIX                := so
 endif
+endif
+ifndef MODULEFLAGS
 ifeq ($(filter-out slc%,$(SCRAM_ARCH)),)
 MODULEFLAGS                 := -shared
+endif
 endif
 MODULE_SUFFIX               := $(SHAREDSUFFIX)
 SHARED_LIB_LOAD_CHECK       := 
