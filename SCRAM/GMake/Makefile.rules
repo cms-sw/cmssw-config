@@ -885,7 +885,7 @@ endef
 #############################################################################
 # Tesings test executable
 define run_test
-  @if [ "X$($(1)_TEST_RUNNER_CMD)" == "Xecho" ] ; then \
+  @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
     $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Skipping test $(1)"; \
   else \
     $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Running test $(1)" &&\

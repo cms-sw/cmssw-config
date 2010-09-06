@@ -1935,7 +1935,11 @@ sub binary_template ()
             if ($class eq "TEST")
 	    {
 	      my $fval = $core->flags("NO_TESTRUN");
-	      if ($fval=~/^(yes|1)$/i){print $fh "${safename}_TEST_RUNNER_CMD := echo\n";}
+	      if ($fval=~/^(yes|1)$/i)
+	      {
+	        print $fh "${safename}_TEST_RUNNER_CMD := echo\n";
+		print $fh "${safename}_NO_TESTRUN := yes\n";
+	      }
 	      else
 	      {
 		$fval = $core->flags("TEST_RUNNER_CMD");
