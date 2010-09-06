@@ -1934,7 +1934,14 @@ sub binary_template ()
                       "$safename := self/${path}\n";
             if ($class eq "TEST")
 	    {
-	      print $fh "${safename}_TEST_RUNNER_ARGS :=  ",$core->flags("TEST_RUNNER_ARGS"),"\n";
+	      my $fval = $core->flags("NO_TESTRUN");
+	      if ($fval=~/^(yes|1)$/i){print $fh "${safename}_TEST_RUNNER_CMD := echo\n";}
+	      else
+	      {
+		$fval = $core->flags("TEST_RUNNER_CMD");
+	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
+	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
+	      }
 	      $self->set("type","test");
 	    }
 	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}

@@ -885,20 +885,19 @@ endef
 #############################################################################
 # Tesings test executable
 define run_test
-  @if [ ! -f $(LOCALTOP)/$(3)/testing.log ]; then \
-    $(CMD_mkdir) -p $(LOCALTOP)/$(3); \
-    $(CMD_touch) $(LOCALTOP)/$(3)/testing.log; \
-    $(CMD_echo) "Creating test log file"; \
+  @if [ "X$($(1)_TEST_RUNNER_CMD)" == "Xecho" ] ; then \
+    $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Skipping test $(1)"; \
+  else \
+    $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Running test $(1)" &&\
+    $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
+    $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
+    $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS") &&\
+    $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
+    $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
+    $(CMD_cat) $($(1)_objdir)/testing.log &&\
+    $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; $(CMD_rm) -f $($(1)_objdir)/testing.log; \
   fi
-  @$(CMD_echo) "Package "$(patsubst src/%/test,%,$(3))": Running test $(1)"
-  @$(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log
-  @$(CMD_echo) " " >> $($(1)_objdir)/testing.log
-  @$(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log
-  @$(LOCALTOP)/$(2)/$(1) $($(1)_TEST_RUNNER_ARGS) >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS"
-  @$(CMD_echo) " " >> $($(1)_objdir)/testing.log
-  @$(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log
-  @$(CMD_cat) $($(1)_objdir)/testing.log
-  @$(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; $(CMD_rm) -f $($(1)_objdir)/testing.log
 endef
 
 ##############################################################################
@@ -1162,8 +1161,8 @@ ifeq ($(strip $(4)),test)
 	$$(call build_test,$(1),$(1),$(3))
 .PHONE: runtests_$(1)
 runtests_$(6) += runtests_$(1)
-runtests_$(1): all_$(1)
-	$$(call run_test,$(1),$(3),$(5))
+runtests_$(1): all_$(1) $(LOCALTOP)/$(5)/testing.log
+	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 $(WORKINGDIR)/cache/prod/$(1): $($(1)_objdir)/$($(1)_product)
 	@if [ ! -f $$@ ] ; then $(CMD_touch) $$@; fi
@@ -1728,6 +1727,11 @@ FORCE_TARGET:
 	@:
 $(WORKINGDIR)/cache/prod/%:
 	@$(CMD_touch) $@
+$(LOCALTOP)/$(SCRAMSTORENAME_LOGS)/testing.log: FORCE_TARGET
+	@$(CMD_mkdir) -p $(@D) ;\
+	$(CMD_rm) -rf $@; \
+	$(CMD_echo) "Creating test log file $(SCRAMSTORENAME_LOGS)/testing.log" ;\
+	$(CMD_touch) $@
 $(WORKINGDIR)/cache/log/%: FORCE_TARGET
 	@if [ -f $@ ] ; then  \
 	  $(CMD_rm) -f $@ ;\
