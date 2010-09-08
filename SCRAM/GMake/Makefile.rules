@@ -665,8 +665,8 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) &&\
-  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) &&\
+  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
 endef
 # ROOt dictionary generation
 define generate_rootdict
