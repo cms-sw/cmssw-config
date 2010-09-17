@@ -387,6 +387,12 @@ define check_module_load
   fi
 endef
 
+ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
+define install_name_tool
+&&  install_name_tool -id $1 $2
+endef
+endif
+
 ifndef SCRAM_NOSYMCHECK
 define check_missing_symbols
   if [ "X$(1)" = X ] ; then \
@@ -450,7 +456,7 @@ define edm_register_plugin
     ($(CMD_cp) -f $(@D)/$($(1)_plugincache) $(<D) || $(CMD_touch) $(<D)/$($(1)_plugincache)) &&\
     ($($(1)_pluginrefresh) $(<D)/$$plugin || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_rm) -f $(<D)/$$plugin &&\
-    $(CMD_cp) -f $< $(@D)/$$plugin &&\
+    (($(CMD_cp) -f $< $(@D)/$$plugin $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
@@ -496,7 +502,7 @@ define edm_register_plugin
     ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    $(CMD_cp) -f $< $(@D)/$$plugin &&\
+    (($(CMD_cp) -f $< $(@D)/$$plugin $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
