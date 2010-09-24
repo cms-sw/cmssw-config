@@ -9,6 +9,7 @@ if(&GetOptions(
                "--toolbox=s",\$toolbox,
 	       "--config=s",\$config,
 	       "--keys=s",\%keys,
+	       "--arch=s",\$arch,
                "--help",\$help,
               ) eq ""){print "ERROR: Wrong arguments.\n"; &usage_msg(1);}
 
@@ -34,6 +35,12 @@ if((!defined $config) || ($config=~/^\s*$/))
 }
 $dir="${config}/config";
 
+if ((!defined $arch) || ($arch eq ""))
+{
+  if (!exists $ENV{SCRAM_ARCH}){$arch=`scram arch`; chomp $arch;}
+  else{$arch=$ENV{SCRAM_ARCH};}
+}
+
 my %cache=();
 foreach my $f ("bootsrc","BuildFile","Self","SCRAM_ExtraBuildRule","boot"){$cache{SCRAMFILES}{$f}=1;}
 $cache{KEYS}{PROJECT_NAME}=$project;
@@ -41,6 +48,9 @@ $cache{KEYS}{PROJECT_VERSION}=$version;
 $cache{KEYS}{PROJECT_TOOL_CONF}=$toolbox;
 $cache{KEYS}{PROJECT_CONFIG_BASE}=$config;
 $cache{KEYS}{SCRAM_VERSION}=$scram;
+
+$cache{EXKEYS}{osx}{LD_LIBRARY_PATH}="DYLD_LIBRARY_PATH";
+
 foreach my $k (keys %keys){$cache{KEYS}{$k}=$keys{$k};}
 
 my $regexp="";
@@ -48,6 +58,18 @@ foreach my $k (keys %{$cache{KEYS}})
 {
   my $v=$cache{KEYS}{$k};
   $regexp.="s|\@$k\@|$v|g;";
+}
+foreach my $a (keys %{$cache{EXKEYS}})
+{
+  if($arch=~/^$a/)
+  {
+    foreach my $k (keys %{$cache{EXKEYS}{$a}})
+    {
+      my $v=$cache{EXKEYS}{$a}{$k};
+      $regexp.="s|\@$k\@|$v|g;";      
+    }
+    last;
+  }
 }
 
 opendir(DIR,$dir) || die "Can not open directory for reading: $dir";
@@ -57,31 +79,37 @@ foreach my $file (readdir(DIR))
   if($file=~/^\./){next;}
   my $fpath="${dir}/${file}";
   if((!-e  $fpath) || (-d $fpath) || (-l $fpath)){next;}
-  if($file=~/^${project}_(.+)$/)
-  {
-    my $type=$1;
-    system("mv $fpath ${dir}/${type}; touch ${dir}/XXX_${type}; rm -f ${dir}/*_${type}");
-    delete $cache{SCRAMFILES}{$type};
-    $cache{FILES}{$type}=1;
-  }
-  else{$cache{FILES}{$file}=1;}
+  if($file=~/^${project}_(.+)$/){system("mv $fpath ${dir}/${1}");}
 }
 closedir(DIR);
 foreach my $type (keys %{$cache{SCRAMFILES}}){system("touch ${dir}/XXX_${type}; rm -f ${dir}/*_${type}*");}
 
-foreach my $file (keys %{$cache{FILES}})
+system("find $dir -name \"*\" -type f | xargs sed -i -e '".$regexp."'");
+system("rm -rf ${dir}/site;  echo $scram > ${dir}/scram_version");
+
+
+if ($replaceArch)
 {
-  my $fpath="${dir}/${file}";
-  if(!-e  $fpath){next;}
-  system("sed '".$regexp."' $fpath > ${fpath}.new.$$; mv ${fpath}.new.$$ $fpath");
+  my $thisscript=basename($0);
+  $regexp="";
+  foreach my $k (keys %{$cache{REPLACE}{$replaceArch}})
+  {
+    my $v=$cache{REPLACE}{$replaceArch};
+    $regexp.="s|\@$k\@|$v|g;";
+  }
+  foreach my $f (`find $dir -name "*" -type f`)
+  {
+    chomp $f;
+    if ($f=~/\/${thisscript}$/){next;}
+    system("sed -i -e '".$regexp."' $f");
+  }
 }
-system("rm -rf ${dir}/site; echo $scram > ${dir}/scram_version");
 
 sub usage_msg()
 {
   my $code=shift || 0;
   print "$0 --project <name> --version <version> --scram <scram version>\n",
-        "   --toolbox <toolbox> [--config <dir>] [--help]\n\n",
+        "   --toolbox <toolbox> [--config <dir>] [--arch <arch>] [--help]\n\n",
         "  This script will copy all <name>_<files> files into <files>\n",
         "  and replace project names, version, scram verion, toolbox path",
 	"  and extra keys/values provided via the command line. e.g.\n",
