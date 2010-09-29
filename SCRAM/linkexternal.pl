@@ -5,7 +5,7 @@ use Cwd;
 use Getopt::Long;
 use Cache::CacheUtilities;
 $|=1;
-my $SCRAM_CMD="scramv1";
+my $SCRAM_CMD="$ENV{SCRAM_TOOL_HOME}/../bin/scram";
 my %cache=();
 $cache{validlinks}{LIBDIR}="lib";
 $cache{validlinks}{BINDIR}="bin";
@@ -39,6 +39,7 @@ if(defined $help){&usage(0);}
 if(defined $all){$all=1;} else{$all=0;}
 
 if((!defined $arch) || ($arch=~/^\s*$/)){$arch=`$SCRAM_CMD arch`; chomp $arch;}
+$ENV{SCRAM_ARCH}=$arch;
 
 my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
@@ -54,7 +55,7 @@ if (!exists $projdata{SCRAM_PROJECTNAME}){die "ERROR: Can not find project name.
 
 if (($all==0) && (!exists $projdata{RELEASETOP})){$all=1;}
 
-if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("scramv1 b -r echo_CXX 2>&1 >/dev/null");}
+if(!-f "${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}"){system("$SCRAM_CMD b -r echo_CXX 2>&1 >/dev/null");}
 $cache{toolcache}=&Cache::CacheUtilities::read("${localtop}/.SCRAM/${arch}/ToolCache.${cacheext}");
 
 $cache{skipTools}{self}=1;

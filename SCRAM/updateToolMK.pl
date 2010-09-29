@@ -8,6 +8,7 @@ $|=1;
 my $arch     = shift     || $ENV{SCRAM_ARCH} || die "Usage: $0 <arch> [<tool> [<tool> [...]]]";
 my $curdir   = cwd();
 my $localtop = &fixPath(&scramReleaseTop($curdir));
+$ENV{SCRAM_ARCH}=$arch;
 if (!-d "${localtop}/.SCRAM/${arch}"){die "$curdir: Not a SCRAM-Based area. Missing .SCRAM directory.";}
 my $envfile="${localtop}/.SCRAM/${arch}/Environment";
 if (!-f $envfile){$envfile="${localtop}/.SCRAM/Environment";}

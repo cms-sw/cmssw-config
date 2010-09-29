@@ -40,6 +40,7 @@ if ((!defined $arch) || ($arch eq ""))
   if (!exists $ENV{SCRAM_ARCH}){$arch=`scram arch`; chomp $arch;}
   else{$arch=$ENV{SCRAM_ARCH};}
 }
+$ENV{SCRAM_ARCH}=$arch;
 
 my %cache=();
 foreach my $f ("bootsrc","BuildFile","Self","SCRAM_ExtraBuildRule","boot"){$cache{SCRAMFILES}{$f}=1;}

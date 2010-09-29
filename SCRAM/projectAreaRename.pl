@@ -12,6 +12,7 @@ if(!defined $dir){$dir=`/bin/pwd`; chomp $dir;}
 my $rel=$dir;
 while((!-d "${rel}/.SCRAM") && ($rel!~/^[\.\/]$/)){$rel=dirname($rel);}
 if(!-d "${rel}/.SCRAM"){die "$dir is not a SCRAM-based project area.";}
+$ENV{SCRAM_ARCH}=$arch;
 
 if($olddir ne $newtop){&process("${rel}/.SCRAM",1);}
 

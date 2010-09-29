@@ -10,6 +10,7 @@ my $cmd      = uc(shift) || &usage();
 if ($cmd!~/^(USES|USED_BY|ORIGIN)$/){&usage();}
 my $pack     = shift || &usage();
 my $arch     = shift || $ENV{SCRAM_ARCH} || &usage();
+$ENV{SCRAM_ARCH}=$arch;
 
 my $envfile="${localtop}/.SCRAM/${arch}/Environment";
 if (!-f $envfile){$envfile="${localtop}/.SCRAM/Environment";}
