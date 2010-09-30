@@ -50,7 +50,7 @@ $cache{KEYS}{PROJECT_TOOL_CONF}=$toolbox;
 $cache{KEYS}{PROJECT_CONFIG_BASE}=$config;
 $cache{KEYS}{SCRAM_VERSION}=$scram;
 
-$cache{EXKEYS}{osx}{LD_LIBRARY_PATH}="DYLD_LIBRARY_PATH";
+$cache{EXKEYS}{LD_LIBRARY_PATH}{osx}="DYLD_LIBRARY_PATH";
 
 foreach my $k (keys %keys){$cache{KEYS}{$k}=$keys{$k};}
 
@@ -60,17 +60,18 @@ foreach my $k (keys %{$cache{KEYS}})
   my $v=$cache{KEYS}{$k};
   $regexp.="s|\@$k\@|$v|g;";
 }
-foreach my $a (keys %{$cache{EXKEYS}})
+foreach my $k (keys %{$cache{EXKEYS}})
 {
-  if($arch=~/^$a/)
+  my $xk=$k;
+  foreach my $a (keys %{$cache{EXKEYS}{$k}})
   {
-    foreach my $k (keys %{$cache{EXKEYS}{$a}})
+    if($arch=~/^$a/)
     {
-      my $v=$cache{EXKEYS}{$a}{$k};
-      $regexp.="s|\@$k\@|$v|g;";      
+      $xk=$cache{EXKEYS}{$k}{$a};
+      last;
     }
-    last;
   }
+  $regexp.="s|\@$k\@|$xk|g;";
 }
 
 opendir(DIR,$dir) || die "Can not open directory for reading: $dir";
