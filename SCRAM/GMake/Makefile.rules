@@ -389,7 +389,7 @@ endef
 
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
   define install_name_tool
-    install_name_tool -id $1 $2 && echo ">> HERE TOOL INSTALL NAME: $1 $2"
+    install_name_tool -id $1 $2
   endef
 else
   define install_name_tool
