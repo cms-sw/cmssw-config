@@ -287,7 +287,7 @@ define copy_build_product
 endef
 
 define copy_lib_to_main_productstore
-  $(call copy_build_product,$(1))
+  $(call install_name_tool,$(@F),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_bigobj_to_main_productstore
@@ -388,9 +388,13 @@ define check_module_load
 endef
 
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
-define install_name_tool
-&&  install_name_tool -id $1 $2
-endef
+  define install_name_tool
+    install_name_tool -id $1 $2 && echo ">> HERE TOOL INSTALL NAME: $1 $2"
+  endef
+else
+  define install_name_tool
+    true
+  endef
 endif
 
 ifndef SCRAM_NOSYMCHECK
@@ -451,12 +455,13 @@ define edm_register_plugin
     ($(CMD_touch) $(@D)/$($(1)_plugincache) || true) &&\
     ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
+    $(call install_name_tool,$$plugin,$<) &&\
     $(CMD_cp) -f $< $(<D)/$$plugin &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
     ($(CMD_cp) -f $(@D)/$($(1)_plugincache) $(<D) || $(CMD_touch) $(<D)/$($(1)_plugincache)) &&\
     ($($(1)_pluginrefresh) $(<D)/$$plugin || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_rm) -f $(<D)/$$plugin &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
+    (($(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
