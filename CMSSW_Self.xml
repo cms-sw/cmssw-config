@@ -4,7 +4,6 @@
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="CMSSW_BINDIR"  value="$LOCALTOP/bin/$SCRAM_ARCH"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
-  <environment name="INCLUDE"       value="$LOCALTOP/include/$SCRAM_ARCH"      handler="warn"/>
  </client>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
