@@ -1,17 +1,3 @@
-<architecture name="slc4_ia32_gcc345">
-<makefile>
-CCcompiler:=gcc3
-</makefile>
-</architecture>
-
-<architecture name="slc4_ia32_gcc345_dbg">
-<flags CXXFLAGS="-O0 -g -DDEBUG"/>
-<makefile>
-CCcompiler:=gcc3
-CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
-</makefile>
-</architecture>
-
 <productstore name="lib" type="arch"/>
 <productstore name="python" type="arch"/>
 <productstore name="include"/>
