@@ -438,6 +438,7 @@ define iglet_register_plugin
   @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+    $(call install_name_tool,$(@F),$<) &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
     $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
@@ -491,6 +492,7 @@ define iglet_register_plugin
   @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+    $(call install_name_tool,$(@F),$<) &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
     $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
