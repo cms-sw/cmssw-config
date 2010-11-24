@@ -12,8 +12,6 @@ prebuild       :=
 postbuild      :=
 prelibdeps     :=
 prebindeps     :=
-precompile     :=
-compile        :=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
 ALL_PACKAGES       :=
@@ -1008,12 +1006,16 @@ define get_time_stamp
 endef
 #############################################################################
 define SubSystem
-.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2)
+.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) compile_$(2) precompile_$(2)
 $(1) src/$(1) $(2) all_$(2): $(subdirs_$(2))
 	@$(CMD_echo) ">> Subsystem $(1) built"
 runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
 	@:
 runpython_$(2): $(addprefix runpython_,$(subdirs_$(2)))
+	@:
+compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
+	@:
+precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
 	@:
 endef
 define EmptyPackage
@@ -1028,7 +1030,7 @@ $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_BuildFile) $$($(1)_libdeps)
 	@$(CMD_touch) $$@
 endef
 define Package
-.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) msg_$(2)
+.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) msg_$(2) compile_$(2) precompile_$(2)
 ifeq ($(strip $(BUILD_LOG)),yes)
 logfile_$(2) := $(WORKINGDIR)/cache/log/src/$(1)/build.log
 redirectlog_$(2) := >> $(WORKINGDIR)/cache/log/src/$(1)/build.log
@@ -1049,7 +1051,11 @@ $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
 ifeq ($$(filter $(2)_test,$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
-endif	
+endif
+precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
+	@:
+compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
+	@:
 ifeq ($$(filter $(2)_python,$(subdirs_$(2))),$(2)_python)
 runpython_$(2): runpython_$(2)_python
 	@$(CMD_echo) ">> Python for package $(1) ran."
@@ -1184,13 +1190,15 @@ ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
 endif
 endif
-precompile += $($(1)_objdir)/precompile
+precompile_$(6):: $($(1)_objdir)/precompile
+	@:
+compile_$(6):: $($(1)_objdir)/compile
+	@:
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 	@$(CMD_touch) $$@
 ifeq ($$(strip $(4)),lib)
 	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
-compile += $($(1)_objdir)/compile
 $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@$(CMD_touch) $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
@@ -1252,7 +1260,7 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,fileext,logprodstore
 define Library
 $(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5)))
-$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(8)))
+$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
 endef
 
 #safename,path,safepath,scriptstore,scripts
@@ -1261,9 +1269,9 @@ $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 endef
 
-#safename,path,libstore,fileext,logprodstore
+#safename,path,libstore,fileext,logprodstore,safepath
 define LibraryTail
-$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(5)))
+$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(5),$(6)))
 ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
@@ -1350,10 +1358,10 @@ $(1)_classnames   := $$(patsubst %_boost,%,$$(filter %_boost,$$(basename $$(notd
 $(1)_CXXSharedLink = -rdynamic $$($(1)_LDFLAGS)
 endef
 
-#safename,path,productstore,logprodstore
+#safename,path,productstore,logprodstore,safepath
 define PythonProductTail
 $(1)_product := $(1).$(SHAREDSUFFIX)
-$$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4)))
+$$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4),$(5)))
 $(foreach ext,$(CXXSRC_FILES_SUFFIXES),$(eval $(call CXXCompileRule,$(1),$(ext),$(1))))
 .PRECIOUS: $($(1)_objdir)/%_boost.cc
 $($(1)_objdir)/%_boost.cc: $($(1)_srcdir)/%.pyste $($(1)_config)
@@ -1375,7 +1383,7 @@ ifneq ($$(strip $$($(1)_files)),)
 ifneq ($$(strip $$($(1)_BuildFile)),)
 ifneq ($$(strip $$(filter boost_python,$($(1)_LOC_USE))),)
 $$(eval $$(call PythonProductFlags,$(1)))
-$$(eval $$(call PythonProductTail,$(1),$(2),$(7),$(10)))
+$$(eval $$(call PythonProductTail,$(1),$(2),$(7),$(10),$(3)))
 else
 ifeq ($(strip $(ONLYECHOTARGETS)),)
 $$(info ****WARNING: Skipped building product $(1).$(SHAREDSUFFIX) due to missing boost_python tool selecting in $(2)/$(SCRAM_BUILDFILE))
@@ -1515,7 +1523,7 @@ $(1)_FILE_MOC_SRC := $$(filter %_cc_moc.cc %_cpp_moc.cc %_cxx_moc.cc, $$($(1)_FI
 $(1)_FILE_MOC_INC := $(filter-out $$($(1)_FILE_MOC_SRC),$$($(1)_FILE_MOC))
 $(1)_files        += $$($(1)_FILE_MOC_INC)
 $(1)_objs         += $$(addprefix $($(1)_objdir)/moc/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_FILE_MOC_INC)))))
-precompile        += $($(1)_objdir)/moc/run_moc
+$(1)_precompile   += $($(1)_objdir)/moc/run_moc
 $($(1)_objdir)/moc/run_moc: $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
 	@[ -f $$@ ] || $(CMD_touch) $$@
 $($(1)_objdir)/moc/%.$(OBJEXT):  $($(1)_objdir)/moc/%.cc
@@ -1561,7 +1569,7 @@ $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
 $(1)_files                  += $$($(1)_LinkDef_files)
 $(1)_objs                   += $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.$(OBJEXT),$(3)))
 .PRECIOUS: $$($(1)_LinkDef_files)
-precompile += $$($(1)_LinkDef_files)
+$(1)_precompile += $$($(1)_LinkDef_files)
 $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
@@ -1617,14 +1625,13 @@ endef
 define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
-precompile  += $($(1)_objdir)/$(2)r.cc
+$(1)_precompile += $($(1)_objdir)/$(2)r.cc
 $($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
 ifneq ($1,$5)
-precompile  += $($(1)_objdir)/$(2)i.cc
-compile     += $($(1)_objdir)/$(2)i.$(OBJEXT)
+$(1)_precompile += $($(1)_objdir)/$(2)i.cc
 $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
@@ -1804,11 +1811,14 @@ all: all_$(TARGETDIR) ProjectPluginRefresh
 project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR) ProjectPluginRefresh
 	@:
 
-.PHONY: python help runtests clean distclean cache_clean project_clean clean_$(SCRAM_SOURCEDIR) project_help help_$(SCRAM_SOURCEDIR)
+.PHONY: python help compile precompile runtests clean distclean cache_clean project_clean project_help 
+.PHONY: clean_$(SCRAM_SOURCEDIR) help_$(SCRAM_SOURCEDIR)
 help: help_$(TARGETDIR)
 clean: clean_$(TARGETDIR)
 runtests: runtests_$(TARGETDIR)
 python: runpython_$(TARGETDIR)
+compile: compile_$(TARGETDIR)
+precompile: precompile_$(TARGETDIR)
 
 project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@$(CMD_echo) "Cleaning ProductStore directories:"
@@ -1924,7 +1934,7 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),src_$(subst /,_,$
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),src_$(subst /,_,$(dir)))))
 endif
 ###########################################################
-PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR)
+PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 	@:
 prebuild: $(prebuild)
@@ -1936,15 +1946,14 @@ runpython_$(SCRAM_SOURCEDIR): $(addprefix runpython_, $(subdirs_$(SCRAM_SOURCEDI
 	@$(CMD_echo) ">> Python completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> Test sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+compile_$(SCRAM_SOURCEDIR): $(addprefix compile_, $(subdirs_$(SCRAM_SOURCEDIR)))
+	@$(CMD_echo) ">> Compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+precompile_$(SCRAM_SOURCEDIR): $(addprefix precompile_, $(subdirs_$(SCRAM_SOURCEDIR)))
+	@$(CMD_echo) ">> Pre-compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 ###########################################################
 
-.PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
+.PHONY: all_% clean_% help_% runtests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
-.PHONT: precompile compile
-precompile: $(precompile)
-	@:
-compile: $(compile) precompile
-	@:	
 help_%_python:
 	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
 help_%_src:
@@ -1957,7 +1966,7 @@ help_%_test:
 	@$(CMD_echo) "Running \"scram build\" here normally build test executables and shared libs (if any)."
 help_$(SCRAM_SOURCEDIR)_%:
 	@$(CMD_echo) "Doing \"scram build\" here will build every thing exist under this directory."
-all_% runtests_% help_% runpython_%:
+all_% runtests_% help_% runpython_% compile_% precompile_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
 	  $(CMD_echo) ">> Nothing to be done for $(THISDIR)";\
 	fi
