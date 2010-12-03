@@ -94,11 +94,14 @@ sub Project()
 ######################################################################
   print $fh ".PHONY: gindices\n",
             "gindices:\n",
-            "\t\@cd \$(LOCALTOP); \\\n",
-            "\tmkdir src/.glimpse_full; \\\n",
-            "\tglimpseindex -F -H src/.glimpse_full src/*; \\\n",
-            "\tcd src; \\\n",
-            "\t/bin/bash ../config/fixindices.sh;\n";
+            "\t\@cd \$(LOCALTOP)/src; \\\n",
+            "\trm -rf  \$(LOCALTOP)/src/.glimpse_full; mkdir  \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\tls -d \$(LOCALTOP)/src/*/*/*  | glimpseindex -F -H \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\tfor  x in `ls -A1 .glimpse_full` ; do \\\n",
+            "\t  ln -s .glimpse_full/\$\$x \$\$x; \\\n",
+            "\tdone; \\\n",
+            "\trm .glimpse_filenames; cp .glimpse_full/.glimpse_filenames .glimpse_filenames; \\\n",
+            "\tsed -i -e 's|\$(LOCALTOP)/src/||g' .glimpse_filenames\n";
 ######################################################################
   print $fh ".PHONY: productmap\n",
             "productmap:\n",
@@ -164,86 +167,6 @@ sub Extra_template()
   $common->pushstash();$common->lexyacc_template();$common->popstash();
   $common->pushstash();$common->codegen_template();$common->popstash();
   $common->pushstash();$common->dict_template();   $common->popstash();
-  return 1;
-}
-
-sub Classlib_template ()
-{
-  my $self=shift;
-  my $common=$self->{template};
-  if ($common->get("suffix") ne ""){return 1;}
-  $common->initTemplate_common2all();
-  my $safename="classlib";
-  $common->set("safename",$safename);
-  my $core=$common->core();
-  my $types=$core->buildproducts();
-  if($types)
-  {
-    foreach my $type (keys %$types)
-    {
-      $common->set("type",$type);
-      $common->unsupportedProductType();
-    }
-  }
-  my $path=$common->get("path"); my $safepath=$common->get("safepath");
-  my $parent=$common->get("parent");
-  my $fh=$common->filehandle();
-  $core->branchdata()->name($safename);
-  print $fh "ifeq (\$(strip \$($parent)),)\n",
-            "${safename} := self/${parent}\n",
-            "${parent} := ${safename}\n",
-	    "${safename}_XDEPS := \$(WORKINGDIR)/\$(SCRAM_SOURCEDIR)/${parent}/${safename}.headers\n";
-  $common->pushstash();$common->library_template_generic();$common->popstash();
-  print $fh "${safename}_INIT_FUNC := \$\$(eval \$\$(call LogFile,${safename},${path}))\n",
-            "${safename}_INIT_FUNC += \$\$(eval \$\$(call ClassLib,${safename},\$(SCRAM_SOURCEDIR)/${parent},${safepath}))\n",
-            "endif\n";
-  
-  my $confstr="\$(LOCALTOP)/\$(SCRAM_SOURCEDIR)/${parent}/configure -C CPPFLAGS=\"\$\$(\$(1)_CPPFLAGS)\" ".
-            "CC=\"\$\$(strip \$(CC))\" CXX=\"\$\$(strip \$(CXX))\" CFLAGS=\"\$\$(strip \$\$(\$(1)_LOC_FLAGS_CFLAGS_ALL))\" ".
-            "CXXFLAGS=\"\$\$(\$(1)_CXXFLAGS)\" LIBS=\"\$\$(\$(1)_LOC_LIB_ALL:%=-l%)\" LDFLAGS=\"\$\$(\$(1)_LOC_LIBDIR_ALL:%=-L%)\" ".
-            "--prefix=\$(LOCALTOP) --libdir=\$(LOCALTOP)/\$(SCRAMSTORENAME_LIB) ".
-            "--includedir=\$(LOCALTOP)/\$(SCRAMSTORENAME_INCLUDE) ".
-            "--with-zlib   --with-zlib-includes=\$(ZLIB_BASE)/include      --with-zlib-libraries=\$(ZLIB_BASE)/lib ".
-            "--with-bz2lib --with-bz2lib-includes=\$(BZ2LIB_BASE)/include  --with-bz2lib-libraries=\$(BZ2LIB_BASE)/lib ".
-            "--with-pcre   --with-pcre-includes=\$(PCRE_BASE)/include      --with-pcre-libraries=\$(PCRE_BASE)/lib ".
-            "--with-uuid   --with-uuid-includes=\$(UUID_BASE)/include/uuid --with-uuid-libraries=\$(UUID_BASE)/lib";
-
-  my $xfhn = "$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/MakeData/ExtraBuilsRules";
-  if (!-d $xfhn){system("mkdir -p $xfhn");}
-  $xfhn.="/${safename}.mk";
-  my $xfh=undef;
-  open ($xfh,">$xfhn") || die "Can not open file for writing: $xfhn";
-  #safename,path,safepath,prodarea
-  print $xfh "define ClassLib\n",
-            ".PHONY: all_\$(3) all_\$(1) \$(3) \$(1)\n",
-            "all_\$(3) all_\$(1) \$(1) \$(3): \$(WORKINGDIR)/\$(2)/\$(1).installed\n",
-            "\$(WORKINGDIR)/cache/prod/lib\$(1): \$(WORKINGDIR)/\$(2)/\$(1).installed\n",
-            "\t\@if [ ! -f \$\$@ ] ; then touch \$\$@; fi\n",
-            "\$(WORKINGDIR)/\$(2)/\$(1).configured: \$(CONFIGDEPS) \$(logfile_\$(1)) \$(\$(1)_BuildFile) \$(LOCALTOP)/\$(2)/configure\n",
-            "\t\@echo \">> Configuring \$2\"\n",
-	    "\t\@\$(startlog_\$(1))mkdir -p \$\$(\@D);\\\n",
-            "\tcd \$\$(\@D); \\\n",
-	    "\techo $confstr &&\\\n",
-	    "\t$confstr &&\\\n",
-            "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
-	    "compile+=\$(WORKINGDIR)/\$(2)/\$(1).made\n",
-            "\$(WORKINGDIR)/\$(2)/\$(1).made: \$(WORKINGDIR)/\$(2)/\$(1).configured\n",
-            "\t\@echo \">> Compiling \$2\"\n",
-	    "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) &&\\\n",
-            "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
-            "\$(WORKINGDIR)/\$(2)/\$(1).installed: \$(WORKINGDIR)/\$(2)/\$(1).made \$(WORKINGDIR)/\$(2)/\$(1).headers\n",
-            "\t\@echo \">> Installing library \$2\"\n",
-	    "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) install-exec &&\\\n",
-            "\tcd \$(LOCALTOP) && rm -f \$(SCRAMSTORENAME_LIB)/lib\$(1).la && touch \$\$@ \$(endlog_\$(1))\n",
-	    "\t\@echo \"01:rm -f \$(LOCALTOP)/\$(SCRAMSTORENAME_LIB)/lib\$(1).so\" > \$(call AutoCleanFile,\$\$(\@D)/\$(1),prod)\n",
-            "precompile += \$(WORKINGDIR)/\$(2)/\$(1).headers\n",
-            "\$(WORKINGDIR)/\$(2)/\$(1).headers: \$(WORKINGDIR)/\$(2)/\$(1).configured\n",
-            "\t\@echo \">> Installing headers \$2\"\n",
-            "\t\@\$(startlog_\$(1))cd \$\$(\@D); \$\$(MAKE) install-data &&\\\n",
-            "\tcd \$(LOCALTOP) && touch \$\$@ \$(endlog_\$(1))\n",
-	    "\t\@echo \"01:rm -rf \$(LOCALTOP)/\$(SCRAMSTORENAME_INCLUDE)/\$(1)\" > \$(call AutoCleanFile,\$\$(\@D)/\$(1),include)\n",
-            "endef\n";
-  close($xfh);
   return 1;
 }
 

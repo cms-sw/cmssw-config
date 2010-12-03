@@ -4,7 +4,6 @@
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="CMSSW_BINDIR"  value="$LOCALTOP/bin/$SCRAM_ARCH"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
-  <environment name="INCLUDE"       value="$LOCALTOP/include/$SCRAM_ARCH"      handler="warn"/>
  </client>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
@@ -19,5 +18,6 @@
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/share"                     type="path" handler="warn"/>
  <runtime name="IGUANA_IVS"            value="$LOCALTOP/share/ivs"                 type="path" handler="warn"/>
  <runtime name="IGUANA_PATH"           value="$LOCALTOP"                           type="path"/>
+ <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"           type="path"/>
  <runtime name="LANG"                  value="C"/>
 </tool>
