@@ -6,12 +6,13 @@ wrongtool := info
 comma:= ,
 empty:= 
 colon:= :
-path_seperator := :
 space:= $(epmty) $(empty)
 prebuild       := 
 postbuild      :=
 prelibdeps     :=
 prebindeps     :=
+precompile     :=
+compile        :=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
 ALL_PACKAGES       :=
@@ -37,54 +38,37 @@ PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
 LD                          := ld
-ifndef LD_UNIT
 ifeq ($(findstring ia32,$(subst _, ,$(SCRAM_ARCH))),ia32)
 LD_UNIT                     := -r -m elf_i386
 else
 LD_UNIT                     := -r -m elf_x86_64
 endif
-endif
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
-OLD_TIMESTAMP               := 198001010100
-
-###################################
-define FindFileInPath
-$(if $(strip $2),$(eval x:=$(wildcard $(firstword $2)/$1))$(if $x,$x,$(call FindFileInPath,$1,$(wordlist 2,1000,$2))),)
-endef
-
-define ShellCMDs
-CMD_$1 := $(eval x:=$(strip $(call FindFileInPath,$1,$(subst $(path_seperator), ,$(PATH)))))$(if $x,$x,$1)
-endef
-
-$(foreach c,awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sh sort touch tr uname uniq xargs,$(eval $(call ShellCMDs,$c)))
+OLD_TIMESTAMP:=198001010100
 ###################################
 ifndef CXX
-CXX:=$(CMD_g++)
+CXX:=g++
 endif
 ifndef CC
-CC:=$(CMD_gcc)
+CC:=gcc
 endif
 ifndef FC
-FC:=$(CMD_g77)
+FC:=g77
 endif
 ifndef JAVAC
-JAVAC:=$(CMD_javac)
+JAVAC:=javac
 endif
-SHELL                       := $(CMD_sh)
-UNAME                       := $(CMD_uname)
-###################################
-ifndef SHAREDSUFFIX
+AR                          := /bin/ar
+SHELL                       := /bin/sh
+UNAME                       := $(shell uname)
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
 SHAREDSUFFIX                := dylib
 else
 SHAREDSUFFIX                := so
 endif
-endif
-ifndef MODULEFLAGS
 ifeq ($(filter-out slc%,$(SCRAM_ARCH)),)
 MODULEFLAGS                 := -shared
-endif
 endif
 MODULE_SUFFIX               := $(SHAREDSUFFIX)
 SHARED_LIB_LOAD_CHECK       := 
@@ -96,8 +80,10 @@ ifeq ($(strip $(SCRAM_SOURCEDIR)),)
 SCRAM_SOURCEDIR:=src
 endif
 
-ifneq ($(strip $(PYTHON_BASE)),)
-CMD_python := $(PYTHON_BASE)/bin/python
+ifneq ($(strip $(QT_BASE)),)
+QTMOC := $(QT_BASE)/bin/moc
+else
+QTMOC := moc
 endif
 
 ifneq ($(wildcard $(WORKINGDIR)/cache/bf/$(SCRAM_CONFIGDIR)/$(SCRAM_BUILDFILE)),)
@@ -121,11 +107,11 @@ endif
 
 ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
-FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$? ; exit 0)
+FORCE_BUILD_END = ) || (echo gmake: \*\*\* [$@] Error $$? ; exit 0)
 else
 ifeq ($(strip $(BUILD_LOG)),yes)
 FORCE_BUILD_START = (
-FORCE_BUILD_END = ) || (exitcode=$$?; $(CMD_echo) gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
+FORCE_BUILD_END = ) || (exitcode=$$?; echo gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
 else
 FORCE_BUILD_START =
 FORCE_BUILD_END =
@@ -171,7 +157,7 @@ define ProductTypeFlags
 $(if $(strip $(filter $1,$(ALL_edm_PLUGINS))),$(EDM_$2),$(NON_EDM_$2))
 endef
 define GetTimeStamp
-$(CMD_perl) -e '@d=stat "$(1)"; print "$$d[9]\n";'
+perl -e '@d=stat "$(1)"; print "$$d[9]\n";'
 endef
 define Uniq
 $(eval uniq_string_:=)$(strip $(foreach v,$(1),$(if $(filter $(v),$(uniq_string_)),,$(eval uniq_string_+=$(v))))$(uniq_string_))
@@ -203,10 +189,10 @@ define ToolLDFlags
 $(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(call ProductTypeFlags,$1,LDFLAGS)
 endef
 define ScramOrderedTools
-$(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) 's|.*:||'),$(warning Calculationg ScramOrderedTools))
+$(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell echo $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | tr ' ' '\n' | sort -r | sed 's|.*:||'),$(warning Calculationg ScramOrderedTools))
 endef
 define CalculateToolOrder
-$(if $(strip $($(1)_LOC_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_LOC_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
+$(if $(strip $($(1)_LOC_USE)),$(shell perl \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_LOC_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
 endef
 define FindToolDependency
 $(sort $(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL)))
@@ -244,14 +230,14 @@ endif
 endef
 define outputlog
   @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
-    $(DO_BUILD_LOG) for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | $(CMD_grep) -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) $(CMD_cat) $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) $(CMD_rm) -f $$f;  $(DO_BUILD_LOG) done ;\
+    $(DO_BUILD_LOG) for f in `find $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | grep -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) cat $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) rm -f $$f;  $(DO_BUILD_LOG) done ;\
   fi
 endef
 define checklibs
   $(eval xliberr:=)$(foreach x,$($(1)_LOC_LIB),$(if $(strip $(filter-out $($(1)_PACKAGE),$($(x)_PACKAGE))),$(eval xliberr+=$x:$($(x)_PACKAGE)),)) \
   if [ "X$(xliberr)" != "X" ] ; then \
-    $(CMD_echo) "****ERROR: Skipping build of $1 generated from $($(1)_PACKAGE) as it is explicitly linking following library/libraries." ;\
-    for x in $(xliberr) ; do $(CMD_echo) "    -> $$x" | $(CMD_sed) 's|:self/| from |';  done;\
+    echo "****ERROR: Skipping build of $1 generated from $($(1)_PACKAGE) as it is explicitly linking following library/libraries." ;\
+    for x in $(xliberr) ; do echo "    -> $$x" | sed 's|:self/| from |';  done;\
     false;\
   fi
 endef
@@ -261,10 +247,10 @@ define BuildClean
     if [ -d $(WORKINGDIR)/$(1) ] ; then \
       regexp=$2; \
       if [ "X$$regexp" == "X" ] ; then regexp='[0-9][0-9]'; fi ;\
-      $(CMD_find) $(WORKINGDIR)/$(1) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^$$regexp:" | $(CMD_sort) | $(CMD_uniq) | $(CMD_sed) "s|^$$regexp:||" > $(WORKINGDIR)/$(1)/.AUTOCLEAN ; \
-      if [ "X$3" == "X" ] ; then $(CMD_cat) $(WORKINGDIR)/$(1)/.AUTOCLEAN; fi;\
-      $(CMD_sh) $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
-      $(CMD_rm) -rf $(WORKINGDIR)/$(1); \
+      find $(WORKINGDIR)/$(1) -name "AUTOCLEAN.*.clean" -type f | xargs cat | grep "^$$regexp:" | sort | uniq | sed "s|^$$regexp:||" > $(WORKINGDIR)/$(1)/.AUTOCLEAN ; \
+      if [ "X$3" == "X" ] ; then cat $(WORKINGDIR)/$(1)/.AUTOCLEAN; fi;\
+      sh $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
+      rm -rf $(WORKINGDIR)/$(1); \
     fi;\
   fi
 endef
@@ -276,16 +262,16 @@ endef
 # Macros for pre/post build steps:
 define copy_build_product
   if [ ! -d $(LOCALTOP)/$(1) ]; then 	\
-    $(CMD_mkdir) -p $(LOCALTOP)/$(1)	&&\
-    $(CMD_echo) "Creating product storage directory: $(LOCALTOP)/$(1)"; \
+    mkdir -p $(LOCALTOP)/$(1)	&&\
+    echo "Creating product storage directory: $(LOCALTOP)/$(1)"; \
   fi &&\
-  $(CMD_echo) "Copying $@ to productstore area:" &&\
-  $(CMD_echo) "01:$(CMD_rm) -f $(1)/$(@F)" > $(call AutoCleanFile,$@,prod) &&\
-  $(CMD_cp) $@ $(LOCALTOP)/$(1) || ($(CMD_rm) -f $@ && $(CMD_echo) ">> Deleted: $@" && exit 1)
+  echo "Copying $@ to productstore area:" &&\
+  echo "01:rm -f $(1)/$(@F)" > $(call AutoCleanFile,$@,prod) &&\
+  cp $@ $(LOCALTOP)/$(1) || (rm -f $@ && echo ">> Deleted: $@" && exit 1)
 endef
 
 define copy_lib_to_main_productstore
-  $(call install_name_tool,$(@F),$@) && $(call copy_build_product,$(1))
+  $(call copy_build_product,$(1))
 endef
 
 define copy_bigobj_to_main_productstore
@@ -305,39 +291,39 @@ define copy_py_to_main_productstore
 endef
 
 define copy_java_to_java_productstore
-  $(startlog_$(2)) clean=$(call AutoCleanFile,$($(1)_workdir)/$(1),java); $(CMD_echo) "" > $$clean ;\
-  for f in `$(CMD_ls) $($(1)_workdir)/ | $(CMD_grep) -v '.done$$\|AUTOCLEAN.'`; do \
-    $(CMD_echo) ">> Copying $$f => $(LOCALTOP)/$(3)" ;  \
-    $(CMD_cp) -rpf $($(1)_workdir)/$$f $(LOCALTOP)/$(3)/ ; \
-    $(CMD_echo) "01:$(CMD_rm) -rf $(3)/$$f" >> $$clean;\
+  $(startlog_$(2)) clean=$(call AutoCleanFile,$($(1)_workdir)/$(1),java); echo "" > $$clean ;\
+  for f in `ls $($(1)_workdir)/ | grep -v '.done$$\|AUTOCLEAN.'`; do \
+    echo ">> Copying $$f => $(LOCALTOP)/$(3)" ;  \
+    cp -rpf $($(1)_workdir)/$$f $(LOCALTOP)/$(3)/ ; \
+    echo "01:rm -rf $(3)/$$f" >> $$clean;\
   done $(endlog_$(2))
 endef
 
 define delete_build_prod 
-  $(CMD_rm) -f $@ $(LOCALTOP)/$(1)/$(@F)
+  rm -f $@ $(LOCALTOP)/$(1)/$(@F)
 endef
 
 define delete_plugin_build_prod 
   $(call delete_build_prod,$(1)) &&\
   if [ "X$(2)" != X ] ; then \
     if [ -f $($(2)_pluginprod) ] ; then \
-      $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/$($(2)_plugintype)_$($(2)_pluginrefresh) &&\
-      $(CMD_rm) -f $($(2)_pluginprod) ;\
+      touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/$($(2)_plugintype)_$($(2)_pluginrefresh) &&\
+      rm -f $($(2)_pluginprod) ;\
     fi ;\
   fi
 endef
 
 define	clean_path
   @if [ -d $(LOCALTOP)/$(1) ] ; then \
-    $(CMD_echo) "Cleaning local working directory:$(1)"; \
-    $(CMD_rm) -rf $(LOCALTOP)/$(1) ; \
+    echo "Cleaning local working directory:$(1)"; \
+    /bin/rm -rf $(LOCALTOP)/$(1) ; \
   fi
 endef
 
 define clean_prod
   @if [ -f $(LOCALTOP)/$(1) ] ; then \
-    $(CMD_echo) "Cleaning product: $(1)" ; \
-    $(CMD_rm) -f $(LOCALTOP)/$(1); \
+    echo "Cleaning product: $(1)" ; \
+    /bin/rm -f $(LOCALTOP)/$(1); \
   fi    
 endef
 
@@ -347,7 +333,7 @@ endef
 
 define clean_files
   for f in $(1); do \
-    $(CMD_rm) -rf $(LOCALTOP)/$(2)/$$f;	\
+    /bin/rm -rf $(LOCALTOP)/$(2)/$$f;	\
   done
 endef
 define iglet_plugin_clean
@@ -364,6 +350,10 @@ define seal_plugin_clean
   $(call clean_prod,$($(1)_pluginprod))
 endef
 
+define rivet_plugin_clean
+  $(call clean_prod,$($(1)_pluginprod))
+endef
+
 define do_plugin_refresh
     if [ "X$(PSR_BASE_TARGET)" = X ] ; then \
       $(call do_$(1),$(2));\
@@ -374,159 +364,157 @@ endef
 define check_module_load
   if [ "X$(SHARED_LIB_LOAD_CHECK)" != X ] ; then \
     if [ "X$(1)" = X ] ; then \
-      $(CMD_echo) "@@@@ Checking shared library load: $(@F)"	&&\
+      echo "@@@@ Checking shared library load: $(@F)"	&&\
       ($(SHARED_LIB_LOAD_CHECK) $@ || ($(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
-      $(CMD_echo) "@@@@ ----> OK, shared library loaded successfully: $(@F)" ; \
+      echo "@@@@ ----> OK, shared library loaded successfully: $(@F)" ; \
     else \
-      $(CMD_echo) "@@@@ Shared library loading was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
+      echo "@@@@ Shared library loading was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
     fi ;\
   else \
-    $(CMD_echo) "@@@@ Shared library loading was SKIPPED due to SCRAM_NOLOADCHECK: $(@F)" ;\
+    echo "@@@@ Shared library loading was SKIPPED due to SCRAM_NOLOADCHECK: $(@F)" ;\
   fi
 endef
-
-ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
-  define install_name_tool
-    install_name_tool -id $1 $2
-  endef
-else
-  define install_name_tool
-    true
-  endef
-endif
 
 ifndef SCRAM_NOSYMCHECK
 define check_missing_symbols
   if [ "X$(1)" = X ] ; then \
-    $(CMD_echo) "@@@@ Checking shared library for missing symbols: $(@F)" &&\
-    $(CMD_echo) "int main(){}" > $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp  &&\
+    echo "@@@@ Checking shared library for missing symbols: $(@F)" &&\
+    echo "int main(){}" > $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp  &&\
     $(VERB_ECHO) $(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp &&\
-    ($(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp || ($(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out && $(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
-    $(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out	&&\
-    $(CMD_echo) "@@@@ ----> OK, shared library FULLY-BOUND (no missing symbols): $(@F)" ; \
+    ($(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp || (rm -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out && $(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
+    rm -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out	&&\
+    echo "@@@@ ----> OK, shared library FULLY-BOUND (no missing symbols): $(@F)" ; \
   else \
-    $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
+    echo "@@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
   fi
 endef
 else
 define check_missing_symbols
-  $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
+  echo "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
 endef
 endif
 
 ifndef SCRAM_NOEDMWRITECONFIG
 define edm_write_config
-  $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
-  $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
+  rm -rf $(<D)/edm_write_config && mkdir -p $(<D)/edm_write_config &&\
+  echo "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
   (cd $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
-  for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
-    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] || $(CMD_mkdir) -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)) ;\
-    $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ;\
-    $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
+  for file in `ls $(<D)/edm_write_config`; do \
+    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] || mkdir -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)) ;\
+    cp -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ;\
+    echo "01:rm -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
   done
 endef
 else
 define edm_write_config
-  $(CMD_echo) "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
+  echo "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
 endef
 endif
 
+define rivet_register_plugin
+  @$(startlog_$(2)) if [ -f $< ] ; then \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    cp -f $< $@ &&\
+    echo "01:rm -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
+    echo "--- Registered Rivet Plugin: $(1)"; \
+  else \
+    rm -f $@ ;\
+  fi
+endef
+
 ifndef SCRAM_NOPLUGINREFRESH
 define iglet_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2))touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(@F),$<) &&\
-    $(CMD_cp) -f $< $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "--- Registered IgLet Plugin: $(1)"; \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    cp -f $< $@ &&\
+    echo "01:rm -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
+    echo "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
+    echo "--- Registered IgLet Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ ;\
+    rm -f $@ ;\
   fi &&\
   $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
 endef
 
 define edm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2)) touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(CMD_touch) $(@D)/$($(1)_plugincache) || true) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    (touch $(@D)/$($(1)_plugincache) || true) &&\
+    ($(call edm_write_config,$(1)) || (rm -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(call install_name_tool,$$plugin,$<) &&\
-    $(CMD_cp) -f $< $(<D)/$$plugin &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    ($(CMD_cp) -f $(@D)/$($(1)_plugincache) $(<D) || $(CMD_touch) $(<D)/$($(1)_plugincache)) &&\
-    ($($(1)_pluginrefresh) $(<D)/$$plugin || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_rm) -f $(<D)/$$plugin &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    ($(CMD_mv) $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
+    cp -f $< $(<D)/$$plugin &&\
+    echo "module $$plugin" > $(<D)/$(@F) &&\
+    (cp -f $(@D)/$($(1)_plugincache) $(<D) || touch $(<D)/$($(1)_plugincache)) &&\
+    ($($(1)_pluginrefresh) $(<D)/$$plugin || (rm -f $< $(<D)/$$plugin && exit 1)) &&\
+    rm -f $(<D)/$$plugin &&\
+    cp -f $< $(@D)/$$plugin &&\
+    cp -f $(<D)/$(@F) $@ &&\
+    echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
+    echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
+    (mv $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
+    echo "--- Registered EDM Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
+    rm -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi &&\
   $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
 endef
 
 define seal_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2))touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(CMD_echo) 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "--- Registered Seal Plugin: $(1)"; \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    echo 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
+    echo "01:rm -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
+    echo "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
+    echo "--- Registered Seal Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ ;\
+    rm -f $@ ;\
   fi &&\
   $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
 endef
 else
 define iglet_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2))touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(@F),$<) &&\
-    $(CMD_cp) -f $< $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "--- Registered IgLet Plugin: $(1)"; \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    cp -f $< $@ &&\
+    echo "01:rm -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
+    echo "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
+    echo "--- Registered IgLet Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ ;\
+    rm -f $@ ;\
   fi $(endlog_$(2))
 endef
 
 define edm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2)) touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    ($(call edm_write_config,$(1)) || (rm -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin && $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
+    echo "module $$plugin" > $(<D)/$(@F) &&\
+    cp -f $< $(@D)/$$plugin &&\
+    cp -f $(<D)/$(@F) $@ &&\
+    echo "01:rm -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
+    echo "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
+    echo "--- Registered EDM Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
+    rm -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi $(endlog_$(2))
 endef
 
 define seal_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
+  @$(startlog_$(2))touch $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(CMD_echo) 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "--- Registered Seal Plugin: $(1)"; \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    echo 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
+    echo "01:rm -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
+    echo "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
+    echo "--- Registered Seal Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ ;\
+    rm -f $@ ;\
   fi $(endlog_$(2))
 endef
 endif
@@ -534,110 +522,110 @@ endif
 #Compilation Rules
 # CXX compilation
 define compile_cxxI
-@$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+@$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
                $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef
 define compile_cxx
-@$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+@$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef  
 # C compilation
 define compile_c
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(CC) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CC)  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Fortran compilation
 define compile_fortran
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(FC) -MMD -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(FC) -MMD -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Boost c++ source compilation
 define compile_boost
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Boost c++ pywrapper compilation
 define compile_pywrapper
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) "Generating and compiling wrapper file: " &&\
-  $(CMD_echo) ">> Compiling $< " &&\
+  @$(startlog_$(2))echo "Generating and compiling wrapper file: " &&\
+  mkdir -p $(@D)  &&\
+  echo ">> Compiling $< " &&\
   $(VERB_ECHO) $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@$(endlog_$(2))
 endef  
 # Dictionary compilation
 define compile_lcgdict
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling for LCG dictionary: $<" &&\
-  $(VERB_ECHO)            $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  ((cd $($(1)_objdir)/..; $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.d &&\
-  if [ -f $<.d ] ; then $(CMD_sed) -i -e 's|$(LOCALTOP)/||' $<.d ; $(CMD_rm) -f $(basename $@).d; fi $(endlog_$(2))
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling for LCG dictionary: $<" &&\
+  $(VERB_ECHO)            $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `echo "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | tr ' ' '\n' | grep -v '^-O[0-9s]*$$' | tr '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  ((cd $($(1)_objdir)/..; $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `echo "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | tr ' ' '\n' | grep -v '^-O[0-9s]*$$' | tr '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || (rm -f $< && exit 1)) $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | grep -v '^ *\\$$' > $<.d &&\
+  if [ -f $<.d ] ; then sed -i -e 's|$(LOCALTOP)/||' $<.d ; rm -f $(basename $@).d; fi $(endlog_$(2))
 endef
 # Root Dictionary compilation
 define compile_rootdict
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling for root dictionary: $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling for root dictionary: $< " &&\
   $(VERB_ECHO) $(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
+  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || (rm -f $< && exit 1)) $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && sed -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
   $(basename $@).d > $<.d &&\
-  if [ -f $<.d ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; $(CMD_mv) $<.d.backup $<.d; fi $(endlog_$(2))
+  if [ -f $<.d ] ; then sed 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; mv $<.d.backup $<.d; fi $(endlog_$(2))
 endef
 # compiling java
 define compile_java
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling java: $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Compiling java: $< " &&\
   $(VERB_ECHO) $(JAVAC) -source 1.4 -classpath $(@D):$$CLASSPATH -d $(@D) $< &&\
   $(JAVAC) -source 1.4 -classpath $(@D):$$CLASSPATH -d $(@D) $< &&\
-  $(CMD_touch) $@ $(endlog_$(2))
+  touch $@ $(endlog_$(2))
 endef
 # compiling python
 define set_python_timestamp
   for mod in $2; do \
-    [ -f $(1)/$$mod.pyc ] && $(CMD_touch) -r $(1)/$$mod.py $(1)/$$mod.pyc;\
+    [ -f $(1)/$$mod.pyc ] && touch -r $(1)/$$mod.py $(1)/$$mod.pyc;\
   done
 endef
 
 define compile_python
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_touch) -t $(OLD_TIMESTAMP) $@ &&\
-  $(CMD_echo) "01:$(CMD_find) $(4)/ -name '*.pyc' -type f 2>/dev/null | $(CMD_xargs) $(CMD_rm) -f " > $(call AutoCleanFile,$@,python) &&\
+  @$(startlog_$(2)) [ -d $(@D) ] || mkdir -p $(@D) ;\
+  touch -t $(OLD_TIMESTAMP) $@ &&\
+  echo "01:find $(4)/ -name '*.pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
   pymods="" &&\
-  for mod in `$(CMD_find) $(4)/ -name '*_cf[if].py' -type f | $(CMD_sed) 's|^$(4)/*||;s|.py$$||'`; do \
+  for mod in `find $(4)/ -name '*_cf[if].py' -type f | sed 's|^$(4)/*||;s|.py$$||'`; do \
     pyc=$(4)/$$mod.pyc ;\
     py=$(4)/$$mod.py ;\
     if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then pymods="$$mod $$pymods";  fi;\
   done; \
   if [ "X$$pymods" != "X" ] ; then \
-    $(CMD_echo) ">> Compiling cfi/cff python modules: $4";\
-    modules=`$(CMD_echo) $(3).$$pymods | $(CMD_sed) 's|/|.|g;s| |,$(3).|g'`;\
-    $(VERB_ECHO) "$(CMD_python) -c 'import $$modules'";\
-    (($(CMD_python) -c "import $$modules" > /dev/null 2>&1 && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
+    echo ">> Compiling cfi/cff python modules: $4";\
+    modules=`echo $(3).$$pymods | sed 's|/|.|g;s| |,$(3).|g'`;\
+    $(VERB_ECHO) "python -c 'import $$modules'";\
+    ((python -c "import $$modules" > /dev/null 2>&1 && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
   fi $(endlog_$(2))
 endef
 
 define compile_python_individual
-  $(CMD_rm) -f  $($(1)_objdir)/py.errors &&\
+  rm -f  $($(1)_objdir)/py.errors &&\
   for mod in $3; do \
     pyc=$(4)/$$mod.pyc ;\
     py=$(4)/$$mod.py ;\
-    $(CMD_echo) ">> Compiling: $$py";\
-    modx=`$(CMD_echo) $(2).$$mod | $(CMD_sed) 's|/|.|g'`;\
-    $(VERB_ECHO) "$(CMD_python) -c 'import $$modx'";\
-    (($(CMD_python) -c "import $$modx" && [ -f $$pyc ] && $(CMD_touch) -r $$py $$pyc) || ($(CMD_echo) "gmake: *** [$$py] Error $$?" && $(CMD_touch) $($(1)_objdir)/py.errors)) ;\
+    echo ">> Compiling: $$py";\
+    modx=`echo $(2).$$mod | sed 's|/|.|g'`;\
+    $(VERB_ECHO) "python -c 'import $$modx'";\
+    ((python -c "import $$modx" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors)) ;\
   done; \
   if [ -f $($(1)_objdir)/py.errors ] ; then \
-    $(CMD_rm) -f $($(1)_objdir)/py.errors ;\
+    rm -f $($(1)_objdir)/py.errors ;\
     ([ "X$(RELEASETOP)" == "X" ] || exit 1) ;\
   fi
 endef
@@ -645,122 +633,126 @@ endef
 # Source Generators Rules
 # boost source generation from Pyste
 define pyste2boost
-  @$(startlog_$(2))$(CMD_echo)  ">> Generating and compiling Boost stub for module $*" 	&& \
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo  ">> Generating and compiling Boost stub for module $*" 	&& \
   $(VERB_ECHO) python $(PYSTE_EXEC) -D_REENTRANT $($(1)_CPPFLAGS) --out=$@ --module=$* $< &&\
   python $(PYSTE_EXEC) -D_REENTRANT $($(1)_CPPFLAGS) --out=$@ --module=$* $< $(endlog_$(2))
 endef  
 # PyWrapper Generation
 define generate_pywrapper
-  @$(startlog_$(2))$(CMD_echo) "Generating wrapper code to put the following files in a single module called: $(1)" $(endlog_$(2))
+  @$(startlog_$(2))echo "Generating wrapper code to put the following files in a single module called: $(1)" $(endlog_$(2))
   @exec 5>&1;	\
-  ( $(CMD_echo) "#include <boost/python.hpp>"; echo;	\
+  ( echo "#include <boost/python.hpp>"; echo;	\
   for c in $($(1)_classnames) ..; do		\
     case $$c in .. ) continue ;; esac ;		\
-    $(CMD_echo) "  $$c" 1>&5;				\
-    $(CMD_echo) "extern void init_module_$$c ();";	\
+    echo "  $$c" 1>&5;				\
+    echo "extern void init_module_$$c ();";	\
   done;						\
-  echo; $(CMD_echo) "void init_module_$(1) () {";	\
+  echo; echo "void init_module_$(1) () {";	\
   for c in $($(1)_classnames) ..; do		\
     case $$c in .. ) continue ;; esac ;		\
-    $(CMD_echo) "  init_module_$$c ();";		\
+    echo "  init_module_$$c ();";		\
   done;						\
-  $(CMD_echo) "}"; echo;				\
-  $(CMD_echo) "extern \"C\" void init$(1) () {";	\
-  $(CMD_echo) 'boost::python::detail::init_module("$(1)",'\
+  echo "}"; echo;				\
+  echo "extern \"C\" void init$(1) () {";	\
+  echo 'boost::python::detail::init_module("$(1)",'\
 	'init_module_$(1));';			\
-  $(CMD_echo) "}";					\
+  echo "}";					\
   ) > $@.tmp
-  @$(CMD_mv) $@.tmp $@
+  @mv $@.tmp $@
 endef  
 #LCG dictionary generation
 define generate_lcgdict
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) &&\
-  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Building LCG reflex dict from header file $4" &&\
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) &&\
+  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) -DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE $($(1)_CPPFLAGS) || (rm -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
 endef
 # ROOt dictionary generation
 define generate_rootdict
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Building Root dict from header file $< " &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Building Root dict from header file $< " &&\
   $(VERB_ECHO) $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< &&\
-  ($(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
-  $(CMD_mv) $@ $@.base	&&\
-  $(CMD_cat) $< $@.base > $@ &&\
-  $(CMD_rm) -f $@.base $(endlog_$(2))
+  ($(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< || (rm -f $@ && exit 1)) &&\
+  mv $@ $@.base	&&\
+  cat $< $@.base > $@ &&\
+  rm -f $@.base $(endlog_$(2))
 endef
 # CodeGen record Generation
 define generate_codegen_record
-  @$(startlog_$(2))$(CMD_echo) ">> Generating file $(@F) from class descriptor $<" &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Generating file $(@F) from class descriptor $<" &&\
   $(VERB_ECHO) $($(1)_CODEGENPY) $(1) $($(1)_objdir) $< &&\
   $($(1)_CODEGENPY) $(1) $($(1)_objdir) $< $(endlog_$(2))
 endef
 # MOC generation
 define generate_moc
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Running moc ( $(3) ) for $<" &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo ">> Running moc ( $(3) ) for $<" &&\
   $(3) -o $@ $< $(endlog_$(2))
 endef
 # Flex Generaton
 define generate_lex
-  @$(startlog_$(2))$(CMD_echo) "Flex: Generating $@ from $<" &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo "Flex: Generating $@ from $<" &&\
   $(VERB_ECHO) $(LEX) -o$@ -P$(patsubst %lex,%,$*) $< &&\
-  ($(LEX) -o$@ -P$(patsubst %lex,%,$*) $< || ($(CMD_rm) -f $@ && exit 1))$(endlog_$(2))
+  ($(LEX) -o$@ -P$(patsubst %lex,%,$*) $< || (rm -f $@ && exit 1))$(endlog_$(2))
 endef
 define generate_parse
-  @$(startlog_$(2))$(CMD_echo) "Bison: Generating $@ from $<" &&\
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  echo "Bison: Generating $@ from $<" &&\
   $(VERB_ECHO) $(YACC) -p$(patsubst %parse,%,$*) --defines=$(basename $@).h -o$(basename $@).cc $< &&\
-  ($(YACC) -p$(patsubst %parse,%,$*) --defines=$(basename $@).h -o$(basename $@).cc $< ||($(CMD_rm) -f $(basename $@).h $(basename $@).cc && exit 1)) &&\
+  ($(YACC) -p$(patsubst %parse,%,$*) --defines=$(basename $@).h -o$(basename $@).cc $< ||(rm -f $(basename $@).h $(basename $@).cc && exit 1)) &&\
   cd $(WORKINGDIR)/$(3) &&\
-  $(CMD_rm) -f $*parse.h && $(CMD_ln) -s $(1)/$*parse.h $*parse.h $(endlog_$(2))
+  rm -f $*parse.h && ln -s $(1)/$*parse.h $*parse.h $(endlog_$(2))
 endef
 ##############################################################################
 # Library linking Rules
 # Shared library linking
 define link_lib
-  @$(startlog_$(2))$(CMD_echo) ">> Building shared library $@" &&\
-  $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
+  @$(startlog_$(2))echo ">> Building shared library $@" &&\
+  touch $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS) &&\
   (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
-  @$(startlog_$(2))$(CMD_rm) -f $@.dep && $(CMD_touch) $@.dep &&\
+  @$(startlog_$(2))rm -f $@.dep && touch $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
+    if [ -f $$dep ] ; then sed 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
   done $(endlog_$(2))
-  @$(CMD_tr) ' ' '\012' <  $@.dep | $(CMD_sed) -e 's/^'\\\\'$$//' -e '/^$$/ d' \
+  @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new
-  @$(CMD_sort) $@.dep.new | $(CMD_uniq) >> $@.dep
-  @$(CMD_rm) -f $@.dep.new
+  @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef  
 # Big Object Files
 define big_obj
-  @$(startlog_$(2))$(CMD_echo) ">> Building big object file $@" &&\
+  @$(startlog_$(2))echo ">> Building big object file $@" &&\
   $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 &&\
   ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 || ($(call delete_build_prod,$(4)) && exit 1)) &&\
   $(call copy_bigobj_to_main_productstore,$(4)) $(endlog_$(2))
 endef
 #Shared library for Python bindings
 define link_pylib
-  @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
-  $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
+  @$(startlog_$(2))echo ">> Building Python module $($(1)_product)" && \
+  touch $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO) $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) &&\
   (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
-  @$(startlog_$(2))$(CMD_rm) -f $@.dep && $(CMD_touch) $@.dep &&\
+  @$(startlog_$(2))rm -f $@.dep && touch $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
+    if [ -f $$dep ] ; then sed 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
   done $(endlog_$(2))
-  @$(CMD_tr) ' ' '\012' <  $@.dep | $(CMD_sed) -e 's/^'\\\\'$$//' -e '/^$$/ d' \
+  @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new 
-  @$(CMD_sort) $@.dep.new | $(CMD_uniq) >> $@.dep
-  @$(CMD_rm) -f $@.dep.new
+  @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef  
 #Shared Capabilities library
 define link_capabilities
-  @$(startlog_$(2))$(CMD_echo) ">> ---- Building capability library $@" &&\
+  @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
   $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
   (($(call checklibs,$(1)) && $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
@@ -773,18 +765,18 @@ endef
 # Binary/test building Rules
 # Binary building 
 define build_bin
-  @$(startlog_$(2))$(CMD_echo) ">> Building binary $(1)" &&\
+  @$(startlog_$(2))echo ">> Building binary $(1)" &&\
   $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
   (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
-  @$(startlog_$(2))$(CMD_rm) -f $@.dep && $(CMD_touch) $@.dep &&\
+  @$(startlog_$(2))rm -f $@.dep && touch $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
+    if [ -f $$dep ] ; then sed 's|$(LOCALTOP)/||' $$dep >> $@.dep ; fi ; \
   done $(endlog_$(2))
-  @$(CMD_tr) ' ' '\012' <  $@.dep | $(CMD_sed) -e 's/^'\\\\'$$//' -e '/^$$/ d' \
+  @tr ' ' '\012' <  $@.dep | sed -e 's/^'\\\\'$$//' -e '/^$$/ d' \
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new 
-  @$(CMD_sort) $@.dep.new | $(CMD_uniq) >> $@.dep
-  @$(CMD_rm) -f $@.dep.new
+  @sort $@.dep.new | uniq >> $@.dep
+  @rm -f $@.dep.new
 endef
 # Test executable building
 define build_test
@@ -794,120 +786,120 @@ endef
 # Data download and Copy
 # Url download
 define download_urls
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@  &&\
-  $(CMD_echo) ">> Downloading and installing data files from WWW: $<" &&\
-  dir=`$(CMD_dirname) $< | $(CMD_sed) 's|^src/|share/|'` && $(CMD_mkdir) -p $$dir   &&\
-  (wget -P $(LOCALTOP)/$$dir -a $(LOCALTOP)/$(3)/wwwdownload.log -i $< -N || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
+  @$(startlog_$(2)) mkdir -p $(@D) && touch $@  &&\
+  echo ">> Downloading and installing data files from WWW: $<" &&\
+  dir=`dirname $< | sed 's|^src/|share/|'` && mkdir -p $$dir   &&\
+  (wget -P $(LOCALTOP)/$$dir -a $(LOCALTOP)/$(3)/wwwdownload.log -i $< -N || (rm -f $@ && exit 1)) $(endlog_$(2))
 endef  
 # All Date dir to share
 define copy_datadir
-  @$(startlog_$(2))$(CMD_echo) ">> Installing data files for $<"	&&\
-  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_cp) -rup $< $(@D) &&\
-  for dir in `$(CMD_find) $@ -name CVS -type d`; do \
-    $(CMD_rm) -rf $$dir ;\
+  @$(startlog_$(2))echo ">> Installing data files for $<"	&&\
+  mkdir -p $(@D) &&\
+  cp -rup $< $(@D) &&\
+  for dir in `find $@ -name CVS -type d`; do \
+    /bin/rm -rf $$dir ;\
   done &&\
-  $(CMD_touch) $@ $(endlog_$(2))
+  touch $@ $(endlog_$(2))
 endef
 define script_copy
-  @$(startlog_$(2))[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_rm) -rf $@ &&\
-  $(CMD_cp) -rp $< $@	&&\
-  $(CMD_echo) ">> Copied $(@F)" $(endlog_$(2))
+  @$(startlog_$(2))mkdir -p $(@D) &&\
+  /bin/rm -rf $@ &&\
+  cp -rp $< $@	&&\
+  echo ">> Copied $(@F)" $(endlog_$(2))
 endef
 define generate_python_bytecode
   if [ "X$(PYTHON_COMPILE)" != X ] ; then \
-    $(CMD_echo) ">> Generating python byte-code: $(1)" && \
+    echo ">> Generating python byte-code: $(1)" && \
     python $(PYTHON_COMPILE) -f $(1) >/dev/null 2>&1; \
   else \
-    $(CMD_echo) "Python tool is not used. So not going to generate byte-code." ; \
+    echo "Python tool is not used. So not going to generate byte-code." ; \
   fi
 endef
 define python_script_copy
   @$(startlog_$(2))if [ ! -d $(LOCALTOP)/$(3) ]; then \
-    $(CMD_mkdir) -p $(LOCALTOP)/$(3) &&\
-    $(CMD_echo) "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
+    mkdir -p $(LOCALTOP)/$(3) &&\
+    echo "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
   fi &&\
-  $(CMD_rm) -rf $($(1)_python_dir) && $(CMD_mkdir) -p $($(1)_python_dir) &&\
-  $(CMD_echo) ">> Copying python/* to $($(1)_python_dir)" &&\
-  for name in `$(CMD_ls) $($(1)_srcdir) | $(CMD_grep) -v "CVS\|BuildFile\|BuildFile.xml"` ; do \
+  rm -rf $($(1)_python_dir) && mkdir -p $($(1)_python_dir) &&\
+  echo ">> Copying python/* to $($(1)_python_dir)" &&\
+  for name in `ls $($(1)_srcdir) | grep -v "CVS\|BuildFile\|BuildFile.xml"` ; do \
     f=$($(1)_srcdir)/$$name &&\
     if [ -d $$f ] ; then \
-      $(CMD_cp) -rp $$f $($(1)_python_dir) || continue ;\
+      cp -rp $$f $($(1)_python_dir) || continue ;\
     else  \
-      [ "X`$(CMD_echo) $$f | $(CMD_grep) '\.py$$'`" != X ] || continue ; \
-      $(CMD_cp) -rp $$f $($(1)_python_dir)/ || continue ;\
+      [ "X`echo $$f | grep '\.py$$'`" != X ] || continue ; \
+      cp -rp $$f $($(1)_python_dir)/ || continue ;\
     fi \
   done &&\
   $(call generate_python_bytecode,$(LOCALTOP)/$($(1)_python_dir)) &&\
-  for dir in `$(CMD_find) $($(1)_python_dir) -name "*" -type d` ; do \
+  for dir in `find $($(1)_python_dir) -name "*" -type d` ; do \
     if [ ! -f $$dir/__init__.py ] ; then \
-      $(CMD_touch) $$dir/__init__.py; \
+      touch $$dir/__init__.py; \
     fi \
   done &&\
-  $(CMD_touch) $($(1)_python_dir)/__init__.py &&\
-  $(CMD_touch) $($(1)_python_dir)/../__init__.py $(endlog_$(2))
+  touch $($(1)_python_dir)/__init__.py &&\
+  touch $($(1)_python_dir)/../__init__.py $(endlog_$(2))
 endef
 define python_directory_link
   @$(startlog_$(2))if [ ! -d $(LOCALTOP)/$(3) ]; then \
-    $(CMD_mkdir) -p $(LOCALTOP)/$(3) &&\
-    $(CMD_echo) "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
+    mkdir -p $(LOCALTOP)/$(3) &&\
+    echo "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
   fi &&\
   if [ ! -e $($(1)_python_dir) ] ; then \
-    subsysdir=`$(CMD_dirname) $($(1)_python_dir)` &&\
-    $(CMD_mkdir) -p $$subsysdir &&\
+    subsysdir=`dirname $($(1)_python_dir)` &&\
+    mkdir -p $$subsysdir &&\
     rellink=. &&\
     subsysdir1=$$subsysdir &&\
-    while [ "$$subsysdir1" != "." ] ; do $(CMD_touch) $$subsysdir/__init__.py; subsysdir1=`$(CMD_dirname) $$subsysdir1`;  rellink=$$rellink/..; done &&\
-    $(CMD_ln) -s $$rellink/$(4) $($(1)_python_dir) &&\
-    $(CMD_echo) ">> Link created: $($(1)_python_dir) -> $($(1)_srcdir)" &&\
-    for d in . `$(CMD_ls) $($(1)_python_dir)` ; do \
+    while [ "$$subsysdir1" != "." ] ; do touch $$subsysdir/__init__.py; subsysdir1=`dirname $$subsysdir1`;  rellink=$$rellink/..; done &&\
+    ln -s $$rellink/$(4) $($(1)_python_dir) &&\
+    echo ">> Link created: $($(1)_python_dir) -> $($(1)_srcdir)" &&\
+    for d in . `ls $($(1)_python_dir)` ; do \
       if [ -d $($(1)_python_dir)/$$d ] ; then \
         if [ ! -f $($(1)_python_dir)/$$d/__init__.py ] ; then \
-	  $(CMD_echo) "#this file was automatically created by SCRAM" > $($(1)_python_dir)/$$d/__init__.py;\
+	  echo "#this file was automatically created by SCRAM" > $($(1)_python_dir)/$$d/__init__.py;\
 	fi ;\
       fi ;\
     done ;\
   fi $(endlog_$(2))
 endef
 define copy_src_scripts
-  @$(startlog_$(2))$(CMD_echo) "------- copying scripts from $(1) -------" &&\
+  @$(startlog_$(2))echo "------- copying scripts from $(1) -------" &&\
   for f in $(3); do \
     [ -f $(LOCALTOP)/$(1)/$$f ] || continue ;\
-    $(CMD_echo) ">> Copying $(LOCALTOP)/$(1)/$$f"	&&\
-    $(CMD_cp) -p $(LOCALTOP)/$(1)/$$f  $(LOCALTOP)/$(4) || continue ;\
+    echo ">> Copying $(LOCALTOP)/$(1)/$$f"	&&\
+    cp -p $(LOCALTOP)/$(1)/$$f  $(LOCALTOP)/$(4) || continue ;\
   done $(endlog_$(2))
 endef
 define src2store_copy
-  @$(startlog_$(2)) $(CMD_echo) "------- copying files from $(1) -------" &&\
-  [ -d $(LOCALTOP)/$(4) ] || $(CMD_mkdir) -p $(LOCALTOP)/$(4) &&\
+  @$(startlog_$(2)) echo "------- copying files from $(1) -------" &&\
+  mkdir -p $(LOCALTOP)/$(4) &&\
   for f in $(3) ; do \
     if [ -d $(LOCALTOP)/$(4)/$$f ] ; then \
-      $(CMD_rm) -rf $(LOCALTOP)/$(4)/$$f; \
+      rm -rf $(LOCALTOP)/$(4)/$$f; \
     fi &&\
-    $(CMD_cp) -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
-    $(CMD_echo) ">> copied $$f"; \
+    cp -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
+    echo ">> copied $$f"; \
   done $(endlog_$(2))
 endef
 define copy_python_products
-  @$(startlog_$(2))[ -d $(4) ] || ($(CMD_mkdir) -p $(4) && $(CMD_echo) ">> $(4) created") &&\
-  $(CMD_cp) $(3) $(4) $(endlog_$(2))
+  @$(startlog_$(2))[ -d $(4) ] || (mkdir -p $(4) && echo ">> $(4) created") &&\
+  cp $(3) $(4) $(endlog_$(2))
 endef
 #############################################################################
 # Tesings test executable
 define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
-    $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Skipping test $(1)"; \
+    echo "Package "$(patsubst src/%/test,%,$(4))": Skipping test $(1)"; \
   else \
-    $(CMD_echo) "Package "$(patsubst src/%/test,%,$(4))": Running test $(1)" &&\
-    $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
-    $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
-    $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS") &&\
-    $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
-    $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
-    $(CMD_cat) $($(1)_objdir)/testing.log &&\
-    $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; $(CMD_rm) -f $($(1)_objdir)/testing.log; \
+    echo "Package "$(patsubst src/%/test,%,$(4))": Running test $(1)" &&\
+    rm -f $($(1)_objdir)/testing.log; touch $($(1)_objdir)/testing.log  &&\
+    echo " " >> $($(1)_objdir)/testing.log &&\
+    echo "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || echo "---> test $(1) had ERRORS") &&\
+    echo " " >> $($(1)_objdir)/testing.log &&\
+    echo "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
+    cat $($(1)_objdir)/testing.log &&\
+    cat $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; rm -f $($(1)_objdir)/testing.log; \
   fi
 endef
 
@@ -916,106 +908,104 @@ endef
 #Preprocessing C source
 define rulechecker_preprocess_file_init
   if [ -f $($(1)_srcdir)/../interface/$*.h ] ; then \
-    $(CMD_echo) "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/../interface/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ; \
+    echo "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/../interface/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ; \
   else \
-    $(CMD_echo) "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ;\
+    echo "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ;\
   fi &&\
-  $(CMD_rm) -f $@.RULES_IGNORED; $(CMD_touch) $@.RULES_IGNORED &&\
-  for rule in `$(CMD_echo) "$($(1)_RULES_IGNORED)" | $(CMD_tr) ' ' '\n' | $(CMD_grep) "$*.$(4):" | $(CMD_sed) 's|$*.$(4):||' | $(CMD_tr) ',' '\n'` ; do \
-    $(CMD_echo) "$$rule" >> $@.RULES_IGNORED;\
+  rm -f $@.RULES_IGNORED; touch $@.RULES_IGNORED &&\
+  for rule in `echo "$($(1)_RULES_IGNORED)" | tr ' ' '\n' | grep "$*.$(4):" | sed 's|$*.$(4):||' | tr ',' '\n'` ; do \
+    echo "$$rule" >> $@.RULES_IGNORED;\
   done &&\
   if [ ! -s $@.RULES_IGNORED ] ; then \
-    $(CMD_rm) -f $@.RULES_IGNORED; \
+    rm -f $@.RULES_IGNORED; \
   fi &&\
-  $(CMD_rm) -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).$(RULECHECKER_VIOLATION_EXT) &&\
-  $(CMD_rm) -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).err &&\
+  rm -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).$(RULECHECKER_VIOLATION_EXT) &&\
+  rm -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).err &&\
   if [ $(@D)/$(*F).d ] ; then \
-    $(CMD_sed) 's|.o: |.i: |' $(@D)/$(*F).d > $(@D)/$(*F).id ;\
+    sed 's|.o: |.i: |' $(@D)/$(*F).d > $(@D)/$(*F).id ;\
   fi
 endef
 #Preprocessing C source
 define preprocess_c
-  @$(startlog_$(2))$(CMD_echo) ">> Preprocessing $<" &&\
+  @$(startlog_$(2)) mkdir -p $(@D) &&\
+  echo ">> Preprocessing $<" &&\
   $(VERB_ECHO) $(CC)  -E $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CC)  -E $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(call rulechecker_preprocess_file_init,$(1),$(2),$(3),$(4)) $(endlog_$(2))
 endef
 #Preprocessing CXX source
 define preprocess_cxx
-  @$(startlog_$(2))$(CMD_echo) ">> Preprocessing $<" &&\
+  @$(startlog_$(2)) mkdir -p $(@D) &&\
+  echo ">> Preprocessing $<" &&\
   $(VERB_ECHO) $(CXX) -E $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(CXX) -E $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
   $(call rulechecker_preprocess_file_init,$(1),$(2),$(3),$(4)) $(endlog_$(2))
 endef
 # Run Rule checker
 define run_rule_checker
-  @$(startlog_$(2)) cd  $($(1)_objdir) && $(CMD_touch) quickExecution &&\
-  for file in `$(CMD_cat) config_FILES_TO_ANALYZE.full | $(CMD_awk) '{print $$1}'`; do \
-    line=`$(CMD_grep) "^$$file " config_FILES_TO_ANALYZE.full` &&\
-    patcharg=`$(CMD_echo) $$line | $(CMD_sed) 's|*.*||'` &&\
-    src_file=`$(CMD_echo) $$line | $(CMD_awk) '{print $$2}'` &&\
-    file_woext=`$(CMD_echo) $$file | $(CMD_sed) 's|\.$(RULECHECKER_PREPROCESS_EXT)$$||'` &&\
+  @$(startlog_$(2)) cd  $($(1)_objdir) && touch quickExecution &&\
+  for file in `cat config_FILES_TO_ANALYZE.full | awk '{print $$1}'`; do \
+    line=`grep "^$$file " config_FILES_TO_ANALYZE.full` &&\
+    patcharg=`echo $$line | sed 's|*.*||'` &&\
+    src_file=`echo $$line | awk '{print $$2}'` &&\
+    file_woext=`echo $$file | sed 's|\.$(RULECHECKER_PREPROCESS_EXT)$$||'` &&\
     viol_err_file=$$file_woext.err &&\
     viol_file=$$file_woext.$(RULECHECKER_VIOLATION_EXT) &&\
-    $(CMD_echo) ">> Patching $$src_file"  &&\
+    echo ">> Patching $$src_file"  &&\
     patch4cms.pl $$patcharg  &&\
-    $(CMD_echo) "$$line" > config_FILES_TO_ANALYZE  &&\
-    $(CMD_rm) -f config_RULES_IGNORED  &&\
+    echo "$$line" > config_FILES_TO_ANALYZE  &&\
+    rm -f config_RULES_IGNORED  &&\
     if [ -f $$file.RULES_IGNORED ] ; then \
-      $(CMD_mv) $$file.RULES_IGNORED config_RULES_IGNORED; \
+      mv $$file.RULES_IGNORED config_RULES_IGNORED; \
     fi	&&\
-    $(CMD_echo) ">> Rule checking $$src_file" &&\
+    echo ">> Rule checking $$src_file" &&\
     rulechecker_runs_ok="yes"  &&\
     $(JAVA_HOME)/bin/java $$CMS_CODING_RULES > $$viol_err_file 2>&1 || rulechecker_runs_ok="no" &&\
-    if [ X$$rulechecker_runs_ok = Xyes ] ; then	$(CMD_rm) -f $$viol_err_file; fi &&\
-    if [ -f "$$file"i ] ; then $(CMD_rm) -f "$$file"i; fi &&\
+    if [ X$$rulechecker_runs_ok = Xyes ] ; then	rm -f $$viol_err_file; fi &&\
+    if [ -f "$$file"i ] ; then rm -f "$$file"i; fi &&\
     if [ -s $$viol_file ] ; then \
-      $(CMD_cat) $$viol_file; $(CMD_mkdir) -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_mv) $$viol_file $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_echo) ">> See rule violations: $(LOCALTOP)/doc/RuleCheck/$(3)/$$viol_file"; \
+      cat $$viol_file; mkdir -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
+      mv $$viol_file $(LOCALTOP)/doc/RuleCheck/$(3) &&\
+      echo ">> See rule violations: $(LOCALTOP)/doc/RuleCheck/$(3)/$$viol_file"; \
     else \
-      $(CMD_rm) -f $$viol_file; $(CMD_echo) "   No violation found"; \
+      rm -f $$viol_file; echo "   No violation found"; \
     fi &&\
     if [ -s $$viol_err_file ] ; then \
-      $(CMD_mkdir) -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_mv) $$viol_err_file $(LOCALTOP)/doc/RuleCheck/$(3); \
+      mkdir -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
+      mv $$viol_err_file $(LOCALTOP)/doc/RuleCheck/$(3); \
     fi ;\
   done &&\
-  $(CMD_rm) -f config_RULES_IGNORED quickExecution config_FILES_TO_ANALYZE.full config_FILES_TO_ANALYZE &&\
-  cd $(LOCALTOP) && $(CMD_touch) $@ $(endlog_$(2))
+  rm -f config_RULES_IGNORED quickExecution config_FILES_TO_ANALYZE.full config_FILES_TO_ANALYZE &&\
+  cd $(LOCALTOP) && touch $@ $(endlog_$(2))
 endef
 ##############################################################################
 define bf_update
   @if [ ! -f $@ ] || [ "X$($(1)_BuildFile)" = X ] ; then \
-    $(CMD_touch) $@;\
+    touch $@;\
   elif [ "X`$(call get_time_stamp,$@)`" != "X`$(call get_time_stamp,$($(1)_BuildFile))`" ] ; then \
-      $(CMD_touch) $@;\
+      touch $@;\
   fi
 endef
 define config_update
-  @[ -d  $(@D)] || $(CMD_mkdir) -p $(@D) ; $(CMD_touch) $@ ;\
+  @mkdir -p $(@D) ; touch $@ ;\
   if [ "X$($(1)_BuildFile)" != X ] ; then \
-    $(CMD_touch) -r $($(1)_BuildFile) $(WORKINGDIR)/cache/bf/$(1);\
+    touch -r $($(1)_BuildFile) $(WORKINGDIR)/cache/bf/$(1);\
   fi
 endef
 define timestamp_cmp
-  $(CMD_perl) -e "my @s1=stat '$1'; my @s2=stat '$2';"'print $$s1[9]<=>$$s2[9];'
+  perl -e "my @s1=stat '$1'; my @s2=stat '$2';"'print $$s1[9]<=>$$s2[9];'
 endef
 define get_time_stamp
-  $(CMD_perl) -e 'my @d=stat "$(1)"; print "$$d[9]\n";'
+  perl -e 'my @d=stat "$(1)"; print "$$d[9]\n";'
 endef
 #############################################################################
 define SubSystem
-.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) compile_$(2) precompile_$(2)
+.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2)
 $(1) src/$(1) $(2) all_$(2): $(subdirs_$(2))
-	@$(CMD_echo) ">> Subsystem $(1) built"
+	@echo ">> Subsystem $(1) built"
 runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
 	@:
 runpython_$(2): $(addprefix runpython_,$(subdirs_$(2)))
-	@:
-compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
-	@:
-precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
 	@:
 endef
 define EmptyPackage
@@ -1024,13 +1014,13 @@ $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
+	@touch $($(1)_BuildFile)
 endif
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_BuildFile) $$($(1)_libdeps)
-	@$(CMD_touch) $$@
+	@touch $$@
 endef
 define Package
-.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) msg_$(2) compile_$(2) precompile_$(2)
+.PHONY: $(1) src/$(1) $(2) all_$(2) runtests_$(2) msg_$(2)
 ifeq ($(strip $(BUILD_LOG)),yes)
 logfile_$(2) := $(WORKINGDIR)/cache/log/src/$(1)/build.log
 redirectlog_$(2) := >> $(WORKINGDIR)/cache/log/src/$(1)/build.log
@@ -1039,26 +1029,22 @@ logfile_$(2) :=
 redirectlog_$(2) := 
 endif
 msg_$(2): $$(logfile_$(2))
-	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
-	$(CMD_echo) ">> Entering Package $(1)"
+	@$(DO_BUILD_LOG) echo ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
+	echo ">> Entering Package $(1)"
 $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
-	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
-	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
-	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
-	$(CMD_echo) ">> Leaving Package $(1)" &&\
-	$(CMD_echo) ">> Package $(1) built"
+	@$(DO_BUILD_LOG) echo ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
+	$(DO_BUILD_LOG) echo ">> Package $(1) built" $$(redirectlog_$(2)) &&\
+	$(DO_BUILD_LOG) cat $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
+	echo ">> Leaving Package $(1)" &&\
+	echo ">> Package $(1) built"
 ifeq ($$(filter $(2)_test,$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
-	@$(CMD_echo) ">> Tests for package $(1) ran."
-endif
-precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
-	@:
-compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
-	@:
+	@echo ">> Tests for package $(1) ran."
+endif	
 ifeq ($$(filter $(2)_python,$(subdirs_$(2))),$(2)_python)
 runpython_$(2): runpython_$(2)_python
-	@$(CMD_echo) ">> Python for package $(1) ran."
+	@echo ">> Python for package $(1) ran."
 endif
 endef
 
@@ -1092,6 +1078,9 @@ $(eval $(call addPlugin,$1,$2,edm,yes,$3,EdmPluginRefresh,.edmplugincache,$(1).e
 endef
 define igletPlugin
 $(eval $(call addPlugin,$1,$2,iglet,yes,$3,IgPluginRefresh,.iglets,$(2).iglet,$2))
+endef
+define rivetPlugin
+$(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
 endef
 
 define CXXCompileRule
@@ -1147,13 +1136,13 @@ ifneq ($$(strip $($(1)_BuildFile)),)
 ifeq ($(filter $($(1)_BuildFile),$(ALL_BUILDFILES)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
+	@touch $($(1)_BuildFile)
 endif
 $$($(1)_objdir)/config: $($(1)_BuildFile)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 endif
 $(1)_config += $$($(1)_objdir)/config
 endef
@@ -1167,7 +1156,7 @@ $(1):  $($(1)_objdir)/$($(1)_product)
 $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
-	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
+	@$$(startlog_$(1))echo "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 $$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
 ifeq ($(strip $(4)),bin)
@@ -1184,25 +1173,23 @@ runtests_$(1): all_$(1) $(LOCALTOP)/$(5)/testing.log
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 $(WORKINGDIR)/cache/prod/$(1): $($(1)_objdir)/$($(1)_product)
-	@if [ ! -f $$@ ] ; then $(CMD_touch) $$@; fi
+	@if [ ! -f $$@ ] ; then touch $$@; fi
 ifneq ($$(strip $($(1)_product)),)
 ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
 endif
 endif
-precompile_$(6):: $($(1)_objdir)/precompile
-	@:
-compile_$(6):: $($(1)_objdir)/compile
-	@:
+precompile += $($(1)_objdir)/precompile
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
-	@$(CMD_touch) $$@
+	@mkdir -p $$(@D) ; touch $$@
 ifeq ($$(strip $(4)),lib)
-	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
+	@$(startlog_$(1))echo "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
+compile += $($(1)_objdir)/compile
 $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
-	@$(CMD_touch) $$@
+	@touch $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
-	@$(CMD_touch) $$@
+	@touch $$@
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
 endif
@@ -1260,7 +1247,7 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,fileext,logprodstore
 define Library
 $(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5)))
-$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
+$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(8)))
 endef
 
 #safename,path,safepath,scriptstore,scripts
@@ -1269,9 +1256,9 @@ $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 endef
 
-#safename,path,libstore,fileext,logprodstore,safepath
+#safename,path,libstore,fileext,logprodstore
 define LibraryTail
-$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(5),$(6)))
+$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(5)))
 ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
@@ -1292,7 +1279,7 @@ endef
 define ExtraPythonProd
 all_$(1)_extra_python_prod += $(3)/$(2)
 $(3)/$(2): $(2) $(1)_copy_python_scripts $($(1)_CONFIGDEPS)
-	@$(CMD_echo) ">> Copying python products \"$(2)\" => $(3)"
+	@echo ">> Copying python products \"$(2)\" => $(3)"
 	$$(call copy_python_products,$(1),$(logfile_$(1)),$(2),$(3))
 endef
 
@@ -1307,12 +1294,12 @@ $(1)_CONFIGDEPS := $(CONFIGDEPS) $(sort $(foreach u,$(sort $($(1)_LOC_USE) $($(1
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
+	@touch $($(1)_BuildFile)
 $$($(1)_objdir)/config: $($(1)_BuildFile)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2)/$(1),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 endif
 $(1)_config += $$($(1)_objdir)/config
 all_$(1) += $(1)_copy_python_scripts
@@ -1332,7 +1319,7 @@ $(1)_copy_python_scripts: $(logfile_$(1))
 endif
 else
 $(1)_copy_python_scripts: $(logfile_$(1))
-	@$(CMD_echo) "No source files to compile. Nothing to be done for Python modules at $(2)."
+	@echo "No source files to compile. Nothing to be done for Python modules at $(2)."
 endif
 runpython_$(3): $(1)_copy_python_scripts
 	@:
@@ -1358,10 +1345,10 @@ $(1)_classnames   := $$(patsubst %_boost,%,$$(filter %_boost,$$(basename $$(notd
 $(1)_CXXSharedLink = -rdynamic $$($(1)_LDFLAGS)
 endef
 
-#safename,path,productstore,logprodstore,safepath
+#safename,path,productstore,logprodstore
 define PythonProductTail
 $(1)_product := $(1).$(SHAREDSUFFIX)
-$$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4),$(5)))
+$$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4)))
 $(foreach ext,$(CXXSRC_FILES_SUFFIXES),$(eval $(call CXXCompileRule,$(1),$(ext),$(1))))
 .PRECIOUS: $($(1)_objdir)/%_boost.cc
 $($(1)_objdir)/%_boost.cc: $($(1)_srcdir)/%.pyste $($(1)_config)
@@ -1383,7 +1370,7 @@ ifneq ($$(strip $$($(1)_files)),)
 ifneq ($$(strip $$($(1)_BuildFile)),)
 ifneq ($$(strip $$(filter boost_python,$($(1)_LOC_USE))),)
 $$(eval $$(call PythonProductFlags,$(1)))
-$$(eval $$(call PythonProductTail,$(1),$(2),$(7),$(10),$(3)))
+$$(eval $$(call PythonProductTail,$(1),$(2),$(7),$(10)))
 else
 ifeq ($(strip $(ONLYECHOTARGETS)),)
 $$(info ****WARNING: Skipped building product $(1).$(SHAREDSUFFIX) due to missing boost_python tool selecting in $(2)/$(SCRAM_BUILDFILE))
@@ -1412,7 +1399,7 @@ $$($(1)_install_path): $(2) $(logfile_$(1))
 	$$(call copy_datadir,$(1),$(1))
 else
 $$($(1)_install_path):
-	@$(CMD_mkdir) -p $$@
+	@mkdir -p $$@
 endif
 ifeq ($(strip $(4)),1)
 $$(eval $$(call AddDownloadUrl,$(1),$(5)))
@@ -1464,12 +1451,12 @@ $(1)_CONFIGDEPS := $(CONFIGDEPS)
 ifneq ($$(strip $($(1)_BuildFile)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
+	@touch $($(1)_BuildFile)
 $$($(1)_objdir)/config: $($(1)_BuildFile)
-	@$$(call BuildClean,$(2),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
+	@$$(call BuildClean,$(2),0[0-9],1); mkdir -p $$(@D) ; touch $$@
 endif
 $(1)_config += $$($(1)_objdir)/config
 else
@@ -1481,12 +1468,12 @@ endef
 define JavaProductTail
 ifneq ($$(strip $($(1)_workdir)),)
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
-	@$(CMD_touch) $$@
+	@mkdir -p $$(@D) ; touch $$@
 $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
-	@$(CMD_touch) $$@
+	@touch $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_link)
 	@$$(call copy_java_to_java_productstore,$(1),$(1),$(3))
-	@$(CMD_touch) $$@
+	@touch $$@
 all_$(1) $(1): $($(1)_objdir)/link $(all_$(1))
 	@:
 $($(1)_workdir)/%.done: $($(1)_javadir)/%.java $($(1)_config) $(logfile_$(1))
@@ -1523,9 +1510,9 @@ $(1)_FILE_MOC_SRC := $$(filter %_cc_moc.cc %_cpp_moc.cc %_cxx_moc.cc, $$($(1)_FI
 $(1)_FILE_MOC_INC := $(filter-out $$($(1)_FILE_MOC_SRC),$$($(1)_FILE_MOC))
 $(1)_files        += $$($(1)_FILE_MOC_INC)
 $(1)_objs         += $$(addprefix $($(1)_objdir)/moc/, $$(addsuffix .$(OBJEXT), $$(basename $$(notdir $$($(1)_FILE_MOC_INC)))))
-$(1)_precompile   += $($(1)_objdir)/moc/run_moc
+precompile        += $($(1)_objdir)/moc/run_moc
 $($(1)_objdir)/moc/run_moc: $$(addprefix $($(1)_objdir)/moc/, $$($(1)_FILE_MOC))
-	@[ -f $$@ ] || $(CMD_touch) $$@
+	@[ -f $$@ ] || touch $$@
 $($(1)_objdir)/moc/%.$(OBJEXT):  $($(1)_objdir)/moc/%.cc
 	$$(call compile_cxx,$(1),$(1))
 $($(1)_objdir)/moc/%_h_moc.cc:   $(3)/%.h   $($(1)_config)
@@ -1569,7 +1556,7 @@ $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
 $(1)_files                  += $$($(1)_LinkDef_files)
 $(1)_objs                   += $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.$(OBJEXT),$(3)))
 .PRECIOUS: $$($(1)_LinkDef_files)
-$(1)_precompile += $$($(1)_LinkDef_files)
+precompile += $$($(1)_LinkDef_files)
 $($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
@@ -1583,11 +1570,11 @@ endef
 #safename,prodpath
 define RootMap
 $($(1)_objdir)/$(1).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
-	@$(startlog_$(1))$(CMD_echo) ">> Generating RootMap file: $$(@F)" &&\
+	@$(startlog_$(1))echo ">> Generating RootMap file: $$(@F)" &&\
 	cd $$(<D); genmap -i $$(<F) -o $$(@F) $(endlog_$(1))
 $(2)/$(1).rootmap: $($(1)_objdir)/$(1).rootmap
-	@$(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod)
-	@$(CMD_cp) $$< $$@
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
+	@mkdir -p $$(@D); cp $$< $$@
 all_$(1) += $(2)/$(1).rootmap
 endef
 
@@ -1595,10 +1582,10 @@ endef
 define LcgDictRootMap
 $(2)_GENREFLEX_ARGS += --rootmap=$(2).rootmap --rootmap-lib=$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
 $($(1)_objdir)/$(2).rootmap: $($(1)_objdir)/$(MODULE_PREFIX)$(2).$(SHAREDSUFFIX)
-	@$(CMD_touch) $$@
+	@touch $$@
 $(3)/$(2).rootmap: $($(1)_objdir)/$(2).rootmap
-	@$(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod)
-	@$(CMD_cp) $$< $$@
+	@echo "01:rm -f $$@" > $$(call AutoCleanFile,$$<,prod)
+	@mkdir -p $$(@D); cp $$< $$@
 all_$(1) += $(3)/$(2).rootmap
 endef
 
@@ -1625,16 +1612,17 @@ endef
 define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
-$(1)_precompile += $($(1)_objdir)/$(2)r.cc
+precompile  += $($(1)_objdir)/$(2)r.cc
 $($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
 ifneq ($1,$5)
-$(1)_precompile += $($(1)_objdir)/$(2)i.cc
+precompile  += $($(1)_objdir)/$(2)i.cc
+compile     += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
-	@[ -f $$< ] || $(CMD_rm) -f $$@
+	@[ -f $$< ] || rm -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxxI,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
@@ -1746,32 +1734,29 @@ $(eval $(call UpdateMakeGoalTypes))
 FORCE_TARGET:
 	@:
 $(WORKINGDIR)/cache/prod/%:
-	@$(CMD_touch) $@
+	@touch $@
 $(LOCALTOP)/$(SCRAMSTORENAME_LOGS)/testing.log: FORCE_TARGET
-	@$(CMD_mkdir) -p $(@D) ;\
-	$(CMD_rm) -rf $@; \
-	$(CMD_echo) "Creating test log file $(SCRAMSTORENAME_LOGS)/testing.log" ;\
-	$(CMD_touch) $@
+	@mkdir -p $(@D) ;\
+	rm -rf $@; \
+	echo "Creating test log file $(SCRAMSTORENAME_LOGS)/testing.log" ;\
+	touch $@
 $(WORKINGDIR)/cache/log/%: FORCE_TARGET
 	@if [ -f $@ ] ; then  \
-	  $(CMD_rm) -f $@ ;\
+	  rm -f $@ ;\
 	else \
-	  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) ;\
+	  [ -d $(@D) ] || mkdir -p $(@D) ;\
 	fi
-	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
+	@touch -t $(OLD_TIMESTAMP) $@
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
 $(WORKINGDIR)/cache/xlibs: $(WORKINGDIR)/cache/xlibs.backup
-	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
-$(WORKINGDIR)/cache/xlibs.backup: $(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB 
-	@$(CMD_touch) $@
-$(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB: $(ToolTimeStamps) $(LOCALTOP)/external/$(SCRAM_ARCH)
-	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
-$(LOCALTOP)/external/$(SCRAM_ARCH): FORCE_TARGET
-	@[ -d $@ ] || $(CMD_mkdir) -p $@
+	@touch -t $(OLD_TIMESTAMP) $@
+$(WORKINGDIR)/cache/xlibs.backup: $(ToolTimeStamps)
+	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH);\
+	touch $@
 ######################################################################
-$(eval curtop:=$(shell $(CMD_echo) $$LOCALTOP))
+$(eval curtop:=$(shell echo $$LOCALTOP))
 ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))
   PROJECT_RENAME_TARGET:=
   ifeq ($(strip $(MAKECMDGOALS)),ProjectRename)
@@ -1787,13 +1772,13 @@ ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))
   endif
   ifneq ($(PROJECT_RENAME_TARGET),yes)
     $(eval dummyfile:=localtopchecking.file.$(shell date +%s.%N 2>/dev/null))
-    $(eval xxtmp:=$(shell $(CMD_touch) $(SCRAM_INIT_LOCALTOP)/$(dummyfile) 2> /dev/null))
+    $(eval xxtmp:=$(shell touch $(SCRAM_INIT_LOCALTOP)/$(dummyfile) 2> /dev/null))
     ifeq ($(strip $(wildcard $(curtop)/$(dummyfile))),)
-      $(eval xxtmp:=$(shell $(CMD_rm) -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
+      $(eval xxtmp:=$(shell rm -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
       $(info **** ERROR: You have moved/renamed this project area "$(curtop)" from "$(SCRAM_INIT_LOCALTOP)")
       $(error Please first run \"scramv1 b ProjectRename\")
     endif
-    $(eval xxtmp:=$(shell $(CMD_rm) -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
+    $(eval xxtmp:=$(shell rm -f $(SCRAM_INIT_LOCALTOP)/$(dummyfile)))
   endif
 endif
 
@@ -1801,7 +1786,7 @@ endif
 ProjectRename projectrename PROJECTRENAME:
 	@if [ -f ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.pl ] ; then \
 	  ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.pl $(SCRAM_INIT_LOCALTOP) $(curtop) $(SCRAM_ARCH); \
-	  $(CMD_echo) "Done: $@"; \
+	  echo "Done: $@"; \
 	fi
 ######################################################################
 #Common Rules
@@ -1811,59 +1796,56 @@ all: all_$(TARGETDIR) ProjectPluginRefresh
 project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR) ProjectPluginRefresh
 	@:
 
-.PHONY: python help compile precompile runtests clean distclean cache_clean project_clean project_help 
-.PHONY: clean_$(SCRAM_SOURCEDIR) help_$(SCRAM_SOURCEDIR)
+.PHONY: python help runtests clean distclean cache_clean project_clean clean_$(SCRAM_SOURCEDIR) project_help help_$(SCRAM_SOURCEDIR)
 help: help_$(TARGETDIR)
 clean: clean_$(TARGETDIR)
 runtests: runtests_$(TARGETDIR)
 python: runpython_$(TARGETDIR)
-compile: compile_$(TARGETDIR)
-precompile: precompile_$(TARGETDIR)
 
 project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
-	@$(CMD_echo) "Cleaning ProductStore directories:"
-	$(CMD_rm) -rf $(ALL_PRODUCT_STORES)
-	@$(CMD_echo) "Resetting project cache:"; $(CMD_mkdir) -p .SCRAM/$(SCRAM_ARCH)
-	@$(CMD_touch) .SCRAM/$(SCRAM_ARCH)/ProjectCache.db.gz
-	$(CMD_rm) -f .SCRAM/$(SCRAM_ARCH)/ProjectCache.db*
-	@$(CMD_touch) .SCRAM/$(SCRAM_ARCH)/DirCache.db.gz
-	$(CMD_rm) -f .SCRAM/$(SCRAM_ARCH)/DirCache.db*
-	@$(CMD_touch) .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db.gz
-	$(CMD_rm) -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
-	$(CMD_rm) -rf .SCRAM/$(SCRAM_ARCH)/MakeData
+	@echo "Cleaning ProductStore directories:"
+	/bin/rm -rf $(ALL_PRODUCT_STORES)
+	@echo "Resetting project cache:"; mkdir -p .SCRAM/$(SCRAM_ARCH)
+	@touch .SCRAM/$(SCRAM_ARCH)/ProjectCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/ProjectCache.db*
+	@touch .SCRAM/$(SCRAM_ARCH)/DirCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/DirCache.db*
+	@touch .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db.gz
+	/bin/rm -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
+	/bin/rm -rf .SCRAM/$(SCRAM_ARCH)/MakeData
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] && [ "X$(ALL_PYTHON_DIRS)" != "X" ] ; then \
-	  $(CMD_echo) "Cleaning up the compiled .pyc files in the $(SCRAM_SOURCEDIR) directory.";\
+	  echo "Cleaning up the compiled .pyc files in the $(SCRAM_SOURCEDIR) directory.";\
 	  for d in $(ALL_PYTHON_DIRS) ; do \
 	    $(call BuildClean,$(SCRAM_SOURCEDIR)/$$d,,no);\
 	  done;\
 	fi
-	$(CMD_rm) -rf $(SCRAM_INTwork)
+	/bin/rm -rf $(SCRAM_INTwork)
 
 project_help help_$(SCRAM_SOURCEDIR):
-	@$(CMD_echo) "------------ Help for Project-level Builds ------------"
-	@$(CMD_echo) ""
-	@$(CMD_echo) "clean:"
-	@$(CMD_echo) "     Clean the local working directory only."
-	@$(CMD_echo) ""
-	@$(CMD_echo) "python:"
-	@$(CMD_echo) "     To just build python i.e. creating sym-links and compiling python modules."
-	@$(CMD_echo) ""
-	@$(CMD_echo) "prebuild:"
-	@$(CMD_echo) "     Execute pre-build target for the project."
-	@$(CMD_echo) ""
-	@$(CMD_echo) "postbuild:"
-	@$(CMD_echo) "     Execute the post-build target for the project."
-	@$(CMD_echo) ""
-	@$(CMD_echo) "rulechecker:"
-	@$(CMD_echo) "     Run the rulechecker to look for code style violations."
-	@$(CMD_echo) ""
-	@$(CMD_echo) "release-test:"
-	@$(CMD_echo) "     Run the integration test suite"
-	@$(CMD_echo) ""
-	@$(CMD_echo) "runtests:"
-	@$(CMD_echo) "     Build and run all tests for the project, or package-level tests only."
-	@$(CMD_echo) "     (Depends on the location where \"scram b runtests\" is run)."
-	@$(CMD_echo) ""
+	@echo "------------ Help for Project-level Builds ------------"
+	@echo ""
+	@echo "clean:"
+	@echo "     Clean the local working directory only."
+	@echo ""
+	@echo "python:"
+	@echo "     To just build python i.e. creating sym-links and compiling python modules."
+	@echo ""
+	@echo "prebuild:"
+	@echo "     Execute pre-build target for the project."
+	@echo ""
+	@echo "postbuild:"
+	@echo "     Execute the post-build target for the project."
+	@echo ""
+	@echo "rulechecker:"
+	@echo "     Run the rulechecker to look for code style violations."
+	@echo ""
+	@echo "release-test:"
+	@echo "     Run the integration test suite"
+	@echo ""
+	@echo "runtests:"
+	@echo "     Build and run all tests for the project, or package-level tests only."
+	@echo "     (Depends on the location where \"scram b runtests\" is run)."
+	@echo ""
 
 .PHONY: release release-build release-reset release-check release-test release-doc release-docs release-freeze rulechecker
 
@@ -1880,19 +1862,19 @@ release-test: integration-test
 release-docs release-doc: doc
 
 release-freeze: release-check
-	@$(CMD_echo) "Cleaning up and protecting directories:"
+	@echo "Cleaning up and protecting directories:"
 	@cd $(LOCALTOP); \
-	$(CMD_rm) -fr $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR) ; \
-	$(CMD_rm) -fr $(SCRAM_INTwork)/cache ; \
-	$(CMD_find) . -type f -print | $(CMD_xargs) $(CMD_chmod) a-w; \
-	$(CMD_find) . -type d -print | $(CMD_xargs) $(CMD_chmod) 555
+	rm -fr $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR) ; \
+	rm -fr $(SCRAM_INTwork)/cache ; \
+	find . -type f -print | xargs chmod a-w; \
+	find . -type d -print | xargs chmod 555
 
 rulechecker:
-	@$(CMD_echo) "Sorry, \"$@\" target is no more available. To run RuleChecker please do either"
-	@$(CMD_echo) "  For csh/tcst:"
-	@$(CMD_echo) "    env CMS_RULECHECKER=1 scramv1 b"
-	@$(CMD_echo) "  OR For bash/sh:"
-	@$(CMD_echo) "    CMS_RULECHECKER=1 scramv1 b"
+	@echo "Sorry, \"$@\" target is no more available. To run RuleChecker please do either"
+	@echo "  For csh/tcst:"
+	@echo "    env CMS_RULECHECKER=1 scramv1 b"
+	@echo "  OR For bash/sh:"
+	@echo "    CMS_RULECHECKER=1 scramv1 b"
 ###############################################################################
 ifdef SCRAM_NOLOADCHECK
 SHARED_LIB_LOAD_CHECK :=
@@ -1909,10 +1891,10 @@ PLUGIN_REFRESH_CMDS :=
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
-$(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
-$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell $(CMD_find) $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^0[0-9]:" | $(CMD_sed) "s|^0[0-9]:||" |$(CMD_sort) | $(CMD_uniq) >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell $(CMD_rm) -rf $(WORKINGDIR)/$(d))),))
-$(foreach d,$(REMOVED_DIRS),$(if $(wildcard $(WORKINGDIR)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),$(shell $(CMD_touch) $(SCRAM_INTwork)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),))
-$(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_mkdir) -p $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_touch) $(DIRCACHE_MKDIR)/RmvDirCache.mk)
+$(shell echo "" > $(WORKINGDIR)/.AUTOCLEAN)
+$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell find $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | xargs cat | grep "^0[0-9]:" | sed "s|^0[0-9]:||" |sort | uniq >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell rm -rf $(WORKINGDIR)/$(d))),))
+$(foreach d,$(REMOVED_DIRS),$(if $(wildcard $(WORKINGDIR)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),$(shell touch $(SCRAM_INTwork)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),))
+$(shell sh $(WORKINGDIR)/.AUTOCLEAN; rm -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; mkdir -p $(DIRCACHE_MKDIR)/RmvDirCache; touch $(DIRCACHE_MKDIR)/RmvDirCache.mk)
 endif
 ####### Update Tools and Prods rules ##############
 ifeq ($(strip $(UFAST)),)
@@ -1934,54 +1916,55 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),src_$(subst /,_,$
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),src_$(subst /,_,$(dir)))))
 endif
 ###########################################################
-PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR)
+PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 	@:
 prebuild: $(prebuild)
-	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
-	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || $(CMD_mkdir) -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
+	@echo ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
+	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || mkdir -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
 postbuild: $(postbuild) release-check
-	@$(CMD_echo) "Release $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) build finished at `date`"
+	@echo "Release $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) build finished at `date`"
 runpython_$(SCRAM_SOURCEDIR): $(addprefix runpython_, $(subdirs_$(SCRAM_SOURCEDIR)))
-	@$(CMD_echo) ">> Python completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+	@echo ">> Python completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 runtests_$(SCRAM_SOURCEDIR): $(addprefix runtests_, $(subdirs_$(SCRAM_SOURCEDIR)))
-	@$(CMD_echo) ">> Test sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
-compile_$(SCRAM_SOURCEDIR): $(addprefix compile_, $(subdirs_$(SCRAM_SOURCEDIR)))
-	@$(CMD_echo) ">> Compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
-precompile_$(SCRAM_SOURCEDIR): $(addprefix precompile_, $(subdirs_$(SCRAM_SOURCEDIR)))
-	@$(CMD_echo) ">> Pre-compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+	@echo ">> Test sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 ###########################################################
 
-.PHONY: all_% clean_% help_% runtests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
+.PHONY: all_% clean_% help_% runtests_% runpython_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
+.PHONT: precompile compile
+precompile: $(precompile)
+	@:
+compile: $(compile) precompile
+	@:	
 help_%_python:
-	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
+	@echo "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
 help_%_src:
-	@$(CMD_echo) "Running \"scram build\" here normally build a shared library."
+	@echo "Running \"scram build\" here normally build a shared library."
 help_%_plugins:
-	@$(CMD_echo) "Running \"scram build\" here normally build EDM-plugins."
+	@echo "Running \"scram build\" here normally build EDM-plugins."
 help_%_bin:
-	@$(CMD_echo) "Running \"scram build\" here normally build public executables and shared libs (if any)."
+	@echo "Running \"scram build\" here normally build public executables and shared libs (if any)."
 help_%_test:
-	@$(CMD_echo) "Running \"scram build\" here normally build test executables and shared libs (if any)."
+	@echo "Running \"scram build\" here normally build test executables and shared libs (if any)."
 help_$(SCRAM_SOURCEDIR)_%:
-	@$(CMD_echo) "Doing \"scram build\" here will build every thing exist under this directory."
-all_% runtests_% help_% runpython_% compile_% precompile_%:
+	@echo "Doing \"scram build\" here will build every thing exist under this directory."
+all_% runtests_% help_% runpython_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
-	  $(CMD_echo) ">> Nothing to be done for $(THISDIR)";\
+	  echo ">> Nothing to be done for $(THISDIR)";\
 	fi
 clean_%:
 	@if [ "X$($*_objdir)" != "X" ] ; then \
-	  dir=`$(CMD_echo) $($*_objdir) | $(CMD_grep) '^$(WORKINGDIR)/' | $(CMD_sed) 's|^$(WORKINGDIR)/||'`;\
+	  dir=`echo $($*_objdir) | grep '^$(WORKINGDIR)/' | sed 's|^$(WORKINGDIR)/||'`;\
 	  if [ "X$$dir" != "X" ] ; then \
 	    if [ -d $(WORKINGDIR)/$$dir ] ; then \
-	      $(CMD_echo) "Cleaning up $$dir"; $(call BuildClean,$$dir) ; exit 0;\
+	      echo "Cleaning up $$dir"; $(call BuildClean,$$dir) ; exit 0;\
 	    fi;\
 	  fi;\
 	elif [ "$(TARGETDIR)" == "$*" ] ; then \
-	  $(CMD_echo) "Cleaning up $(THISDIR)"; $(call BuildClean,$(THISDIR));\
+	  echo "Cleaning up $(THISDIR)"; $(call BuildClean,$(THISDIR));\
 	else \
-	  $(CMD_echo) "***WARNING: Unknown product $*. Failed to cleanup.";\
+	  echo "***WARNING: Unknown product $*. Failed to cleanup.";\
 	fi
 ufast xfast fast:
 	@:
@@ -2001,72 +1984,72 @@ ufast xfast fast:
 	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) ORIGIN $(patsubst %_ORIGIN,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
 echo_%:
-	@$(CMD_echo) "$* = $(subst ",\",$($*))"
+	@echo "$* = $(subst ",\",$($*))"
 
 $(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
-	@$(CMD_echo) ">> Updating python symlinks."
+	@echo ">> Updating python symlinks."
 	@for d in $(ALL_PYTHON_DIRS); do \
-	  p=`$(CMD_dirname) python/$$d`;\
+	  p=`dirname python/$$d`;\
 	  if [ ! -e $$p ] ; then \
-	    s=`$(CMD_dirname) $$p`;\
-	    $(CMD_mkdir) -p $$s;\
+	    s=`dirname $$p`;\
+	    mkdir -p $$s;\
 	    r=.. ;\
 	    s1=$$s ;\
 	    while [ "$$s1" != "python" ] ; do \
 	      if [ "X$(RELEASETOP)" = "X" ] ; then \
-		$(CMD_echo) "import os" > $$s1/__init__.py;\
-		$(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$s1/__init__.py;\
-		$(CMD_echo) "if localrt != None:" >> $$s1/__init__.py;\
-	        $(CMD_echo) "  __path__.insert(0,localrt+'/$$s1')" >> $$s1/__init__.py;\
+		echo "import os" > $$s1/__init__.py;\
+		echo "localrt=os.getenv('LOCALRT', None)" >> $$s1/__init__.py;\
+		echo "if localrt != None:" >> $$s1/__init__.py;\
+	        echo "  __path__.insert(0,localrt+'/$$s1')" >> $$s1/__init__.py;\
 	      else \
-		$(CMD_echo) "__path__.append('$(RELEASETOP)/$$s1')" > $$s1/__init__.py;\
+		echo "__path__.append('$(RELEASETOP)/$$s1')" > $$s1/__init__.py;\
 	      fi;\
-	      s1=`$(CMD_dirname) $$s1`;\
+	      s1=`dirname $$s1`;\
 	      r=$$r/..;\
 	    done ;\
-	    $(CMD_touch) $$s1/__init__.py;\
-	    $(CMD_ln) -s $$r/$(SCRAM_SOURCEDIR)/$$d $$p ;\
-	    $(CMD_echo) "   python/$$d -> $(SCRAM_SOURCEDIR)/$$d" ;\
+	    touch $$s1/__init__.py;\
+	    ln -s $$r/$(SCRAM_SOURCEDIR)/$$d $$p ;\
+	    echo "   python/$$d -> $(SCRAM_SOURCEDIR)/$$d" ;\
 	  fi;\
 	done
 	@for d in $(ALL_PYTHON_DIRS); do \
-	  for dir in `$(CMD_find) $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
+	  for dir in `find $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | grep -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
-	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
+	      echo "#Automatically created by SCRAM" > $$dir/__init__.py;\
 	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-	        pkgdir=`$(CMD_echo) $$dir| $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||;s|/python$$||'`; \
-		$(CMD_echo) "import os" >> $$dir/__init__.py;\
-	        $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "arch=os.getenv('SCRAM_ARCH', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "if localrt != None:" >> $$dir/__init__.py;\
-	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/'+arch+'/$$pkgdir')"  >> $$dir/__init__.py;\
+	        pkgdir=`echo $$dir| sed 's|^$(SCRAM_SOURCEDIR)/||;s|/python$$||'`; \
+		echo "import os" >> $$dir/__init__.py;\
+	        echo "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
+	        echo "arch=os.getenv('SCRAM_ARCH', None)" >> $$dir/__init__.py;\
+	        echo "if localrt != None:" >> $$dir/__init__.py;\
+	        echo "  __path__.append(localrt+'/cfipython/'+arch+'/$$pkgdir')"  >> $$dir/__init__.py;\
 	      fi;\
-	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
+	      [ -d $(WORKINGDIR)/$$dir ] || mkdir -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
-	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
+	      echo "01:rm -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
 	done
-	@for l in `$(CMD_find) python -name "*" -type l`; do \
-	  if [ ! -f $$l/__init__.py ] ; then $(CMD_rm) -f $$l; fi;\
+	@for l in `find python -name "*" -type l`; do \
+	  if [ ! -f $$l/__init__.py ] ; then rm -f $$l; fi;\
 	done
-	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
+	@[ -f $@ ] || (mkdir -p $(@D) ; touch -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
 	  $(call BuildClean,$*/$$dir,0[0-9]);\
 	done
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
+	@[ -d $(@D) ] || mkdir -p $(@D) &&\
+	touch -t $(OLD_TIMESTAMP) $@
 bigobj: $(ALL_BIGOBJS)
 	@:
 outputlog:
 	$(eval DO_BUILD_LOG:=)
 	@$(call outputlog,,,)
 runtime:
-	@$(CMD_echo) ">> Runtime environment:"; env
+	@echo ">> Runtime environment:"; env
 %:
-	@$(CMD_echo) TARGET:$@
+	@echo TARGET:$@
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  $(CMD_echo) "$$var = $(subst ",\",$($(patsubst echo_%,%,$@)))";\
+	  echo "$$var = $(subst ",\",$($(patsubst echo_%,%,$@)))";\
 	fi

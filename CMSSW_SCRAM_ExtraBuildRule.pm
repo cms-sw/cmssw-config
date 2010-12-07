@@ -32,6 +32,7 @@ sub Project()
   $common->symlinkPythonDirectory(1);
   $common->addPluginSupport("iglet","IGLET","IgPluginRefresh",'\/iglet$',"SCRAMSTORENAME_LIB",".iglets",'$name="${name}.iglet"',"yes");
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
+  $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefres",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
