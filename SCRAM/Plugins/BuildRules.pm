@@ -330,20 +330,6 @@ sub getIgletFile ()
   if(exists $self->{cache}{IgLetFile}){$file=$self->{cache}{IgLetFile};}
   return $file;
 }
-
-sub setRootReflex ()
-{
-  my $self=shift;
-  my $tool=shift || return;
-  $self->{cache}{RootRflx}=lc($tool);
-  return;
-}
-
-sub getRootReflex ()
-{
-  my $self=shift;
-  return $self->{cache}{RootRflx};
-}
 ##############################################################
 sub setLCGCapabilitiesPluginType ()
 {
@@ -917,7 +903,7 @@ sub searchLCGRootDict ()
   my $lcgxml=[];
   my $headers=[];
   my $rootmap=0;
-  my $genreflex_args="\$(GENREFLEX_ARGS)";
+  my $genreflex_args="--deep";
   my $rootdict="";
   my $path=$stash->get('path');
   my $dir=$path;
@@ -1478,7 +1464,6 @@ sub initTemplate_PROJECT ()
   $self->{cache}{CXXCompiler}="cxxcompiler";
   $self->{cache}{CCompiler}="ccompiler";
   $self->{cache}{F77Compiler}="f77compiler";
-  $self->setRootReflex ("rootrflx");
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
   {$self->{cache}{BuildFile}=$ENV{SCRAM_BUILDFILE};}
   else{$self->{cache}{BuildFile}="BuildFile";}
@@ -1604,6 +1589,7 @@ sub Project_template()
       $self->addCacheData($var,$vals);
     }
   }
+  
   #Compiler tools variables initilize
   foreach my $toolname ("CXX","C","F77")
   {
@@ -1634,15 +1620,6 @@ sub Project_template()
       }
     }
   }
-  my $rflx=$self->getRootReflex();
-  if ($rflx ne "")
-  {
-    my $tool = $self->getTool($rflx);
-    foreach my $flag (keys %{$tool->{FLAGS}})
-    {
-      if ($flag=~/^GENREFLEX_/){print $fh "$flag := \$(${rflx}_LOC_FLAGS_${flag})\n";}
-    }
-  }
   
   # All flags from top level BuildFile
   my $flags=$core->allflags();
@@ -1664,12 +1641,6 @@ sub Project_template()
 	    "\n",
             "ifeq (\$(strip \$(GENREFLEX)),)\n",
             "GENREFLEX:=",$self->getGenReflexPath(),"\n",
-            "endif\n",
-            "ifeq (\$(strip \$(GENREFLEX_CPPFLAGS)),)\n",
-            "GENREFLEX_CPPFLAGS:=-DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE\n",
-            "endif\n",
-            "ifeq (\$(strip \$(GENREFLEX_ARGS)),)\n",
-            "GENREFLEX_ARGS:=--deep\n",
             "endif\n",
             "ifeq (\$(strip \$(ROOTCINT)),)\n",
             "ROOTCINT:=",$self->getRootCintPath(),"\n",
