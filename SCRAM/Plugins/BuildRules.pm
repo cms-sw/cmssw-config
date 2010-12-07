@@ -556,7 +556,7 @@ sub checkSealPluginFlag ()
 	    $plugintype=$stash->get('plugin_type');
 	    if($plugintype eq ""){$err=1;}
 	  }
-	  else{$plugintype=$t;}
+	  else{$plugintype=$self->{cache}{DefaultPluginType};}
 	  $plugin=1;
 	  last;
         }
