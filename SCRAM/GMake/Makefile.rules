@@ -38,7 +38,11 @@ PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
 LD                          := ld
+ifeq ($(findstring ia32,$(subst _, ,$(SCRAM_ARCH))),ia32)
 LD_UNIT                     := -r -m elf_i386
+else
+LD_UNIT                     := -r -m elf_x86_64
+endif
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP:=198001010100
@@ -346,6 +350,10 @@ define seal_plugin_clean
   $(call clean_prod,$($(1)_pluginprod))
 endef
 
+define rivet_plugin_clean
+  $(call clean_prod,$($(1)_pluginprod))
+endef
+
 define do_plugin_refresh
     if [ "X$(PSR_BASE_TARGET)" = X ] ; then \
       $(call do_$(1),$(2));\
@@ -402,6 +410,17 @@ define edm_write_config
   echo "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
 endef
 endif
+
+define rivet_register_plugin
+  @$(startlog_$(2)) if [ -f $< ] ; then \
+    [ -d $(@D) ] || mkdir -p $(@D) &&\
+    cp -f $< $@ &&\
+    echo "01:rm -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
+    echo "--- Registered Rivet Plugin: $(1)"; \
+  else \
+    rm -f $@ ;\
+  fi
+endef
 
 ifndef SCRAM_NOPLUGINREFRESH
 define iglet_register_plugin
@@ -571,34 +590,45 @@ define compile_java
   touch $@ $(endlog_$(2))
 endef
 # compiling python
+define set_python_timestamp
+  for mod in $2; do \
+    [ -f $(1)/$$mod.pyc ] && touch -r $(1)/$$mod.py $(1)/$$mod.pyc;\
+  done
+endef
+
 define compile_python
   @$(startlog_$(2)) [ -d $(@D) ] || mkdir -p $(@D) ;\
   touch -t $(OLD_TIMESTAMP) $@ &&\
-  echo "01:find $(4)/ -name '*_cf[if].pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
-  msg=no;\
-  rm -f  $($(1)_objdir)/py.errors;\
+  echo "01:find $(4)/ -name '*.pyc' -type f 2>/dev/null | xargs rm -f " > $(call AutoCleanFile,$@,python) &&\
+  pymods="" &&\
   for mod in `find $(4)/ -name '*_cf[if].py' -type f | sed 's|^$(4)/*||;s|.py$$||'`; do \
     pyc=$(4)/$$mod.pyc ;\
     py=$(4)/$$mod.py ;\
-    if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then \
-      [ "X$$msg" = "Xyes" ] || echo ">> Compiling python scripts: $(4)" && msg=yes ;\
-      echo ">> Compiling: $$py";\
-      if [ "`echo $$mod | grep '/'`X" == "X" ] ; then \
-        $(VERB_ECHO) "python -c import $3.$$mod";\
-	((python -c "import $3.$$mod" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors)) ;\
-      else \
-        moddir=`dirname $$mod`; mod=`basename $$mod`;\
-        $(VERB_ECHO) "python -c import $$mod";\
-        (((cd $(4)/$$moddir && python -c "import $$mod") && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors));\
-      fi;\
-    fi;\
+    if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then pymods="$$mod $$pymods";  fi;\
+  done; \
+  if [ "X$$pymods" != "X" ] ; then \
+    echo ">> Compiling cfi/cff python modules: $4";\
+    modules=`echo $(3).$$pymods | sed 's|/|.|g;s| |,$(3).|g'`;\
+    $(VERB_ECHO) "python -c 'import $$modules'";\
+    ((python -c "import $$modules" > /dev/null 2>&1 && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
+  fi $(endlog_$(2))
+endef
+
+define compile_python_individual
+  rm -f  $($(1)_objdir)/py.errors &&\
+  for mod in $3; do \
+    pyc=$(4)/$$mod.pyc ;\
+    py=$(4)/$$mod.py ;\
+    echo ">> Compiling: $$py";\
+    modx=`echo $(2).$$mod | sed 's|/|.|g'`;\
+    $(VERB_ECHO) "python -c 'import $$modx'";\
+    ((python -c "import $$modx" && [ -f $$pyc ] && touch -r $$py $$pyc) || (echo "gmake: *** [$$py] Error $$?" && touch $($(1)_objdir)/py.errors)) ;\
   done; \
   if [ -f $($(1)_objdir)/py.errors ] ; then \
     rm -f $($(1)_objdir)/py.errors ;\
     ([ "X$(RELEASETOP)" == "X" ] || exit 1) ;\
-  fi $(endlog_$(2))
+  fi
 endef
-
 ##############################################################################
 # Source Generators Rules
 # boost source generation from Pyste
@@ -700,9 +730,9 @@ endef
 # Big Object Files
 define big_obj
   @$(startlog_$(2))echo ">> Building big object file $@" &&\
-  $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) &&\
-  ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $($(1)_objs) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
-  $(call copy_bigobj_to_main_productstore,$(3)) $(endlog_$(2))
+  $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 &&\
+  ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 || ($(call delete_build_prod,$(4)) && exit 1)) &&\
+  $(call copy_bigobj_to_main_productstore,$(4)) $(endlog_$(2))
 endef
 #Shared library for Python bindings
 define link_pylib
@@ -723,8 +753,8 @@ endef
 #Shared Capabilities library
 define link_capabilities
   @$(startlog_$(2))echo ">> ---- Building capability library $@" &&\
-  $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $< -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -752,7 +782,6 @@ endef
 define build_test
   $(call build_bin,$(1),$(2),$(3))
 endef  
-
 ##############################################################################
 # Data download and Copy
 # Url download
@@ -859,20 +888,19 @@ endef
 #############################################################################
 # Tesings test executable
 define run_test
-  @if [ ! -f $(LOCALTOP)/$(3)/testing.log ]; then \
-    mkdir -p $(LOCALTOP)/$(3); \
-    touch $(LOCALTOP)/$(3)/testing.log; \
-    echo "Creating test log file"; \
+  @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
+    echo "Package "$(patsubst src/%/test,%,$(4))": Skipping test $(1)"; \
+  else \
+    echo "Package "$(patsubst src/%/test,%,$(4))": Running test $(1)" &&\
+    rm -f $($(1)_objdir)/testing.log; touch $($(1)_objdir)/testing.log  &&\
+    echo " " >> $($(1)_objdir)/testing.log &&\
+    echo "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || echo "---> test $(1) had ERRORS") &&\
+    echo " " >> $($(1)_objdir)/testing.log &&\
+    echo "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
+    cat $($(1)_objdir)/testing.log &&\
+    cat $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; rm -f $($(1)_objdir)/testing.log; \
   fi
-  @echo "Package "$(patsubst src/%/test,%,$(3))": Running test $(1)"
-  @rm -f $($(1)_objdir)/testing.log; touch $($(1)_objdir)/testing.log
-  @echo " " >> $($(1)_objdir)/testing.log
-  @echo "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log
-  @$(LOCALTOP)/$(2)/$(1) $($(1)_TEST_RUNNER_ARGS) >> $($(1)_objdir)/testing.log 2>&1 || echo "---> test $(1) had ERRORS"
-  @echo " " >> $($(1)_objdir)/testing.log
-  @echo "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log
-  @cat $($(1)_objdir)/testing.log
-  @cat $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; rm -f $($(1)_objdir)/testing.log
 endef
 
 ##############################################################################
@@ -1051,6 +1079,9 @@ endef
 define igletPlugin
 $(eval $(call addPlugin,$1,$2,iglet,yes,$3,IgPluginRefresh,.iglets,$(2).iglet,$2))
 endef
+define rivetPlugin
+$(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
+endef
 
 define CXXCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
@@ -1126,11 +1157,7 @@ $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1))echo "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
-ifeq ($(strip $(BIGLIBS)),yes)
-all_$(1) += $($(1)_objdir)/$(1).$(BIGLIB_OBJEXT)
-$($(1)_objdir)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/compile
-	$$(call big_obj,$(1),$(1),$(patsubst %/lib,%/objs,$(patsubst lib/%,objs/%,$(3))))
-endif
+$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
@@ -1142,8 +1169,8 @@ ifeq ($(strip $(4)),test)
 	$$(call build_test,$(1),$(1),$(3))
 .PHONE: runtests_$(1)
 runtests_$(6) += runtests_$(1)
-runtests_$(1): all_$(1)
-	$$(call run_test,$(1),$(3),$(5))
+runtests_$(1): all_$(1) $(LOCALTOP)/$(5)/testing.log
+	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 $(WORKINGDIR)/cache/prod/$(1): $($(1)_objdir)/$($(1)_product)
 	@if [ ! -f $$@ ] ; then touch $$@; fi
@@ -1165,6 +1192,16 @@ $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1
 	@touch $$@
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
+endif
+endef
+
+define BigObject
+ifeq ($(strip $(BIGOBJS)),yes)
+$(2)_objprefix := $(if $(strip $(filter edmX,$($(2)_plugintype)X)),plugin,lib)
+all_$(1) += $($(1)_objdir)/$$($(2)_objprefix)$(2).$(BIGLIB_OBJEXT)
+ALL_BIGOBJS += $($(1)_objdir)/$$($(2)_objprefix)$(2).$(BIGLIB_OBJEXT)
+$($(1)_objdir)/$$($(2)_objprefix)$(2).$(BIGLIB_OBJEXT): $(3)
+	$$(call big_obj,$(2),$(1),$(3),$(SCRAMSTORENAME_OBJS))
 endif
 endef
 
@@ -1563,7 +1600,8 @@ ifneq ($(strip $8),)
 $(1)$(8)_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
 all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX)
 $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX): $$($(1)$(8)_ids) $(WORKINGDIR)/cache/prod/lib$(1)
-	$$(call link_capabilities,$(1),$(1),$(6),$(1)$(8))
+	$$(call link_capabilities,$(1),$(1),$(6),$(1)$(8),$$($(1)$(8)_ids))
+$$(eval $$(call BigObject,$(1),$(1)$(8),$$($(1)$(8)_ids)))
 endif
 endef
 
@@ -1651,8 +1689,8 @@ $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cpp $($(1)_objdir)/precompile
 endef
 ##############################################################################
 define SetTargetType
-ifneq ($(strip $(filter biglib,$(MAKECMDGOALS))),)
-  BIGLIBS:=yes
+ifneq ($(strip $(filter bigobj,$(MAKECMDGOALS))),)
+  BIGOBJS:=yes
 endif
 ifeq ($(strip $(MAKECMDGOALS)),outputlog)
   FAST :=yes
@@ -1665,7 +1703,7 @@ ifeq ($(strip $(MAKECMDGOALS)),clean)
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out productmap gindices echo_% clean_% fast xfast ufast biglib outputlog,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out productmap gindices echo_% clean_% fast xfast ufast bigobj outputlog,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1697,6 +1735,11 @@ FORCE_TARGET:
 	@:
 $(WORKINGDIR)/cache/prod/%:
 	@touch $@
+$(LOCALTOP)/$(SCRAMSTORENAME_LOGS)/testing.log: FORCE_TARGET
+	@mkdir -p $(@D) ;\
+	rm -rf $@; \
+	echo "Creating test log file $(SCRAMSTORENAME_LOGS)/testing.log" ;\
+	touch $@
 $(WORKINGDIR)/cache/log/%: FORCE_TARGET
 	@if [ -f $@ ] ; then  \
 	  rm -f $@ ;\
@@ -1997,7 +2040,7 @@ $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	done
 	@[ -d $(@D) ] || mkdir -p $(@D) &&\
 	touch -t $(OLD_TIMESTAMP) $@
-biglib: $(if $(strip $(filter-out biglib,$(MAKECMDGOALS))),$(filter-out biglib,$(MAKECMDGOALS)),all)
+bigobj: $(ALL_BIGOBJS)
 	@:
 outputlog:
 	$(eval DO_BUILD_LOG:=)
