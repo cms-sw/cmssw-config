@@ -9,7 +9,7 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <productstore name="bin"     type="arch" swap="true"/>
 <productstore name="test"    type="arch" swap="true"/>
 <productstore name="logs"    type="arch" swap="true"/>
-<productstore name="include" type="arch" swap="true"/>
+<productstore name="objs"    type="arch" swap="true"/>
 <productstore name="cfipython" type="arch" swap="true"/>
 <productstore name="doc"/>
 <productstore name="python"/>
@@ -18,7 +18,6 @@ CXXFLAGS := $(patsubst -O2,,$(CXXFLAGS))
 <productstore name="share/htdocs"/>
 
 <classpath path="+Project/Iguana+SubSystem/Iguana+Package/src+binary"/>
-<classpath path="+Project/Iguana+SubSystem/Utilities+Package/src+Classlib"/>
 <classpath path="+Project/+SubSystem/+Package/ivs+ivs"/>
 <classpath path="+Project/+SubSystem/+Package/html+html"/>
 <classpath path="+Project/+SubSystem/+Package/images+images"/>
