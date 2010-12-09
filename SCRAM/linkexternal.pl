@@ -8,9 +8,10 @@ $|=1;
 my $SCRAM_CMD="$ENV{SCRAM_TOOL_HOME}/../bin/scram";
 my %cache=();
 $cache{validlinks}{LIBDIR}="lib";
-$cache{validlinks}{BINDIR}="bin";
+$cache{validlinks}{PATH}="bin";
 $cache{validlinks}{PYTHONPATH}="python";
 $cache{validlinks}{CMSSW_SEARCH_PATH}="data";
+$cache{validlinks}{SHAREDIR}="share";
 
 
 $cache{defaultlinks}{LIBDIR}=1;
@@ -24,7 +25,6 @@ $cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{".package-checksum"}="f";
 
 $cache{runtime_map}{LIBDIR}="@LD_LIBRARY_PATH@";
-$cache{runtime_map}{BINDIR}="PATH";
 
 if(&GetOptions(
                "--update=s",\@update,
@@ -48,6 +48,7 @@ chdir($localtop);
 my $scramver=&scramVersion($localtop);
 my $cacheext="db";
 my $admindir="";
+if ($scramver eq ""){die "ERROR: Something worng, could not find SCRAM VERSION.\n";}
 if($scramver=~/^V[2-9]/){$cacheext="db.gz";$admindir=$arch;}
 
 my %projdata=&readProjectData($localtop,$admindir);
@@ -148,7 +149,11 @@ if(exists $cache{toolcache}{SETUP})
     {
       if (exists $tc->{$x})
       {
-	foreach my $dir (@{$tc->{$x}})
+	my $ref=ref($tc->{$x});
+	my $dirs=[];
+	if ($ref eq "ARRAY"){$dirs=$tc->{$x};}
+	elsif($ref eq ""){$dirs=[$tc->{$x}];}
+	foreach my $dir (@$dirs)
         {
 	  $nbases{$dir}=1;
 	  $cache{"${x}_BASES"}{$t}{$dir}=1;

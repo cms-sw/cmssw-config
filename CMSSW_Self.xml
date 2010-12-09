@@ -4,9 +4,10 @@
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
   <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler"/>
-  <flags EXTERNAL_SYMLINK="BINDIR"/>
+  <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags EXTERNAL_SYMLINK="CMSSW_SEARCH_PATH"/>
+  <flags EXTERNAL_SYMLINK="SHAREDIR"/>
   <flags NO_EXTERNAL_RUNTIME="@LD_LIBRARY_PATH@"/>
   <flags NO_EXTERNAL_RUNTIME="PATH"/>
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
