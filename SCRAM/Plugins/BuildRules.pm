@@ -542,7 +542,7 @@ sub checkSealPluginFlag ()
 	    $plugintype=$stash->get('plugin_type');
 	    if($plugintype eq ""){$err=1;}
 	  }
-	  else{$plugintype=$t;}
+	  else{$plugintype=$self->{cache}{DefaultPluginType};}
 	  $plugin=1;
 	  last;
         }
@@ -1934,7 +1934,18 @@ sub binary_template ()
                       "$safename := self/${path}\n";
             if ($class eq "TEST")
 	    {
-	      print $fh "${safename}_TEST_RUNNER_ARGS :=  ",$core->flags("TEST_RUNNER_ARGS"),"\n";
+	      my $fval = $core->flags("NO_TESTRUN");
+	      if ($fval=~/^(yes|1)$/i)
+	      {
+	        print $fh "${safename}_TEST_RUNNER_CMD := echo\n";
+		print $fh "${safename}_NO_TESTRUN := yes\n";
+	      }
+	      else
+	      {
+		$fval = $core->flags("TEST_RUNNER_CMD");
+	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
+	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
+	      }
 	      $self->set("type","test");
 	    }
 	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}
