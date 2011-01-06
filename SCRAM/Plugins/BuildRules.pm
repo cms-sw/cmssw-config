@@ -666,7 +666,7 @@ sub shouldRunMoc ()
 {
   my $self=shift;
   my $hasmoc=0;
-  if($self->isDependentOnTool(["qt","soqt"]))
+  if($self->isDependentOnTool(["qt"]))
   {
     my $stash=$self->{context}->stash();
     my $src=$stash->get('path');
@@ -724,6 +724,7 @@ sub getLocalBuildFile ()
 {
   my $self=shift;
   my $path=$self->{context}->stash()->get('path');
+  if (exists $self->{cache}{BuildFileMap}{$path}){return $self->{cache}{BuildFileMap}{$path};}
   my $bn=$self->{cache}{BuildFile};
   my $bf="${path}/${bn}.xml";
   if(!-f $bf)
@@ -741,7 +742,20 @@ sub getLocalBuildFile ()
     }
   }
   if(!-f $bf){$bf="";}
-  else{$bf=~s/\.xml//;}
+  else
+  {
+    if ($bf!~/\.xml$/)
+    {
+      if(!exists $self->{WrongBF}{$bf})
+      {
+        $self->{WrongBF}{$bf}=1;
+	if (exists $self->{FH}){my $fh=$self->{FH}; print $fh "NON_XML_BUILDFILE += $bf\n";}
+	else{print STDERR "**** ERROR: non-xml BuildFile are obsolete now. Please convert $bf to xml format using \"scram build -c\" command.\n";}
+      }
+    }
+    $bf=~s/\.xml$//;
+  }
+  $self->{cache}{BuildFileMap}{$path}=$bf;
   return $bf;
 }
 

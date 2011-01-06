@@ -47,7 +47,7 @@ endif
 LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
-
+NON_XML_BUILDFILE           := 
 ###################################
 define FindFileInPath
 $(if $(strip $2),$(eval x:=$(wildcard $(firstword $2)/$1))$(if $x,$x,$(call FindFileInPath,$1,$(wordlist 2,1000,$2))),)
@@ -58,6 +58,16 @@ CMD_$1 := $(eval x:=$(strip $(call FindFileInPath,$1,$(subst $(path_seperator), 
 endef
 
 $(foreach c,awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sh sort touch tr uname uniq xargs,$(eval $(call ShellCMDs,$c)))
+###################################
+ifndef CXX_MMD
+CXX_MMD:=-MMD
+endif
+ifndef C_MMD
+C_MMD:=-MMD
+endif
+ifndef F77_MMD
+F77_MMD:=-MMD
+endif
 ###################################
 ifndef CXX
 CXX:=$(CMD_g++)
@@ -552,50 +562,50 @@ endif
 define compile_cxxI
 @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-               $(CXX) -MMD  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+               $(CXX) $(CXX_MMD)  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef
 define compile_cxx
 @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CXX) $(CXX_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
 endef  
 # C compilation
 define compile_c
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CC) -MMD  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CC)  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(VERB_ECHO) $(CC) $(C_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CC) $(C_MMD) -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Fortran compilation
 define compile_fortran
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(FC) -MMD -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(FC) -MMD -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(VERB_ECHO) $(FC) $(F77_MMD) -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(FC) $(F77_MMD) -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Boost c++ source compilation
 define compile_boost
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
 endef  
 # Boost c++ pywrapper compilation
 define compile_pywrapper
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) "Generating and compiling wrapper file: " &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -MMD  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@$(endlog_$(2))
+  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@$(endlog_$(2))
 endef  
 # Dictionary compilation
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling for LCG dictionary: $<" &&\
-  $(VERB_ECHO)            $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  ((cd $($(1)_objdir)/..; $(CXX) -MMD -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  ((cd $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.d &&\
   if [ -f $<.d ] ; then $(CMD_sed) -i -e 's|$(LOCALTOP)/||' $<.d ; $(CMD_rm) -f $(basename $@).d; fi $(endlog_$(2))
 endef
@@ -603,8 +613,8 @@ endef
 define compile_rootdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling for root dictionary: $< " &&\
-  $(VERB_ECHO) $(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  ($(CXX) -MMD -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) $(CXX) $(CXX_MMD) -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  ($(CXX) $(CXX_MMD) -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; $(CMD_mv) $<.d.backup $<.d; fi $(endlog_$(2))
@@ -1761,8 +1771,14 @@ $(if $(strip $(filter echo_%,$(1))),$(patsubst echo_%,%,$(1)),)
 endef
 $(eval $(call UpdateMakeGoalTypes))
 ##############################################################################
-.PHONY: FORCE_TARGET ToolUpdated_% ToolUpdated ExternalLinks
-FORCE_TARGET:
+.PHONY: FORCE_TARGET ToolUpdated_% ToolUpdated ExternalLinks Non-xml\ BuildFile\ check
+Non-xml\ BuildFile\ check:
+	@if [ "X$(NON_XML_BUILDFILE)" != "X" ] ; then \
+	  echo "****ERROR: Non-XML BuildFiles found. Please convert these to xml format using 'scram build -c'";\
+          $(foreach bf,$(NON_XML_BUILDFILE),echo "          => $(bf)";) \
+	  [ "X$(RELEASETOP)" = "X" ] || exit 1 ;\
+	fi
+FORCE_TARGET:  Non-xml\ BuildFile\ check
 	@:
 $(WORKINGDIR)/cache/prod/%:
 	@$(CMD_touch) $@
