@@ -39,6 +39,7 @@ $mkprocess{skiplines}[$skline++] = qr/.+_iglet_file\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/ALL_COMMONRULES\s+\+=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_PACKAGE\s+:=\s+self\//;
 $mkprocess{skiplines}[$skline++] = qr/\$\(call\s+(RootDict|LCGDict|LexYACC|CodeGen|Iglet|AddMOC|.+Plugin),/;
+$mkprocess{skiplines}[$skline++] = qr/NON_XML_BUILDFILE\s+\+=/;
 $mkprocess{skipcount}=$skline; $skline = 0;
 
 $mkprocess{editlines}[$skline]{reg}     = qr/^\s*ALL_PRODS(\s+\+=.+)$/;
