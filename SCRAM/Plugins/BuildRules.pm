@@ -1859,6 +1859,7 @@ sub library_template_generic ()
   my $core=$self->core();
   my $safename=$self->get("safename");
   my $localbf = $self->getLocalBuildFile();
+  my %no_export=();
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -1866,6 +1867,10 @@ sub library_template_generic ()
     {
       my $v=$core->flags($flag);
       if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+    }
+    foreach my $d (@{$core->flagsdata("NO_EXPORT")})
+    {
+      foreach my $x (split(" ",$d)){$no_export{$x}=0;}
     }
     foreach my $data ("INCLUDE","LIB")
     {
@@ -1876,7 +1881,11 @@ sub library_template_generic ()
     {
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-      if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
+      if($dataval ne "")
+      {
+        print $fh " ",join(" ",@$dataval);
+        foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
+      }
       print $fh "\n";
     }
     my $flag=$core->flags("SKIP_FILES");
@@ -1909,7 +1918,18 @@ sub library_template_generic ()
 	  print $fh "${safename}_EX_${data}   := $xdata\n";
 	}
       }
-      print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";
+      my $noexpstr="";
+      foreach my $d (keys %no_export)
+      {
+        if ($no_export{$d}==1){$noexpstr.=" $d";}
+	else
+	{
+	  print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
+	               "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
+	}
+      }
+      if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
+      else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
     }
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
