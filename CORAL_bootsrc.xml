@@ -8,7 +8,6 @@
     <download url="file:src/RelationalAccess"                 name="src/LCG/RelationalAccess"/>
     <download url="file:src/CoralCommon"                      name="src/LCG/CoralCommon"/>
     <download url="file:src/OracleAccess"                     name="src/LCG/OracleAccess"/>
-    <download url="file:src/MySQLAccess"                      name="src/LCG/MySQLAccess"/>
     <download url="file:src/SQLiteAccess"                     name="src/LCG/SQLiteAccess"/>
     <download url="file:src/FrontierAccess"                   name="src/LCG/FrontierAccess"/>
     <download url="file:src/RelationalService"                name="src/LCG/RelationalService"/>
