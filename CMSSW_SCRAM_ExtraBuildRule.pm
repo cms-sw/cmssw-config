@@ -17,8 +17,6 @@ sub isPublic ()
    my $self=shift;
    my $class = shift;
    if ($class eq "LIBRARY") {return 1;}
-   elsif($class eq "SEAL_PLATFORM"){return 1;}
-   elsif($class eq "CLASSLIB"){return 1;}
    return 0;
    }
 
@@ -27,37 +25,26 @@ sub Project()
   my $self=shift;
   my $common=$self->{template};
   my $fh=$common->filehandle();
-  my $hasseal=$common->isToolAvailable("seal");
-  if (!$hasseal){$common->removePluginSupport("seal");}
   $common->symlinkPythonDirectory(1);
+  #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   $common->addPluginSupport("iglet","IGLET","IgPluginRefresh",'\/iglet$',"SCRAMSTORENAME_LIB",".iglets",'$name="${name}.iglet"',"yes");
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
   $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefres",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
+  $common->addSymLinks("src python 2 python '' -/LCG/");
+  $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "CPPDEFINES+=-DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
-  my $g4magic="$ENV{LOCALTOP}/src/SimG4Core/Packaging/g4magic";
-  if ((-f $g4magic) && (!-f "${g4magic}.done"))
-  {
-    print STDERR ">> Updating SimG4Core/Packaging sources by running the g4magic script\n";
-    system("/bin/bash $g4magic");
-    system("touch ${g4magic}.done");
-  }
-  print $fh "integration-test:\n",
-            "\t\@if [ -f \$(LOCALTOP)/src/Configuration/Applications/data/runall.sh ]; then \\\n",
-            "\t echo \">> Running integration test suite\"; echo; \\\n",
-            "\t cd \$(LOCALTOP)/src/Configuration/Applications/data; ./runall.sh >/dev/null 2>&1; \\\n",
-            "\tfi;\n";
 ######################################################################
 # Dependencies: run ignominy analysis for release documentation
   print $fh ".PHONY: dependencies\n",
             "dependencies:\n",
-            "\t\@cd \$(LOCALTOP); eval `scramv1 run -sh`; \\\n",
+            "\t\@cd \$(LOCALTOP); \\\n",
             "\tmkdir -p \$(LOCALTOP)/doc/deps/\$(SCRAM_ARCH); \\\n",
             "\tcd \$(LOCALTOP)/doc/deps/\$(SCRAM_ARCH); \\\n",
-            "\trunignominy -f -d os -A -g all \$(LOCALTOP)\n";
+            "\tignominy -f -i -A -g all \$(LOCALTOP)\n";
 ######################################################################
 # Documentation targets. Note- must be lower case otherwise conflict with rules
 # for dirs which have the same name:
@@ -113,44 +100,6 @@ sub Project()
   print $fh ".PHONY: depscheck\n",
             "depscheck:\n",
             "\t\@ReleaseDepsChecks.pl --detail\n";
-#####################################################################
-# python link directory rule over ridden
-  if (!$common->isReleaseArea())
-  {
-    print $fh <<EOD;
-override define python_directory_link
-  @\$(startlog_\$(2))if [ ! -d \$(LOCALTOP)/\$(3) ]; then \\
-    mkdir -p \$(LOCALTOP)/\$(3) &&\\
-    echo "Creating product storage directory: \$(LOCALTOP)/\$(3)"; 	\\
-  fi &&\\
-  if [ ! -e \$(\$(1)_python_dir) ] ; then \\
-    subsysdir=`dirname \$(\$(1)_python_dir)` &&\\
-    mkdir -p \$\$subsysdir &&\\
-    rellink=. &&\\
-    subsysdir1=\$\$subsysdir &&\\
-    while [ "\$\$subsysdir1" != "." ] ; do \\
-      if [ ! -f \$\$subsysdir1/__init__.py ] ; then \\
-        touch \$\$subsysdir1/__init__.py ;\\
-        if [ "X\$\$subsysdir1" != "X\$3" ] ; then \\
-          echo "__path__.append(\\\"$ENV{RELEASETOP}/\$\$subsysdir1\\\")" > \$\$subsysdir1/__init__.py ;\\
-        fi ;\\
-      fi ;\\
-      subsysdir1=`dirname \$\$subsysdir1`;  \\
-      rellink=\$\$rellink/..; \\
-    done &&\\
-    ln -s \$\$rellink/\$(4) \$(\$(1)_python_dir) &&\\
-    echo ">> Link created: \$(\$(1)_python_dir) -> \$(\$(1)_srcdir)" &&\\
-    for d in . `ls \$(\$(1)_python_dir)` ; do \\
-      if [ -d \$(\$(1)_python_dir)/\$\$d ] ; then \\
-        if [ ! -f \$(\$(1)_python_dir)/\$\$d/__init__.py ] ; then \\
-          echo "#this file was automatically created by SCRAM" > \$(\$(1)_python_dir)/\$\$d/__init__.py; \\
-        fi ;\\
-      fi ;\\
-    done ;\\
-  fi \$(endlog_\$(2))
-endef
-EOD
-  }
   return 1;
 }
 
@@ -160,11 +109,7 @@ sub Extra_template()
   my $common=$self->{template};
   $common->pushstash();$common->moc_template();$common->popstash();
   if ($common->get("iglet_file") ne ""){$common->iglet_template();}
-  else
-  {
-    if ($common->isToolAvailable("seal")){$common->set("plugin_name",$common->core()->flags("SEAL_PLUGIN_NAME"));}
-    $common->plugin_template();
-  }
+  else{$common->plugin_template();}
   $common->pushstash();$common->lexyacc_template();$common->popstash();
   $common->pushstash();$common->codegen_template();$common->popstash();
   $common->pushstash();$common->dict_template();   $common->popstash();

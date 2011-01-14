@@ -3,11 +3,11 @@
   <environment name="LIBDIR"        value="$LOCALTOP/lib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
+  <environment name="INCLUDE"       value="$LOCALTOP/include/LCG"              handler="warn"/>
   <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler"/>
   <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags EXTERNAL_SYMLINK="CMSSW_SEARCH_PATH"/>
-  <flags EXTERNAL_SYMLINK="SHAREDIR"/>
   <flags NO_EXTERNAL_RUNTIME="@LD_LIBRARY_PATH@"/>
   <flags NO_EXTERNAL_RUNTIME="PATH"/>
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
@@ -25,9 +25,7 @@
  <runtime name="PYTHONPATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/external/$SCRAM_ARCH/data"   type="path" handler="warn"/>
- <runtime name="IGUANA_IVS"            value="$LOCALTOP/share/ivs"                   type="path" handler="warn"/>
- <runtime name="IGUANA_PATH"           value="$LOCALTOP"                             type="path"/>
  <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="LANG"                  value="C"/>
- <runtime name="TEST_SRTOPT_PATH"      value="$LOCALTOP/test/$SCRAM_ARCH"           type="path"/>
+ <runtime name="TEST_SRTOPT_PATH"      value="$LOCALTOP/test/$SCRAM_ARCH"            type="path"/>
 </tool>

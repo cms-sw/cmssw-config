@@ -344,6 +344,43 @@ sub getRootReflex ()
   my $self=shift;
   return $self->{cache}{RootRflx};
 }
+
+##############################################################
+sub addSymLinks()
+{
+  my ($self,$dir)=@_;
+  if ($dir ne ""){$self->{cache}{SymLinks}{$dir}=1;}
+}
+
+sub removeSymLinks()
+{
+  my ($self,$dir)=@_;
+  delete $self->{cache}{SymLinks}{$dir};
+}
+
+sub getSymLinks()
+{
+  my $self=shift;
+  my @dirs=();
+  if (exists $self->{cache}{SymLinks}){@dirs=keys %{$self->{cache}{SymLinks}};}
+  return @dirs;
+}
+
+sub createSymLinks()
+{
+  my $self=shift;
+  my @dirs=$self->getSymLinks();
+  if (scalar(@dirs)==0){return;}
+  my $fh=$self->filehandle();
+  print $fh "CONFIGDEPS += \$(COMMON_WORKINGDIR)/cache/project_links\n",
+            "\$(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET\n",
+	    "\t\@echo '>>Creating project symlinks';\\\n",
+	    "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D); \\\n";
+  foreach my $cmd (@dirs)
+  {print $fh "\t",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.pl $cmd;  \\\n";}
+  print $fh "\tif [ ! -f \$@ ] ; then touch \$@; fi\n\n";
+  return 1;
+}
 ##############################################################
 sub setLCGCapabilitiesPluginType ()
 {
@@ -1012,28 +1049,6 @@ sub searchLCGRootDict ()
   return;
 }
 
-sub isDataDownloadCopy ()
-{
-  my $self=shift;
-  my $stash=$self->{context}->stash();
-  my $add_download=0;my $add_data_copy=0;
-  my $datapath=$stash->get('datapath');
-  if (-d $datapath)
-  {
-    my $urls=();
-    foreach my $file (@{&readDir($datapath,2,-1)})
-    {if($file=~/\/download\.url$/){push @$urls,$file;$add_download=1;}}
-#lange- turn off downloads now - distribute separately
-#    if($add_download){$stash->set('downloadurls',$urls);}
-#lange - turn off copy of data for now
-#    if($ENV{RELEASETOP} eq ""){$add_data_copy=1;}
-  }
-  $stash->set('add_data_copy',$add_data_copy);
-  $stash->set('add_download',$add_download);
-  if($add_data_copy || $add_download){return 1;}
-  return 0;
-}
-
 sub fixProductName ()
 {
   my $self=shift;
@@ -1347,9 +1362,8 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_pool (){return &safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
-sub safename_seal (){return &safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
-sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
+sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1363,8 +1377,6 @@ sub safename_LCGProjects ()
   return $sname;
 }
 
-sub safename_ignominy (){return &safename_CMSProjects(shift,"safename_PackageBased",shift);}
-sub safename_iguana (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 sub safename_cmssw (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 sub safename_default (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 
@@ -1584,21 +1596,10 @@ sub Project_template()
   my $safepath=$self->get("safepath");
   my $fh=$self->{FH};
   $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
-  my $common=$self->getProjectPluginTemplate();
-  if ((defined $common) && ($common->isToolAvailable("seal")))
-  {
-    #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
-    $self->addPluginSupport("seal","SEALPLUGIN:SEAL_PLUGIN_NAME","SealPluginRefresh",'\/sealplugins$',"SCRAMSTORENAME_MODULE",".cache",'$name="${name}.reg"',"");
-    $self->setProjectDefaultPluginType ("seal");
-    $self->setLCGCapabilitiesPluginType ("seal");
-  }
   #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
   foreach my $type ("lib","bin","test","python","java","logs","include")
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
   $self->addProductDirMap ("scripts",'.+',"SCRAMSTORENAME_BIN");
-  $self->addProductDirMap ("ivs",'.+',"SCRAMSTORENAME_SHARE_IVS");
-  $self->addProductDirMap ("html",'.+',"SCRAMSTORENAME_SHARE_HTDOCS");
-  $self->addProductDirMap ("images",'.+',"SCRAMSTORENAME_SHARE_IMAGES");
   $self->updateEnvVarMK();
 
   # LIB/INCLUDE/USE from toplevel BuildFile
@@ -1700,7 +1701,8 @@ sub Project_template()
             "subdirs_${safepath}+=\$(filter-out Documentation, ",$core->safesubdirs(),")\n\n";
 
   $self->processTemplate("Project");
-
+  $self->createSymLinks();
+  
   my %pdirs=();
   foreach my $ptype ($self->getPluginTypes())
   {foreach my $dir ($self->getPluginProductDirs($ptype)){$pdirs{$dir}=1;}}
@@ -1842,6 +1844,7 @@ sub library_template ()
             "${safename} := self/${parent}\n",
             "${parent} := ${safename}\n",
             "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
+  if ($parent=~/^LCG\/(.+)$/){print $fh "$1 := ${safename}\n";}
   my $iglet=$self->get("iglet_file");
   if($iglet ne ""){print $fh "${safename}_iglet_file := $iglet\n";}
   $self->library_template_generic();
@@ -1930,13 +1933,6 @@ sub binary_template ()
   my $safepath=$self->get("safepath"); my $path=$self->get("path");
   my $fh=$self->{FH};
   my $class=$self->get("class");
-  if ($class eq "TEST")
-  {
-    $self->pushstash();
-    $self->set("datapath","${path}/data");
-    $self->data_template_generic();
-    $self->popstash();
-  }
   my $types=$core->buildproducts();
   my $localbf = $self->getLocalBuildFile();
   if($types)
@@ -2062,13 +2058,6 @@ sub src2store_copy()
   print $fh "\$(eval \$(call Src2StoreCopy,${safepath},${path},${store},${filter}))\n";
 }
 
-sub html_template ()
-{
-  my $self=shift;
-  $self->src2store_copy('*',"\$(addprefix \$(".$self->getProductStore("html").")/,\$(patsubst src/%,%,".$self->get("path")."))");
-  return 1;
-}
-
 sub images_template ()
 {
   my $self=shift;
@@ -2111,29 +2100,6 @@ sub codegen_template ()
     print $fh "\$(eval \$(call CodeGen,",$self->get("safename"),",",$self->get("path"),",$flag))\n";
   }
   return 1;
-}
-
-sub data_install_template()
-{
-  my $self=shift;
-  if($self->get("suffix") ne ""){return 1;}
-  $self->initTemplate_common2all ();
-  $self->set("datapath",$path);
-  $self->data_template_generic();
-  my $fh=$self->{FH};
-  print $fh "\$(eval \$(call CommonDataRules,",$self->get("safepath"),",",$self->get("path"),"))\n";
-  return 1;
-}
-
-sub data_template_generic()
-{
-  my $self=shift;
-  if($self->isDataDownloadCopy())
-  {
-    my $fh=$self->{FH};
-    print $fh "\$(eval \$(call DataInstall,",$self->get("safepath"),",",$self->get("datapath"),",",$self->get("add_data_copy"),",",
-              $self->get("add_download"),",",join(" ",$self->get("downloadurls")),"))\n";
-  }
 }
 
 sub donothing_template()
