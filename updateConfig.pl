@@ -86,9 +86,9 @@ foreach my $file (readdir(DIR))
 closedir(DIR);
 foreach my $type (keys %{$cache{SCRAMFILES}}){system("touch ${dir}/XXX_${type}; rm -f ${dir}/*_${type}*");}
 
-system("find $dir -name \"*\" -type f | xargs sed -i -e '".$regexp."'");
+system("find $dir -name \"*\" -type f | xargs sed -i.backup$$ -e '".$regexp."'");
+system("find $dir -name \"*.backup$$\" -type f | xargs rm -f");
 system("rm -rf ${dir}/site;  echo $scram > ${dir}/scram_version");
-
 
 if ($replaceArch)
 {
