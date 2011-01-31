@@ -929,7 +929,7 @@ define run_test
     $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS") &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) < /dev/null >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS") &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log &&\
@@ -1184,7 +1184,7 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(1)_config += $$($(1)_objdir)/config
+$(1)_config += $$($(1)_objdir)/config $(logfile_$(1))
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
