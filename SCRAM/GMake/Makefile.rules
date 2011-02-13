@@ -1184,7 +1184,7 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(1)_config += $$($(1)_objdir)/config
+$(1)_config += $$($(1)_objdir)/config $(logfile_$(1))
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
