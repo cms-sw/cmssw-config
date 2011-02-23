@@ -49,15 +49,13 @@ BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
 ###################################
-define FindFileInPath
-$(if $(strip $2),$(eval x:=$(wildcard $(firstword $2)/$1))$(if $x,$x,$(call FindFileInPath,$1,$(wordlist 2,1000,$2))),)
-endef
-
+SHELL := /bin/sh
+CMD_which := which
 define ShellCMDs
-CMD_$1 := $(eval x:=$(strip $(call FindFileInPath,$1,$(subst $(path_seperator), ,$(PATH)))))$(if $x,$x,$1)
+CMD_$1 := $(eval x:=$(strip $(firstword $(shell $(CMD_which) $1 2>&1))))$(if $(wildcard $x),$x,$1)
 endef
-
-$(foreach c,awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sh sort touch tr uname uniq xargs,$(eval $(call ShellCMDs,$c)))
+$(eval $(call ShellCMDs,which))
+$(foreach c,sh awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs,$(eval $(call ShellCMDs,$c)))
 ###################################
 ifndef CXX_MMD
 CXX_MMD:=-MMD
@@ -81,7 +79,6 @@ endif
 ifndef JAVAC
 JAVAC:=$(CMD_javac)
 endif
-SHELL                       := $(CMD_sh)
 UNAME                       := $(CMD_uname)
 ###################################
 ifndef SHAREDSUFFIX
@@ -1184,7 +1181,7 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(1)_config += $$($(1)_objdir)/config
+$(1)_config += $$($(1)_objdir)/config $(logfile_$(1))
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
