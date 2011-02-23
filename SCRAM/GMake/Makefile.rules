@@ -872,28 +872,6 @@ define python_script_copy
   $(CMD_touch) $($(1)_python_dir)/__init__.py &&\
   $(CMD_touch) $($(1)_python_dir)/../__init__.py $(endlog_$(2))
 endef
-define python_directory_link
-  @$(startlog_$(2))if [ ! -d $(LOCALTOP)/$(3) ]; then \
-    $(CMD_mkdir) -p $(LOCALTOP)/$(3) &&\
-    $(CMD_echo) "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
-  fi &&\
-  if [ ! -e $($(1)_python_dir) ] ; then \
-    subsysdir=`$(CMD_dirname) $($(1)_python_dir)` &&\
-    $(CMD_mkdir) -p $$subsysdir &&\
-    rellink=. &&\
-    subsysdir1=$$subsysdir &&\
-    while [ "$$subsysdir1" != "." ] ; do $(CMD_touch) $$subsysdir/__init__.py; subsysdir1=`$(CMD_dirname) $$subsysdir1`;  rellink=$$rellink/..; done &&\
-    $(CMD_ln) -s $$rellink/$(4) $($(1)_python_dir) &&\
-    $(CMD_echo) ">> Link created: $($(1)_python_dir) -> $($(1)_srcdir)" &&\
-    for d in . `$(CMD_ls) $($(1)_python_dir)` ; do \
-      if [ -d $($(1)_python_dir)/$$d ] ; then \
-        if [ ! -f $($(1)_python_dir)/$$d/__init__.py ] ; then \
-	  $(CMD_echo) "#this file was automatically created by SCRAM" > $($(1)_python_dir)/$$d/__init__.py;\
-	fi ;\
-      fi ;\
-    done ;\
-  fi $(endlog_$(2))
-endef
 define copy_src_scripts
   @$(startlog_$(2))$(CMD_echo) "------- copying scripts from $(1) -------" &&\
   for f in $(3); do \
@@ -1349,11 +1327,11 @@ all_$(1) += $(1)_copy_python_scripts
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
 ifeq ($$(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
-$$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
+$$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
 	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))),$(2))
 $(1)_copy_python_scripts: $$($(1)_objdir)/cmssw_python_modules
 else
-$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/python_symlinks
+$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
 endif
 	@:
 else
@@ -2039,53 +2017,25 @@ ufast xfast fast:
 	fi
 echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
-
-$(COMMON_WORKINGDIR)/python_symlinks: FORCE_TARGET
-	@$(CMD_echo) ">> Updating python symlinks."
-	@for d in $(ALL_PYTHON_DIRS); do \
-	  p=`$(CMD_dirname) python/$$d`;\
-	  if [ ! -e $$p ] ; then \
-	    s=`$(CMD_dirname) $$p`;\
-	    $(CMD_mkdir) -p $$s;\
-	    r=.. ;\
-	    s1=$$s ;\
-	    while [ "$$s1" != "python" ] ; do \
-	      if [ "X$(RELEASETOP)" = "X" ] ; then \
-		$(CMD_echo) "import os" > $$s1/__init__.py;\
-		$(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$s1/__init__.py;\
-		$(CMD_echo) "if localrt != None:" >> $$s1/__init__.py;\
-	        $(CMD_echo) "  __path__.insert(0,localrt+'/$$s1')" >> $$s1/__init__.py;\
-	      else \
-		$(CMD_echo) "__path__.append('$(RELEASETOP)/$$s1')" > $$s1/__init__.py;\
-	      fi;\
-	      s1=`$(CMD_dirname) $$s1`;\
-	      r=$$r/..;\
-	    done ;\
-	    $(CMD_touch) $$s1/__init__.py;\
-	    $(CMD_ln) -s $$r/$(SCRAM_SOURCEDIR)/$$d $$p ;\
-	    $(CMD_echo) "   python/$$d -> $(SCRAM_SOURCEDIR)/$$d" ;\
-	  fi;\
-	done
-	@for d in $(ALL_PYTHON_DIRS); do \
-	  for dir in `$(CMD_find) $(SCRAM_SOURCEDIR)/$$d -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
+$(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
+	@[ -d python ] || $(CMD_mkdir) python; \
+	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl ;\
+	$(CMD_touch) python/__init__.py
+	@for d in `$(CMD_find) python -name "*" -type l | $(CMD_sed) s'|^python/||'`; do \
+	  for dir in `$(CMD_find) src/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
 	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-	        pkgdir=`$(CMD_echo) $$dir| $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||;s|/python$$||'`; \
 		$(CMD_echo) "import os" >> $$dir/__init__.py;\
 	        $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "arch=os.getenv('SCRAM_ARCH', None)" >> $$dir/__init__.py;\
 	        $(CMD_echo) "if localrt != None:" >> $$dir/__init__.py;\
-	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/'+arch+'/$$pkgdir')"  >> $$dir/__init__.py;\
+	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
 	      fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
-	done
-	@for l in `$(CMD_find) python -name "*" -type l`; do \
-	  if [ ! -f $$l/__init__.py ] ; then $(CMD_rm) -f $$l; fi;\
 	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
