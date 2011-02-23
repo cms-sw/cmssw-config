@@ -14,6 +14,7 @@ my $envfile="${localtop}/.SCRAM/${arch}/Environment";
 if (!-f $envfile){$envfile="${localtop}/.SCRAM/Environment";}
 my $reltop   = `grep RELEASETOP= $envfile | sed 's|RELEASETOP=||'`; chomp $reltop;
 $reltop      = &fixPath($reltop);
+my $proj_name = lc($ENV{SCRAM_PROJECTNAME});
 my $cacheext="db";
 if(&scramVersion($localtop)=~/^V[2-9]/){$cacheext="db.gz";}
 
@@ -39,6 +40,7 @@ $mkprocess{skiplines}[$skline++] = qr/.+_iglet_file\s+[:+]=/;
 $mkprocess{skiplines}[$skline++] = qr/ALL_COMMONRULES\s+\+=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_PACKAGE\s+:=\s+self\//;
 $mkprocess{skiplines}[$skline++] = qr/\$\(call\s+(RootDict|LCGDict|LexYACC|CodeGen|Iglet|AddMOC|.+Plugin),/;
+$mkprocess{skiplines}[$skline++] = qr/NON_XML_BUILDFILE\s+\+=/;
 $mkprocess{skipcount}=$skline; $skline = 0;
 
 $mkprocess{editlines}[$skline]{reg}     = qr/^\s*ALL_PRODS(\s+\+=.+)$/;
@@ -69,7 +71,7 @@ foreach my $t (keys %tools)
   my $c=$tcache->{SETUP}{$t};
   my $sproj=$c->{SCRAM_PROJECT} || 0;
   my @tvars=@toolvar;
-  if($t eq "self"){push @tvars,"LIBDIR";}
+  if(($t eq "self") || ($t eq $proj_name)){push @tvars,"LIBDIR";}
   open(TFILE,">${tooldir}/${t}.mk") || die "Can not open file for writing: ${tooldir}/${t}.mk\n";
   print TFILE "$t             := $t\n";
   print TFILE "ALL_TOOLS      += $t\n";
@@ -79,7 +81,11 @@ foreach my $t (keys %tools)
     if(exists $c->{$f})
     {
       my $x=join(" ",@{$c->{$f}});
-      if($x!~/^\s*$/){print TFILE "${t}_LOC_$f := $x\n${t}_EX_$f  := \$(${t}_LOC_$f)\n";}
+      if($x!~/^\s*$/)
+      {
+        print TFILE "${t}_LOC_$f := $x\n${t}_EX_$f  := \$(${t}_LOC_$f)\n";
+        if (($t eq "self") && ($f eq "LIBDIR")){print TFILE "${t}_LOC_$f += \$(${proj_name}_EX_$f)\n${t}_EX_$f  += \$(${proj_name}_EX_$f)\n";}
+      }
     }
   }
   if(exists $c->{USE})
