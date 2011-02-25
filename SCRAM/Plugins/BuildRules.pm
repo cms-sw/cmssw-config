@@ -1345,7 +1345,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
+sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 sub safename_LCGProjects ()
 {
   my $self=shift;

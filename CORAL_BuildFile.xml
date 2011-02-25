@@ -4,8 +4,8 @@
 <productstore name="tests/lib" type="arch"/>
 <productstore name="include"/>
 
-<classpath path="+Project/+Package/src+library"/>
-<classpath path="+Project/+Package/tests+binary"/>
-<classpath path="+Project/+Package/python+python"/>
+<classpath path="+Project/LCG+SubSystem/+Package/src+library"/>
+<classpath path="+Project/LCG+SubSystem/+Package/tests+binary"/>
+<classpath path="+Project/LCG+SubSystem/+Package/python+python"/>
 
 <use name="self"/>
