@@ -2,7 +2,7 @@
  <client>
   <environment name="LIBDIR"  value="$LOCALTOP/$SCRAM_ARCH/lib"/>
   <environment name="LIBDIR"  value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
-  <environment name="INCLUDE" value="$LOCALTOP/include/LCG"              handler="warn"/>
+  <environment name="INCLUDE" value="$LOCALTOP/include"/>
   <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler"/>
   <flags EXTERNAL_SYMLINK="BINDIR"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
@@ -11,8 +11,8 @@
  </client>
  <runtime name="@LD_LIBRARY_PATH@" value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path"/>
  <runtime name="@LD_LIBRARY_PATH@" value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
- <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
- <runtime name="PYTHONPATH"      value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
- <runtime name="PATH"            value="$LOCALTOP/$SCRAM_ARCH/bin"           type="path" handler="warn"/>
- <runtime name="PATH"            value="$LOCALTOP/external/$SCRAM_ARCH/bin"  type="path" handler="warn"/>
+ <runtime name="PYTHONPATH"        value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
+ <runtime name="PYTHONPATH"        value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
+ <runtime name="PATH"              value="$LOCALTOP/$SCRAM_ARCH/bin"           type="path" handler="warn"/>
+ <runtime name="PATH"              value="$LOCALTOP/external/$SCRAM_ARCH/bin"  type="path" handler="warn"/>
 </tool>

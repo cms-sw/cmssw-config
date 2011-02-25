@@ -49,15 +49,24 @@ LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
+ALL_PYTHON_COMPILE          := 
 ###################################
-SHELL := /bin/sh
-CMD_which := which
-define ShellCMDs
-CMD_$1 := $(eval x:=$(strip $(firstword $(shell $(CMD_which) $1 2>&1))))$(if $(wildcard $x),$x,$1)
-endef
+CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77 JAVAC:javac
+ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
+SHELL                       := /bin/sh
+BASECMD_which               := which
+###################################
+SetLocalCMDs    = $(if $($1),$(eval CMD_$2:=$($1)),)
+SetCompilerCMDs = $(if $($1),,$(eval $1:=$(CMD_$2)))
+ShellCMDs       = $(if $(CMD_$1),,$(eval CMD_$1:=$(eval x:=$(strip $(firstword $(shell $(BASECMD_which) $1 2>&1))))$(if $(wildcard $x),$x,$1)))
+###################################
 $(eval $(call ShellCMDs,which))
-$(foreach c,sh awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs,$(eval $(call ShellCMDs,$c)))
+BASECMD_which := $(CMD_which)
+$(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetLocalCMDs,$(subst :,$(comma),$c))))
+$(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
+$(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
 ###################################
+UNAME                       := $(CMD_uname)
 ifndef CXX_MMD
 CXX_MMD:=-MMD
 endif
@@ -67,20 +76,6 @@ endif
 ifndef F77_MMD
 F77_MMD:=-MMD
 endif
-###################################
-ifndef CXX
-CXX:=$(CMD_g++)
-endif
-ifndef CC
-CC:=$(CMD_gcc)
-endif
-ifndef FC
-FC:=$(CMD_g77)
-endif
-ifndef JAVAC
-JAVAC:=$(CMD_javac)
-endif
-UNAME                       := $(CMD_uname)
 ###################################
 ifndef SHAREDSUFFIX
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
@@ -137,22 +132,6 @@ FORCE_BUILD_END = ) || (exitcode=$$?; $(CMD_echo) gmake: \*\*\* [$@] Error $$exi
 else
 FORCE_BUILD_START =
 FORCE_BUILD_END =
-endif
-endif
-
-PSR_BASE_TARGET:=
-ifneq ($(strip $(MAKECMDGOALS)),)
-ifeq ($(strip $(MAKECMDGOALS)),release)
-PSR_BASE_TARGET := $(SCRAM_SOURCEDIR)
-endif
-ifeq ($(strip $(MAKECMDGOALS)),release-build)
-PSR_BASE_TARGET := $(SCRAM_SOURCEDIR)
-endif
-else
-ifeq ($(strip $(TARGETDIR)),src)
-PSR_BASE_TARGET := $(TARGETDIR)
-else
-PSR_BASE_TARGET := all_$(TARGETDIR)
 endif
 endif
 
@@ -253,6 +232,17 @@ endef
 define outputlog
   @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
     $(DO_BUILD_LOG) for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | $(CMD_grep) -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) $(CMD_cat) $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) $(CMD_rm) -f $$f;  $(DO_BUILD_LOG) done ;\
+  fi
+endef
+define outputLogFile
+  @if [ "X$1" != "X" ] ; then \
+    $(CMD_cat) $1;\
+    dir=`$(CMD_dirname) $1`;\
+    while [ ! -f "$$dir/build.log" ] && [ "$$dir" != "$(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)" ] ; do \
+      dir=`$(CMD_dirname) $$dir`;\
+    done ;\
+    [ -f "$$dir/build.log" ] && $(CMD_cat) $1 >> $$dir/build.log ;\
+    $(CMD_rm) -f $1;\
   fi
 endef
 define checklibs
@@ -358,17 +348,9 @@ define clean_files
     $(CMD_rm) -rf $(LOCALTOP)/$(2)/$$f;	\
   done
 endef
-define iglet_plugin_clean
-  $(call clean_prod,$($(1)_pluginprod))
-endef
 
 define edm_plugin_clean
   $(call clean_prod,$($(1)_plugindir)/plugin$(1).$(SHAREDSUFFIX))
-  $(call clean_prod,$($(1)_pluginprod))
-endef
-
-define seal_plugin_clean
-  $(call clean_prod,$($(1)_plugindir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX))
   $(call clean_prod,$($(1)_pluginprod))
 endef
 
@@ -377,9 +359,6 @@ define rivet_plugin_clean
 endef
 
 define do_plugin_refresh
-    if [ "X$(PSR_BASE_TARGET)" = X ] ; then \
-      $(call do_$(1),$(2));\
-    fi
 endef
 #############################################################################
 ##############################################################################
@@ -455,22 +434,12 @@ define rivet_register_plugin
   fi $(endlog_$(2))
 endef
 
-ifndef SCRAM_NOPLUGINREFRESH
-define iglet_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(@F),$<) &&\
-    $(CMD_cp) -f $< $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "--- Registered IgLet Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ ;\
-  fi &&\
-  $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
-endef
+#Force not to register individual plugins. We run the plugin refresh at the end.
+ifdef SCRAM_NOPLUGINREFRESH
+undefine SCRAM_NOPLUGINREFRESH
+endif
 
+ifndef SCRAM_NOPLUGINREFRESH
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
@@ -495,35 +464,7 @@ define edm_register_plugin
   fi &&\
   $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
 endef
-
-define seal_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(CMD_echo) 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "--- Registered Seal Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ ;\
-  fi &&\
-  $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
-endef
 else
-define iglet_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/iglet_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(@F),$<) &&\
-    $(CMD_cp) -f $< $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "90:IgPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,iglet) &&\
-    $(CMD_echo) "--- Registered IgLet Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ ;\
-  fi $(endlog_$(2))
-endef
-
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
@@ -538,19 +479,6 @@ define edm_register_plugin
     $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
   else \
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
-  fi $(endlog_$(2))
-endef
-
-define seal_register_plugin
-  @$(startlog_$(2))$(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/seal_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(CMD_echo) 'module $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)' > $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"                 > $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "90:SealPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,seal) &&\
-    $(CMD_echo) "--- Registered Seal Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ ;\
   fi $(endlog_$(2))
 endef
 endif
@@ -914,79 +842,6 @@ define run_test
 endef
 
 ##############################################################################
-# Rule Checker rukes
-#Preprocessing C source
-define rulechecker_preprocess_file_init
-  if [ -f $($(1)_srcdir)/../interface/$*.h ] ; then \
-    $(CMD_echo) "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/../interface/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ; \
-  else \
-    $(CMD_echo) "$*.$(RULECHECKER_PREPROCESS_EXT) $< $($(1)_srcdir)/$*.h *$*.$(RULECHECKER_VIOLATION_EXT)*" >> $($(1)_objdir)/config_FILES_TO_ANALYZE.full ;\
-  fi &&\
-  $(CMD_rm) -f $@.RULES_IGNORED; $(CMD_touch) $@.RULES_IGNORED &&\
-  for rule in `$(CMD_echo) "$($(1)_RULES_IGNORED)" | $(CMD_tr) ' ' '\n' | $(CMD_grep) "$*.$(4):" | $(CMD_sed) 's|$*.$(4):||' | $(CMD_tr) ',' '\n'` ; do \
-    $(CMD_echo) "$$rule" >> $@.RULES_IGNORED;\
-  done &&\
-  if [ ! -s $@.RULES_IGNORED ] ; then \
-    $(CMD_rm) -f $@.RULES_IGNORED; \
-  fi &&\
-  $(CMD_rm) -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).$(RULECHECKER_VIOLATION_EXT) &&\
-  $(CMD_rm) -f $(LOCALTOP)/doc/RuleCheck/$(3)/$(*F).err &&\
-  if [ $(@D)/$(*F).d ] ; then \
-    $(CMD_sed) 's|.o: |.i: |' $(@D)/$(*F).d > $(@D)/$(*F).id ;\
-  fi
-endef
-#Preprocessing C source
-define preprocess_c
-  @$(startlog_$(2))$(CMD_echo) ">> Preprocessing $<" &&\
-  $(VERB_ECHO) $(CC)  -E $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CC)  -E $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(call rulechecker_preprocess_file_init,$(1),$(2),$(3),$(4)) $(endlog_$(2))
-endef
-#Preprocessing CXX source
-define preprocess_cxx
-  @$(startlog_$(2))$(CMD_echo) ">> Preprocessing $<" &&\
-  $(VERB_ECHO) $(CXX) -E $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) -E $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(call rulechecker_preprocess_file_init,$(1),$(2),$(3),$(4)) $(endlog_$(2))
-endef
-# Run Rule checker
-define run_rule_checker
-  @$(startlog_$(2)) cd  $($(1)_objdir) && $(CMD_touch) quickExecution &&\
-  for file in `$(CMD_cat) config_FILES_TO_ANALYZE.full | $(CMD_awk) '{print $$1}'`; do \
-    line=`$(CMD_grep) "^$$file " config_FILES_TO_ANALYZE.full` &&\
-    patcharg=`$(CMD_echo) $$line | $(CMD_sed) 's|*.*||'` &&\
-    src_file=`$(CMD_echo) $$line | $(CMD_awk) '{print $$2}'` &&\
-    file_woext=`$(CMD_echo) $$file | $(CMD_sed) 's|\.$(RULECHECKER_PREPROCESS_EXT)$$||'` &&\
-    viol_err_file=$$file_woext.err &&\
-    viol_file=$$file_woext.$(RULECHECKER_VIOLATION_EXT) &&\
-    $(CMD_echo) ">> Patching $$src_file"  &&\
-    patch4cms.pl $$patcharg  &&\
-    $(CMD_echo) "$$line" > config_FILES_TO_ANALYZE  &&\
-    $(CMD_rm) -f config_RULES_IGNORED  &&\
-    if [ -f $$file.RULES_IGNORED ] ; then \
-      $(CMD_mv) $$file.RULES_IGNORED config_RULES_IGNORED; \
-    fi	&&\
-    $(CMD_echo) ">> Rule checking $$src_file" &&\
-    rulechecker_runs_ok="yes"  &&\
-    $(JAVA_HOME)/bin/java $$CMS_CODING_RULES > $$viol_err_file 2>&1 || rulechecker_runs_ok="no" &&\
-    if [ X$$rulechecker_runs_ok = Xyes ] ; then	$(CMD_rm) -f $$viol_err_file; fi &&\
-    if [ -f "$$file"i ] ; then $(CMD_rm) -f "$$file"i; fi &&\
-    if [ -s $$viol_file ] ; then \
-      $(CMD_cat) $$viol_file; $(CMD_mkdir) -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_mv) $$viol_file $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_echo) ">> See rule violations: $(LOCALTOP)/doc/RuleCheck/$(3)/$$viol_file"; \
-    else \
-      $(CMD_rm) -f $$viol_file; $(CMD_echo) "   No violation found"; \
-    fi &&\
-    if [ -s $$viol_err_file ] ; then \
-      $(CMD_mkdir) -p $(LOCALTOP)/doc/RuleCheck/$(3) &&\
-      $(CMD_mv) $$viol_err_file $(LOCALTOP)/doc/RuleCheck/$(3); \
-    fi ;\
-  done &&\
-  $(CMD_rm) -f config_RULES_IGNORED quickExecution config_FILES_TO_ANALYZE.full config_FILES_TO_ANALYZE &&\
-  cd $(LOCALTOP) && $(CMD_touch) $@ $(endlog_$(2))
-endef
-##############################################################################
 define bf_update
   @if [ ! -f $@ ] || [ "X$($(1)_BuildFile)" = X ] ; then \
     $(CMD_touch) $@;\
@@ -1086,14 +941,8 @@ endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
 endef
-define sealPlugin
-$(eval $(call addPlugin,$1,$2,seal,,$3,SealPluginRefresh,.cache,$(1).reg,$1))
-endef
 define edmPlugin
 $(eval $(call addPlugin,$1,$2,edm,yes,$3,EdmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
-endef
-define igletPlugin
-$(eval $(call addPlugin,$1,$2,iglet,yes,$3,IgPluginRefresh,.iglets,$(2).iglet,$2))
 endef
 define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
@@ -1139,7 +988,7 @@ $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_libdeps      := $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
-$(1)_files        := $$(filter-out $$($(1)_iglet_file) $($(1)_SKIP_FILES), $$($(1)_files))
+$(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $$($(1)_files))
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files))))
 ifneq ($(strip $(5)),)
 .PHONE: $(1)_install_scripts_rule
@@ -1329,10 +1178,10 @@ ifeq ($$(strip $(5)),1)
 ifeq ($$(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 $$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
 	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))),$(2))
-$(1)_copy_python_scripts: $$($(1)_objdir)/cmssw_python_modules
-else
-$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
+	$$(call outputLogFile,$(logfile_$(1)))
+ALL_PYTHON_COMPILE += $$($(1)_objdir)/cmssw_python_modules
 endif
+$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
 	@:
 else
 $(1)_copy_python_scripts: $(logfile_$(1))
@@ -1546,28 +1395,6 @@ $($(1)_objdir)/moc/%_cpp_moc.cc: $(4)/%.cpp $($(1)_config)
 	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 $($(1)_objdir)/moc/%_cxx_moc.cc: $(4)/%.cxx $($(1)_config)
 	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
-endef
-
-#safename,igletfile,prodstore
-define Iglet
-$(1)_ExtraIglet_objs        := $(addprefix $($(1)_objdir)/, $(addsuffix .$(OBJEXT), $(basename $(2))))
-$(1)_ExtraIglet_libcheck    := $($(1)_libcheck)
-$(1)_ExtraIglet_CXXFLAGS     = $$($(1)_CXXFLAGS)
-$(1)_ExtraIglet_LDFLAGS      = $$($(1)_LDFLAGS)
-$(1)_ExtraIglet_libdeps     := $($(1)_libdeps)
-$(1)_compile += $$($(1)_ExtraIglet_objs)
-ifeq ($(strip $($(1)_objs)),)
-$($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.cc $($(1)_config) $(logfile_$(1))
-	$$(call compile_cxx,$(1),$(1))
-else
-$(1)_ExtraIglet_LDFLAGS      = $$($(1)_LDFLAGS) -l$(1)
-$(1)_ExtraIglet_libdeps     += $(WORKINGDIR)/cache/prod/lib$(1)
-endif
-$($(1)_ExtraIglet_pluginlib): $$($(1)_ExtraIglet_objs) $$($(1)_ExtraIglet_libdeps)
-	$$(call link_lib,$(1)_ExtraIglet,$(1),$(3),$(1)_ExtraIglet)
-ifneq ($(wildcard $($(1)_ExtraIglet_pluginlib).dep),)
--include $($(1)_ExtraIglet_pluginlib).dep
-endif
 endef
 
 #safename,path,*LinkDef.h files
@@ -1819,10 +1646,13 @@ ProjectRename projectrename PROJECTRENAME:
 	fi
 ######################################################################
 #Common Rules
-.PHONY: all project project_all all_$(SCRAM_SOURCEDIR)
-all: all_$(TARGETDIR) ProjectPluginRefresh
-	@:
-project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR) ProjectPluginRefresh
+.PHONY: all project project_all all_$(SCRAM_SOURCEDIR) ProjectPluginRefresh CompilePython PostBuild
+all: all_$(TARGETDIR)
+	@if [ "X$(TARGETDIR)" != "X$(SCRAM_SOURCEDIR)" ] ; then \
+	  $(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog ;\
+	  $(MAKE) -f $(SCRAM_MAKEFILE) PostBuild ;\
+	fi
+project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR)
 	@:
 
 .PHONY: python help compile precompile runtests clean distclean cache_clean project_clean project_help 
@@ -1868,9 +1698,6 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "postbuild:"
 	@$(CMD_echo) "     Execute the post-build target for the project."
 	@$(CMD_echo) ""
-	@$(CMD_echo) "rulechecker:"
-	@$(CMD_echo) "     Run the rulechecker to look for code style violations."
-	@$(CMD_echo) ""
 	@$(CMD_echo) "release-test:"
 	@$(CMD_echo) "     Run the integration test suite"
 	@$(CMD_echo) ""
@@ -1879,7 +1706,7 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "     (Depends on the location where \"scram b runtests\" is run)."
 	@$(CMD_echo) ""
 
-.PHONY: release release-build release-reset release-check release-test release-doc release-docs release-freeze rulechecker
+.PHONY: release release-build release-reset release-check release-test release-doc release-docs release-freeze
 
 release: release-reset release-build postbuild
 
@@ -1901,12 +1728,6 @@ release-freeze: release-check
 	$(CMD_find) . -type f -print | $(CMD_xargs) $(CMD_chmod) a-w; \
 	$(CMD_find) . -type d -print | $(CMD_xargs) $(CMD_chmod) 555
 
-rulechecker:
-	@$(CMD_echo) "Sorry, \"$@\" target is no more available. To run RuleChecker please do either"
-	@$(CMD_echo) "  For csh/tcst:"
-	@$(CMD_echo) "    env CMS_RULECHECKER=1 scramv1 b"
-	@$(CMD_echo) "  OR For bash/sh:"
-	@$(CMD_echo) "    CMS_RULECHECKER=1 scramv1 b"
 ###############################################################################
 ifdef SCRAM_NOLOADCHECK
 SHARED_LIB_LOAD_CHECK :=
@@ -1950,7 +1771,8 @@ endif
 ###########################################################
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
-	@:
+	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
+	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 prebuild: $(prebuild)
 	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
 	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || $(CMD_mkdir) -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
@@ -2017,6 +1839,7 @@ ufast xfast fast:
 	fi
 echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
+
 $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
 	@[ -d python ] || $(CMD_mkdir) python; \
 	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl ;\
@@ -2053,6 +1876,15 @@ runtime:
 	@$(CMD_echo) ">> Runtime environment:"; env
 skiptest_%:
 	@:
+PostBuild: CompilePython ProjectPluginRefresh
+	@:
+CompilePython: $(WORKINGDIR)/cache/CompilePython
+	@:
+$(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
+	@$(CMD_echo) ">> All python modules compiled"
+	@$(CMD_touch) $(WORKINGDIR)/cache/CompilePython
+ProjectPluginRefresh: FORCE_TARGET $(wildcard $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file))))
+	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
 	@$(CMD_echo) TARGET:$@
 	@var=$(call GetEchoVariable,$@);\

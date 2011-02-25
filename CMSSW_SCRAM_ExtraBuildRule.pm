@@ -27,13 +27,11 @@ sub Project()
   my $fh=$common->filehandle();
   $common->symlinkPythonDirectory(1);
   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
-  $common->addPluginSupport("iglet","IGLET","IgPluginRefresh",'\/iglet$',"SCRAMSTORENAME_LIB",".iglets",'$name="${name}.iglet"',"yes");
   $common->addPluginSupport("edm","EDM_PLUGIN","EdmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
   $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefres",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");
-  $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "CPPDEFINES+=-DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
@@ -108,8 +106,7 @@ sub Extra_template()
   my $self=shift;
   my $common=$self->{template};
   $common->pushstash();$common->moc_template();$common->popstash();
-  if ($common->get("iglet_file") ne ""){$common->iglet_template();}
-  else{$common->plugin_template();}
+  $common->plugin_template();
   $common->pushstash();$common->lexyacc_template();$common->popstash();
   $common->pushstash();$common->codegen_template();$common->popstash();
   $common->pushstash();$common->dict_template();   $common->popstash();

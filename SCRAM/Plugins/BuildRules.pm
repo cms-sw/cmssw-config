@@ -315,22 +315,6 @@ sub getProductStore ()
   return "";
 }
 
-sub setIgletFile ()
-{
-  my $self=shift;
-  my $file=shift || return;
-  $self->{cache}{IgLetFile}=$file;
-  return;
-}
-
-sub getIgletFile ()
-{
-  my $self=shift;
-  my $file="";
-  if(exists $self->{cache}{IgLetFile}){$file=$self->{cache}{IgLetFile};}
-  return $file;
-}
-
 sub setRootReflex ()
 {
   my $self=shift;
@@ -369,15 +353,15 @@ sub getSymLinks()
 sub createSymLinks()
 {
   my $self=shift;
-  my @dirs=$self->getSymLinks();
-  if (scalar(@dirs)==0){return;}
   my $fh=$self->filehandle();
   print $fh "CONFIGDEPS += \$(COMMON_WORKINGDIR)/cache/project_links\n",
             "\$(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET\n",
-	    "\t\@echo '>>Creating project symlinks';\\\n",
-	    "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D); \\\n";
+            "\t\@echo '>>Creating project symlinks';\\\n",
+            "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D)\n";
+  my @dirs=$self->getSymLinks();
+  if (scalar(@dirs)==0){return;}
   foreach my $cmd (@dirs)
-  {print $fh "\t",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.pl $cmd;  \\\n";}
+  {print $fh "\t\@",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.pl $cmd;  \\\n";}
   print $fh "\tif [ ! -f \$@ ] ; then touch \$@; fi\n\n";
   return 1;
 }
@@ -528,7 +512,7 @@ sub getDefaultPluginType ()
   return $type;
 }
 
-sub checkSealPluginFlag ()
+sub checkPluginFlag ()
 {
   my $self=shift;
   my $stash=$self->{context}->stash();
@@ -641,7 +625,6 @@ sub checkSealPluginFlag ()
     $stash->set('plugin_dir',$pd);
     my $nexp=$self->{cache}{SupportedPlugins}{$plugintype}{Name};
     my $name=$pn;
-    if($plugintype eq "iglet"){$name=~s/_ExtraIglet$//;}
     eval $nexp;
     $stash->set('plugin_product', $name);
     $stash->set("no_shared_lib_copy",$self->{cache}{SupportedPlugins}{$plugintype}{NoSharedLibCopy});
@@ -1020,10 +1003,10 @@ sub searchLCGRootDict ()
     if(($plugin ne "") && ($plugin eq $libname))
     {
       my @bf=keys %{$stash->get('core.bfdeps()')};
-      print STDERR "****ERROR: One should not set SEAL_PLUGIN_NAME or SEALPLUGIN flag for a library which is also going to generate LCG dictionaries.\n";
+      print STDERR "****ERROR: One should not set EDM_PLUGIN flag for a library which is also going to generate LCG dictionaries.\n";
       print STDERR "           Please take appropriate action to fix this by either removing the\n";
-      print STDERR "           SEAL_PLUGIN_NAME or SEALPLUGIN flag from the \"$bf[@bf-1]\" file for library \"$libname\"\n";
-      print STDERR "           OR LCG DICT header/xml files for this seal plugin library.\n";
+      print STDERR "           EDM_PLUGIN flag from the \"$bf[@bf-1]\" file for library \"$libname\"\n";
+      print STDERR "           OR LCG DICT header/xml files for this edm plugin library.\n";
       if((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne "")){exit 1;}
     }
   }
@@ -1362,8 +1345,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
-
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1500,7 +1482,6 @@ sub initTemplate_PROJECT ()
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
-  $self->{cache}{IgLetFile}="iglet.cc";
   $self->{cache}{CXXCompiler}="cxxcompiler";
   $self->{cache}{CCompiler}="ccompiler";
   $self->{cache}{F77Compiler}="f77compiler";
@@ -1534,12 +1515,6 @@ sub initTemplate_LIBRARY ()
     print STDERR "*** ERROR: Unable to generate library safename for package \"$path\" of project $ENV{SCRAM_PROJECTNAME}\n";
     print STDERR "    Please send email to hn-cms-sw-develtools\@cern.ch\n";
     exit 1;
-  }
-  if(exists $self->{cache}{IgLetFile})
-  {
-    my $file=$self->{cache}{IgLetFile};
-    if(-f "${path}/${file}")
-    {$stash->set("iglet_file",$file);}
   }
   return;
 }
@@ -1596,6 +1571,7 @@ sub Project_template()
   my $safepath=$self->get("safepath");
   my $fh=$self->{FH};
   $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
+  #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
   foreach my $type ("lib","bin","test","python","java","logs","include")
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
@@ -1717,7 +1693,7 @@ sub Project_template()
               "endef\n";
     foreach my $dir ($self->getPluginProductDirs($ptype))
     {
-      print $fh "\$(LOCALTOP)/\$($dir)/${cachefile}: \$(LOCALTOP)/\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd} \$(WORKINGDIR)/cache/prod/${refreshcmd}\n",
+      print $fh "\$($dir)/${cachefile}: \$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd} \$(SCRAM_INTwork)/cache/prod/${refreshcmd}\n",
                 "\t\@if [ -f \$< ] ; then \\\n",
                 "\t  if [ -f \$\@ ] ; then \\\n",
 		"\t    if [ -s foo ] ; then \\\n",
@@ -1729,15 +1705,13 @@ sub Project_template()
                 "\t  \$(call do_${refreshcmd},\$(\@D)) &&\\\n",
                 "\t  touch \$\@ ;\\\n",
                 "\tfi\n",
-                "${refreshcmd}_cache := \$(LOCALTOP)/\$($dir)/${cachefile}\n";
+                "${refreshcmd}_cache := \$($dir)/${cachefile}\n";
     }
     
-    print $fh "\$(LOCALTOP)/\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd}: \$(PSR_BASE_TARGET)\n",
-              "\t@:\n";
+    print $fh "\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd}: \n",
+              "\t\@:\n";
   }
-  print $fh "ProjectPluginRefresh: \$(foreach file,\$(addsuffix _cache,\$(PLUGIN_REFRESH_CMDS)),\$(\$(file)))\n",
-            "\t@:\n",
-            "###############################################################################\n\n";
+  print $fh "###############################################################################\n\n";
   $self->processTemplate("Common_rules");
   return 1;
 }
@@ -1745,7 +1719,7 @@ sub Project_template()
 sub plugin_template ()
 {
   my $self=shift;
-  $self->checkSealPluginFlag();
+  $self->checkPluginFlag();
   if ($self->get("plugin_name") ne "")
   {
     my $fh=$self->{FH};
@@ -1845,8 +1819,6 @@ sub library_template ()
             "${parent} := ${safename}\n",
             "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
   if ($parent=~/^LCG\/(.+)$/){print $fh "$1 := ${safename}\n";}
-  my $iglet=$self->get("iglet_file");
-  if($iglet ne ""){print $fh "${safename}_iglet_file := $iglet\n";}
   $self->library_template_generic();
   print $fh "endif\n";
   return 1;
@@ -2078,20 +2050,6 @@ sub src2store_copy()
   print $fh "\$(eval \$(call Src2StoreCopy,${safepath},${path},${store},${filter}))\n";
 }
 
-sub images_template ()
-{
-  my $self=shift;
-  $self->src2store_copy('*.*',"\$(".$self->getProductStore("images").")");
-  return 1;
-}
-
-sub ivs_template ()
-{
-  my $self=shift;
-  $self->src2store_copy('*.iv',"\$(".$self->getProductStore("ivs").")");
-  return 1;
-}
-
 sub scripts_template ()
 {
   my $self=shift;
@@ -2130,19 +2088,6 @@ sub donothing_template()
   my $fh=$self->{FH}; my $safepath=$self->get("safepath");
   print $fh ".PHONY : all_${safepath} ${safepath}\n",
             "${safepath} all_${safepath}:\n";
-  return 1;
-}
-
-sub iglet_template ()
-{
-  my $self=shift;
-  my $safename=$self->get("safename");
-  $self->set("plugin_name","${safename}_ExtraIglet");
-  $self->set("plugin_name_force",1);
-  $self->set("plugin_type","iglet");
-  $self->plugin_template();
-  my $fh=$self->{FH};
-  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call Iglet,${safename},",$self->get("iglet_file"),",\$(",$self->getProductStore("lib"),")))\n";
   return 1;
 }
 
