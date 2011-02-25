@@ -1,7 +1,6 @@
 <productstore name="lib"       type="arch"/>
 <productstore name="python"    type="arch"/>
 <productstore name="tests/bin" type="arch"/>
-<productstore name="tests/lib" type="arch"/>
 <productstore name="include"/>
 
 <classpath path="+Project/+Package/src+library"/>
