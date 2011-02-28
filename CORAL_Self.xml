@@ -4,7 +4,7 @@
   <environment name="LIBDIR"  value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE" value="$LOCALTOP/include"/>
   <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler"/>
-  <flags EXTERNAL_SYMLINK="BINDIR"/>
+  <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags NO_EXTERNAL_RUNTIME="@LD_LIBRARY_PATH@"/>
   <flags NO_EXTERNAL_RUNTIME="PATH"/>

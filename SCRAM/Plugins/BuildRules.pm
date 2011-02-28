@@ -1466,7 +1466,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
-  $self->{cache}{ProjectConfig}="${ltop}/$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
