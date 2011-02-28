@@ -1827,6 +1827,7 @@ $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_l
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
+	  if [ ! -f python/$$d/__init__.py ] ; then $(CMD_rm) -f python/$$d; fi;\
 	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
