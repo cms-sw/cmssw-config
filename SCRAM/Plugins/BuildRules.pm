@@ -1345,7 +1345,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1466,7 +1466,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
-  $self->{cache}{ProjectConfig}="${ltop}/$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
