@@ -3,19 +3,22 @@
   <toolbox dir="file:@PROJECT_TOOL_CONF@"/>
   <base url="file:@PROJECT_CONFIG_BASE@/">
     <download url="file:config"                               name="config"/>
-    <download url="file:src/CoralKernel"                      name="src/LCG/CoralKernel"/>
-    <download url="file:src/CoralBase"                        name="src/LCG/CoralBase"/>
-    <download url="file:src/RelationalAccess"                 name="src/LCG/RelationalAccess"/>
-    <download url="file:src/CoralCommon"                      name="src/LCG/CoralCommon"/>
-    <download url="file:src/OracleAccess"                     name="src/LCG/OracleAccess"/>
-    <download url="file:src/SQLiteAccess"                     name="src/LCG/SQLiteAccess"/>
-    <download url="file:src/FrontierAccess"                   name="src/LCG/FrontierAccess"/>
-    <download url="file:src/RelationalService"                name="src/LCG/RelationalService"/>
-    <download url="file:src/XMLLookupService"                 name="src/LCG/XMLLookupService"/>
-    <download url="file:src/PyCoral"                          name="src/LCG/PyCoral"/>
-    <download url="file:src/XMLAuthenticationService"         name="src/LCG/XMLAuthenticationService"/>
-    <download url="file:src/EnvironmentAuthenticationService" name="src/LCG/EnvironmentAuthenticationService"/>
-    <download url="file:src/MonitoringService"                name="src/LCG/MonitoringService"/>
-    <download url="file:src/ConnectionService"                name="src/LCG/ConnectionService"/>
+    <download url="file:src/CoralKernel"                      name="src/CoralKernel"/>
+    <download url="file:src/CoralBase"                        name="src/CoralBase"/>
+    <download url="file:src/CoralBricks"                      name="src/CoralBricks"/>
+    <download url="file:src/RelationalAccess"                 name="src/RelationalAccess"/>
+    <download url="file:src/CoralCommon"                      name="src/CoralCommon"/>
+    <download url="file:src/OracleAccess"                     name="src/OracleAccess"/>
+    <download url="file:src/MySQLAccess"                      name="src/MySQLAccess"/>
+    <download url="file:src/SQLiteAccess"                     name="src/SQLiteAccess"/>
+    <download url="file:src/FrontierAccess"                   name="src/FrontierAccess"/>
+    <download url="file:src/RelationalService"                name="src/RelationalService"/>
+    <download url="file:src/XMLLookupService"                 name="src/XMLLookupService"/>
+    <download url="file:src/PyCoral"                          name="src/PyCoral"/>
+    <download url="file:src/XMLAuthenticationService"         name="src/XMLAuthenticationService"/>
+    <download url="file:src/EnvironmentAuthenticationService" name="src/EnvironmentAuthenticationService"/>
+    <download url="file:src/MonitoringService"                name="src/MonitoringService"/>
+    <download url="file:src/ConnectionService"                name="src/ConnectionService"/>
+    <download url="file:src/UnitTests"                        name="src/UnitTests"/>
   </base>
 </project>
