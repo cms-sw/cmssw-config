@@ -1852,7 +1852,7 @@ CompilePython: $(WORKINGDIR)/cache/CompilePython
 $(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
 	@$(CMD_echo) ">> All python modules compiled"
 	@$(CMD_touch) $(WORKINGDIR)/cache/CompilePython
-ProjectPluginRefresh: FORCE_TARGET $(wildcard $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file))))
+ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
 	@$(CMD_echo) TARGET:$@
