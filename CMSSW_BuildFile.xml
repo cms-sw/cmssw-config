@@ -16,6 +16,9 @@
 <classpath path="+Project/+SubSystem/+Package/plugins+plugins"/>
 <classpath path="+Project/+SubSystem/+Package/python+python"/>
 
+#<!-- Rules for LCG/CORAL Packages build in CMSSW -->
+<classpath path="+Project/LCG+SubSystem/+Package/tests+binary"/>
+
 <use name="self"/>
 
 <flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
