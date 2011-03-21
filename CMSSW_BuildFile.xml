@@ -16,7 +16,16 @@
 <classpath path="+Project/+SubSystem/+Package/plugins+plugins"/>
 <classpath path="+Project/+SubSystem/+Package/python+python"/>
 
-#<!-- Rules for LCG/CORAL Packages build in CMSSW -->
-<classpath path="+Project/LCG+SubSystem/+Package/tests+binary"/>
-
 <use name="self"/>
+
+<flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
+
+<flags REM_LCGDICT_CXXFLAGS="-O%"/>
+<flags REM_LCGDICT_CPPFLAGS="-O%"/>
+<flags LCGDICT_CXXFLAGS="-Os"/>
+
+<flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
+
+<architecture name="slc">
+#  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
+</architecture>
