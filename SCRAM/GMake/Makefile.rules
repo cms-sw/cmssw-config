@@ -432,6 +432,7 @@ define compile_cxx_common
   (             $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
 endef
 define compile_c_common
+  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
   $(VERB_ECHO) $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
   (             $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
