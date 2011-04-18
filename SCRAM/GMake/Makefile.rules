@@ -172,22 +172,22 @@ define GetVariable
 $($(1))
 endef
 define AdjustFlags
-$(foreach f,$3,$(patsubst $(strip $(foreach t,$2,$(REM_$t_$f)) $(REM_$f)),,$($1_$f)) $(foreach t,$2,$($t_$f)))
+$(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f)) $(REM_$f)),$($1_$f)) $(foreach t,$2,$($t_$f)))
 endef
 define ToolCXXFlags
-$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
+$(filter-out $(USER_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
+$(filter-out $(USER_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
+$(filter-out $(USER_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) 's|.*:||'),$(warning Calculationg ScramOrderedTools))
@@ -620,7 +620,7 @@ define link_lib_common
   @$(CMD_rm) -f $@.dep.new
 endef
 define link_lib
-  $(call link_lib_common,$1,$2,$3,$4,shared library,$($(1)_CXXFLAGS))
+  $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
 endef  
 define link_lib_edm
   $(call link_lib_common,$1,$2,$3,$4,edm plugin,$(call AdjustFlags,$1,EDM,CXXFLAGS),$(call AdjustFlags,$1,EDM,LDFLAGS))
