@@ -1578,6 +1578,11 @@ PLUGIN_REFRESH_CMDS :=
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(RELEASETOP)),)
+POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
+self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_LOC_INCLUDE))
+self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
+endif
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
