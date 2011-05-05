@@ -434,37 +434,6 @@ define rivet_register_plugin
   fi $(endlog_$(2))
 endef
 
-#Force not to register individual plugins. We run the plugin refresh at the end.
-ifdef SCRAM_NOPLUGINREFRESH
-undefine SCRAM_NOPLUGINREFRESH
-endif
-
-ifndef SCRAM_NOPLUGINREFRESH
-define edm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(CMD_touch) $(@D)/$($(1)_plugincache) || true) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
-    plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(call install_name_tool,$$plugin,$<) &&\
-    $(CMD_cp) -f $< $(<D)/$$plugin &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    ($(CMD_cp) -f $(@D)/$($(1)_plugincache) $(<D) || $(CMD_touch) $(<D)/$($(1)_plugincache)) &&\
-    ($($(1)_pluginrefresh) $(<D)/$$plugin || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_rm) -f $(<D)/$$plugin &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    ($(CMD_mv) $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
-  fi &&\
-  $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
-endef
-else
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
@@ -481,7 +450,6 @@ define edm_register_plugin
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi $(endlog_$(2))
 endef
-endif
 ##############################################################################
 #Compilation Rules
 # CXX compilation
@@ -1742,6 +1710,11 @@ PLUGIN_REFRESH_CMDS :=
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(RELEASETOP)),)
+POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
+self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_LOC_INCLUDE))
+self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
+endif
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
@@ -1848,17 +1821,18 @@ $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_l
 	  for dir in `$(CMD_find) src/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-		$(CMD_echo) "import os" >> $$dir/__init__.py;\
-	        $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "if localrt != None:" >> $$dir/__init__.py;\
-	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
-	      fi;\
+              if [ "$$dir" == "src/$$d/python" ] ; then \
+	        if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
+                  $(CMD_echo) "import os" >> $$dir/__init__.py;\
+                  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
+	        fi;\
+              fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
+	  if [ ! -f python/$$d/__init__.py ] ; then $(CMD_rm) -f python/$$d; fi;\
 	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
@@ -1883,7 +1857,7 @@ CompilePython: $(WORKINGDIR)/cache/CompilePython
 $(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
 	@$(CMD_echo) ">> All python modules compiled"
 	@$(CMD_touch) $(WORKINGDIR)/cache/CompilePython
-ProjectPluginRefresh: FORCE_TARGET $(wildcard $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file))))
+ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
 	@$(CMD_echo) TARGET:$@
