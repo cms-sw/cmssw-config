@@ -1105,38 +1105,6 @@ sub setValidSourceExtensions ()
     foreach my $e ($self->getSourceExtensions("cxx"))
     {push @{$exts{cxx}},$e;}
   }
-  elsif($class ne "JAVA")
-  {
-    my %tmp=();
-    foreach my $f (split /\s+/,$self->{core}->productfiles())
-    {
-      if($f=~/\.([^\.]+)$/)
-      {
-        my $ext=$1;
-	if(exists $tmp{$ext}){next;}
-	$tmp{$ext}=1;
-	my $found=0;
-	foreach my $t (@exttypes)
-	{
-	  if(exists $self->{cache}{SourceExtensions}{$t}{$ext})
-	  {
-	    push @{$exts{$t}},$ext;
-	    $found=1;
-	  }
-	}
-	if(!$found)
-	{
-	  $unknown{$ext}=1;
-	  print STDERR "ERROR: The file \"$f\" has extensions \"$ext\" which is not supported yet.\n";
-	  print STDERR "       Followings are the valid extensions:\n";
-	  foreach my $t (@exttypes)
-	  {print STDERR "         $t: ",$self->getSourceExtensionsStr($t),"\n";}
-	  print STDERR "       Please either rename your file to match one of the above mentioned\n";
-	  print STDERR "       extensions OR contact the releasse manager to support \"$ext\" too.\n";
-	}
-      }
-    }
-  }
   foreach my $t (@exttypes)
   {
     my $tn="${t}Extensions";
@@ -1466,7 +1434,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
-  $self->{cache}{ProjectConfig}="${ltop}/$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
@@ -1573,7 +1541,7 @@ sub Project_template()
   $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
-  foreach my $type ("lib","bin","test","python","java","logs","include")
+  foreach my $type ("lib","bin","test","python","logs","include")
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
   $self->addProductDirMap ("scripts",'.+',"SCRAMSTORENAME_BIN");
   $self->updateEnvVarMK();
@@ -1605,8 +1573,15 @@ sub Project_template()
       foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
     }
   }
-  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPDEFINES","CPPFLAGS","LDFLAGS")
-  {print $fh "EDM_${flag}:=\nNON_EDM_${flag}:=\nLCGDICT_${flag}:=\n";}
+  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
+  {
+    foreach my $type ("","REM_")
+    {
+      foreach my $var ("BIN","TEST","EDM","CAPABILITIES","LCGDICT","ROOTDICT")
+      {print $fh "${type}${var}_${flag}:=\n";}
+    }
+    print $fh "REM_${flag}:=\n";
+  }
   foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);
@@ -2164,32 +2139,6 @@ sub python_template()
             "endif\n",
             "ALL_COMMONRULES += $safepath\n",
             "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
-  return 1;
-}
-
-sub java_template()
-{
-  my $self=shift;
-  if ($self->get("suffix") ne ""){return 1;}
-  $self->initTemplate_common2all ();
-  my $safename=$self->get("safepath");my $path=$self->get("path");
-  my $type="java";
-  $self->set("safename",$safename);$self->set("type",$type);
-  my $localbf=$self->getLocalBuildFile();
-  my $fh=$self->{FH};
-  print $fh "${safename}_SKIP_FILES   := CVS \$(SCRAM_BUILDFILE) \$(SCRAM_BUILDFILE).xml\n";
-  if($localbf ne "")
-  {
-    my $core=$self->core();
-    print $fh "${safename}_BuildFile  := \$(WORKINGDIR)/cache/bf/${localbf}\n",
-              "${safename}_SKIP_FILES += ",$core->flags("SKIP_FILES")," ",$core->flags("SKIP_SCRIPTS"),"\n";
-    my $flag=$core->flags("FILE_COMPILATION_ORDER");
-    if($flag ne ""){print $fh "${safename}_FILE_COMPILATION_ORDER := $flag\n";}
-    my $mk=$core->data("MAKEFILE");
-    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-  }
-  print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC := \$\$(eval \$\$(call JavaProduct,$safename,$path,\$(",$self->getProductStore(),")))\n";
   return 1;
 }
 
