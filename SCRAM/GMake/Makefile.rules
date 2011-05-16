@@ -51,8 +51,8 @@ OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
 ALL_PYTHON_COMPILE          := 
 ###################################
-CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77 JAVAC:javac
-ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep javac ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
+CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
+ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
 SHELL                       := /bin/sh
 BASECMD_which               := which
 ###################################
@@ -154,9 +154,6 @@ define get_uniq_cached_var_
 $(if $(subst undefined,,$(origin cached_var_$(1))),$(cached_var_$(1)),$(eval $(call set_cached_var_,$(1)))$(eval cached_var_$(1):=$(call Uniq,$(cached_var_$(1))))$(cached_var_$(1)))
 endef
 ##############################################################################
-define ProductTypeFlags
-$(if $(strip $(filter $1,$(ALL_edm_PLUGINS))),$(EDM_$2),$(NON_EDM_$2))
-endef
 define GetTimeStamp
 $(CMD_perl) -e '@d=stat "$(1)"; print "$$d[9]\n";'
 endef
@@ -174,20 +171,23 @@ endef
 define GetVariable
 $($(1))
 endef
+define AdjustFlags
+$(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f)) $(REM_$f)),$($1_$f)) $(foreach t,$2,$($t_$f)))
+endef
 define ToolCXXFlags
-$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(call ProductTypeFlags,$1,CXXFLAGS) $(USER_CXXFLAGS)
+$(filter-out $(USER_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(call ProductTypeFlags,$1,FFLAGS) $(USER_FFLAGS)
+$(filter-out $(USER_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(call ProductTypeFlags,$1,CFLAGS) $(USER_CFLAGS)
+$(filter-out $(USER_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(call ProductTypeFlags,$1,CPPDEFINES) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(call ProductTypeFlags,$1,CPPFLAGS) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(call ProductTypeFlags,$1,LDFLAGS)
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) 's|.*:||'),$(warning Calculationg ScramOrderedTools))
@@ -302,15 +302,6 @@ define copy_py_to_main_productstore
   $(call copy_build_product,$(1))
 endef
 
-define copy_java_to_java_productstore
-  $(startlog_$(2)) clean=$(call AutoCleanFile,$($(1)_workdir)/$(1),java); $(CMD_echo) "" > $$clean ;\
-  for f in `$(CMD_ls) $($(1)_workdir)/ | $(CMD_grep) -v '.done$$\|AUTOCLEAN.'`; do \
-    $(CMD_echo) ">> Copying $$f => $(LOCALTOP)/$(3)" ;  \
-    $(CMD_cp) -rpf $($(1)_workdir)/$$f $(LOCALTOP)/$(3)/ ; \
-    $(CMD_echo) "01:$(CMD_rm) -rf $(3)/$$f" >> $$clean;\
-  done $(endlog_$(2))
-endef
-
 define delete_build_prod 
   $(CMD_rm) -f $@ $(LOCALTOP)/$(1)/$(@F)
 endef
@@ -386,25 +377,6 @@ else
   endef
 endif
 
-ifndef SCRAM_NOSYMCHECK
-define check_missing_symbols
-  if [ "X$(1)" = X ] ; then \
-    $(CMD_echo) "@@@@ Checking shared library for missing symbols: $(@F)" &&\
-    $(CMD_echo) "int main(){}" > $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp  &&\
-    $(VERB_ECHO) $(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp &&\
-    ($(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp || ($(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out && $(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
-    $(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out	&&\
-    $(CMD_echo) "@@@@ ----> OK, shared library FULLY-BOUND (no missing symbols): $(@F)" ; \
-  else \
-    $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
-  fi
-endef
-else
-define check_missing_symbols
-  $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
-endef
-endif
-
 ifndef SCRAM_NOEDMWRITECONFIG
 define edm_write_config
   $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
@@ -434,37 +406,6 @@ define rivet_register_plugin
   fi $(endlog_$(2))
 endef
 
-#Force not to register individual plugins. We run the plugin refresh at the end.
-ifdef SCRAM_NOPLUGINREFRESH
-undefine SCRAM_NOPLUGINREFRESH
-endif
-
-ifndef SCRAM_NOPLUGINREFRESH
-define edm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(CMD_touch) $(@D)/$($(1)_plugincache) || true) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
-    plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(call install_name_tool,$$plugin,$<) &&\
-    $(CMD_cp) -f $< $(<D)/$$plugin &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    ($(CMD_cp) -f $(@D)/$($(1)_plugincache) $(<D) || $(CMD_touch) $(<D)/$($(1)_plugincache)) &&\
-    ($($(1)_pluginrefresh) $(<D)/$$plugin || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_rm) -f $(<D)/$$plugin &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    ($(CMD_mv) $(<D)/$($(1)_plugincache) $(@D) || true ) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
-  fi &&\
-  $(call do_plugin_refresh,$($(1)_pluginrefresh),$(@D)) $(endlog_$(2))
-endef
-else
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
@@ -481,77 +422,68 @@ define edm_register_plugin
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi $(endlog_$(2))
 endef
-endif
+##############################################################################
 ##############################################################################
 #Compilation Rules
-# CXX compilation
-define compile_cxxI
-@$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-               $(CXX) $(CXX_MMD)  -c $(patsubst $(NON_EDM_CPPFLAGS) $(NON_EDM_CXXFLAGS),,$($(1)_CPPFLAGS) $($(1)_CXXFLAGS)) $(EDM_CPPFLAGS) $(EDM_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
+define compile_cxx_common
+  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Compiling $(4) $< " &&\
+  $(VERB_ECHO) $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
+  (             $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
 endef
+define compile_c_common
+  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Compiling $(4) $< " &&\
+  $(VERB_ECHO) $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
+  (             $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
+endef
+define compile_fortran_common
+  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Compiling $(4) $< " &&\
+  $(VERB_ECHO) $(FC) $(F77_MMD) -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
+  (             $(FC) $(F77_MMD) -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
+endef
+##############################################################################
 define compile_cxx
-@$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) $(CXX_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@  $(endlog_$(2))
-endef  
-# C compilation
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS))
+endef
+define compile_cxx_capabilities
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM CAPABILITIES,CPPFLAGS CXXFLAGS),capabilities)
+endef
+define compile_cxx_edm
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS),edm plugin)
+endef
 define compile_c
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CC) $(C_MMD)  -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CC) $(C_MMD) -c $($(1)_CPPFLAGS) $($(1)_CFLAGS) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS))
+endef
+define compile_c_edm
+  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CFLAGS),edm plugin)
 endef  
-# Fortran compilation
 define compile_fortran
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(FC) $(F77_MMD) -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(FC) $(F77_MMD) -c $($(1)_CPPFLAGS) $($(1)_FFLAGS) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS))
 endef  
-# Boost c++ source compilation
 define compile_boost
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(endlog_$(2))
+  $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
 endef  
-# Boost c++ pywrapper compilation
 define compile_pywrapper
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) "Generating and compiling wrapper file: " &&\
-  $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  $(CXX) $(CXX_MMD)  -c -DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $($(1)_CPPFLAGS) $($(1)_PY_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@$(endlog_$(2))
-endef  
+  $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),pywrapper)
+endef
+##############################################################################
 # Dictionary compilation
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling for LCG dictionary: $<" &&\
-  $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  ((cd $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(patsubst $(NON_EDM_CPPFLAGS),,$($(1)_CPPFLAGS)) $(LCGDICT_CPPFLAGS) `$(CMD_echo) "$(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS))" | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^-O[0-9s]*$$' | $(CMD_tr) '\n' ' '` -Os $(LCGDICT_CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
+  $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  ((cd $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.d &&\
   if [ -f $<.d ] ; then $(CMD_sed) -i -e 's|$(LOCALTOP)/||' $<.d ; $(CMD_rm) -f $(basename $@).d; fi $(endlog_$(2))
 endef
 # Root Dictionary compilation
 define compile_rootdict
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling for root dictionary: $< " &&\
-  $(VERB_ECHO) $(CXX) $(CXX_MMD) -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  ($(CXX) $(CXX_MMD) -c $($(1)_CPPFLAGS) $(patsubst -pedantic,,$($(1)_CXXFLAGS)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
   @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 2d -e 's#^[ ]\\##g' -e 's#LinkDef.o:#LinkDef.cc:#g' -e 's#LinkDef.cc #LinkDef.cc: #g' \
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; $(CMD_mv) $<.d.backup $<.d; fi $(endlog_$(2))
-endef
-# compiling java
-define compile_java
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling java: $< " &&\
-  $(VERB_ECHO) $(JAVAC) -source 1.4 -classpath $(@D):$$CLASSPATH -d $(@D) $< &&\
-  $(JAVAC) -source 1.4 -classpath $(@D):$$CLASSPATH -d $(@D) $< &&\
-  $(CMD_touch) $@ $(endlog_$(2))
 endef
 # compiling python
 define set_python_timestamp
@@ -628,15 +560,15 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) &&\
-  ($(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $($(1)_CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  (            $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
 endef
 # ROOt dictionary generation
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
   $(VERB_ECHO) $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< &&\
-  ($(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
+  ($(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
@@ -669,11 +601,11 @@ endef
 ##############################################################################
 # Library linking Rules
 # Shared library linking
-define link_lib
-  @$(startlog_$(2))$(CMD_echo) ">> Building shared library $@" &&\
+define link_lib_common
+  @$(startlog_$(2))$(CMD_echo) ">> Building $(5) $@" &&\
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(MODULEFLAGS) $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(MODULEFLAGS) $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -686,19 +618,23 @@ define link_lib
   -e '/:$$/ d' -e 's/$$/ :/' > $@.dep.new
   @$(CMD_sort) $@.dep.new | $(CMD_uniq) >> $@.dep
   @$(CMD_rm) -f $@.dep.new
+endef
+define link_lib
+  $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
 endef  
-# Big Object Files
+define link_lib_edm
+  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$(call AdjustFlags,$1,EDM,CXXFLAGS),$(call AdjustFlags,$1,EDM,LDFLAGS))
+endef
 define big_obj
   @$(startlog_$(2))$(CMD_echo) ">> Building big object file $@" &&\
   $(VERB_ECHO) $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 &&\
-  ($(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 || ($(call delete_build_prod,$(4)) && exit 1)) &&\
+  (            $(LD) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $3 || ($(call delete_build_prod,$(4)) && exit 1)) &&\
   $(call copy_bigobj_to_main_productstore,$(4)) $(endlog_$(2))
 endef
-#Shared library for Python bindings
 define link_pylib
   @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO) $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) &&\
+  $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) &&\
   (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
   @$(startlog_$(2))$(CMD_rm) -f $@.dep && $(CMD_touch) $@.dep &&\
@@ -711,10 +647,10 @@ define link_pylib
   @$(CMD_rm) -f $@.dep.new
 endef  
 #Shared Capabilities library
-define link_capabilities
-  @$(startlog_$(2))$(CMD_echo) ">> ---- Building capability library $@" &&\
-  $(VERB_ECHO) $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(patsubst $(NON_EDM_CXXFLAGS),,$($(1)_CXXFLAGS)) $(EDM_CXXFLAGS) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(patsubst $(NON_EDM_LDFLAGS),,$($(4)_CDICT_LDFLAGS)) $(EDM_LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+define link_lib_capabilities
+  @$(startlog_$(2))$(CMD_echo) ">> Building capability library $@" &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -726,8 +662,8 @@ endef
 # Binary building 
 define build_bin
   @$(startlog_$(2))$(CMD_echo) ">> Building binary $(1)" &&\
-  $(VERB_ECHO) $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
-  (($(call checklibs,$(1)) && $(CXX) $($(1)_CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(startlog_$(2))$(CMD_rm) -f $@.dep && $(CMD_touch) $@.dep &&\
   for dep in $(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d) ; do \
@@ -740,27 +676,10 @@ define build_bin
 endef
 # Test executable building
 define build_test
-  $(call build_bin,$(1),$(2),$(3))
+  $(call build_bin,$(1),$(2),$(3),$(4))
 endef  
 ##############################################################################
 # Data download and Copy
-# Url download
-define download_urls
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@  &&\
-  $(CMD_echo) ">> Downloading and installing data files from WWW: $<" &&\
-  dir=`$(CMD_dirname) $< | $(CMD_sed) 's|^src/|share/|'` && $(CMD_mkdir) -p $$dir   &&\
-  (wget -P $(LOCALTOP)/$$dir -a $(LOCALTOP)/$(3)/wwwdownload.log -i $< -N || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
-endef  
-# All Date dir to share
-define copy_datadir
-  @$(startlog_$(2))$(CMD_echo) ">> Installing data files for $<"	&&\
-  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_cp) -rup $< $(@D) &&\
-  for dir in `$(CMD_find) $@ -name CVS -type d`; do \
-    $(CMD_rm) -rf $$dir ;\
-  done &&\
-  $(CMD_touch) $@ $(endlog_$(2))
-endef
 define script_copy
   @$(startlog_$(2))[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(CMD_rm) -rf $@ &&\
@@ -943,6 +862,7 @@ $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 endef
 define edmPlugin
 $(eval $(call addPlugin,$1,$2,edm,yes,$3,EdmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
+$(1)_BUILDRULES := _edm
 endef
 define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
@@ -950,15 +870,15 @@ endef
 
 define CXXCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_cxx,$(1),$(3))
+	$$(call compile_cxx$(4),$(1),$(3))
 endef
 define CCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_c,$(1),$(3))
+	$$(call compile_c$(4),$(1),$(3))
 endef
 define F77CompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
-	$$(call compile_fortran,$(1),$(3))
+	$$(call compile_fortran$(4),$(1),$(3))
 endef
 define EmptyProduct
 .PHONY: $(1) all_$(1) $(2) all_$(2)
@@ -1020,18 +940,18 @@ ALL_$(4)_PRODUCTS += $(1)
 $(1):  $($(1)_objdir)/$($(1)_product)
 $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
-	$$(call link_lib,$(1),$(1),$(3),$($(1)_pluginname))
+	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 $$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
 ifeq ($(strip $(4)),bin)
-	$$(call build_bin,$(1),$(1),$(3))
+	$$(call build_bin,$(1),$(1),$(3),BIN)
 endif
 ifeq ($(strip $(4)),python)
 	$$(call link_pylib,$(1),$(1),$(3))
 endif
 ifeq ($(strip $(4)),test)
-	$$(call build_test,$(1),$(1),$(3))
+	$$(call build_test,$(1),$(1),$(3),TEST)
 .PHONE: runtests_$(1)
 ifeq ($$(strip $$(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
@@ -1133,8 +1053,8 @@ ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
 	@:
-$(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),$(4)),    $(eval $(call CXXCompileRule,$(1),$(ext),$(1))))
-$(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),$(4)),      $(eval $(call CCompileRule,$(1),$(ext),$(1))))
+$(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),$(4)),    $(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
+$(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),$(4)),      $(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$(4)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
 else
 $(1) all_$(1): $$(all_$(1))
@@ -1258,35 +1178,6 @@ $(1) all_$(1): $(all_$(1))
 endif
 endef
 
-#safepath,datapath,datacopy,urldownload,downloadurls
-define DataInstall
-ifneq ($(strip $(3)$(4)),00)
-$(eval $(call LogFile,$(1),$(2)))
-$(1)_install_path   := $(addprefix share/,$(patsubst src/%,%,$(2)))
-$(1)_data_copy_rule := $$($(1)_install_path)
-ifeq ($(strip $(3)),1)
-$$($(1)_install_path): $(2) $(logfile_$(1))
-	$$(call copy_datadir,$(1),$(1))
-else
-$$($(1)_install_path):
-	@$(CMD_mkdir) -p $$@
-endif
-ifeq ($(strip $(4)),1)
-$$(eval $$(call AddDownloadUrl,$(1),$(5)))
-endif
-endif
-endef
-
-define AddDownloadUrl
-$(if $(2),$(eval $(call DownloadUrlRule,$(1),$(firstword $(2))))$(eval $(call AddDownloadUrl,$(1),$(wordlist 2,100,$(2)))),)
-endef
-
-define DownloadUrlRule
-$(1)_data_copy_rule += $(COMMON_WORKINGDIR)/$(2)
-$(COMMON_WORKINGDIR)/$(2): $(2) $($(1)_install_path) $(logfile_$(1))
-	$$(call download_urls,$(1),$(1),$(SCRAMSTORENAME_LOGS))
-endef
-
 define Src2StoreCopy
 .PHONY: $(1) all_$(1)
 $(1)_files := $(filter-out CVS $(SCRAM_BUILDFILE) $(SCRAM_BUILDFILE).xml $($(1)_SKIP_FILES), $($(1)_files))
@@ -1299,61 +1190,6 @@ all_$(1): $(logfile_$(1))
 	@$$(call clean_files,$($(1)_SKIP_FILES),$$($(1)_installdir))
 	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir))
 endif
-endef
-
-#safename,path,javastore,xprodfiles,xproddirs
-define JavaProductHead
-.PHONY: $(1) all_$(1)
-$(eval $(call LogFile,$(1),$(2)))
-$(1)_objdir := $(WORKINGDIR)/$(2)
-$(1)_javadir := $(LOCALTOP)/$(2)
-$(1)_files1 := $(filter-out $($(1)_SKIP_FILES), $($(1)_FILE_COMPILATION_ORDER))
-$(1)_files2 := $$(filter-out $($(1)_SKIP_FILES),$$(notdir $$(wildcard $$(foreach dir,$$($(1)_javadir),$$(dir)/*.java))))
-$(1)_files  := $$($(1)_files1) $$($(1)_files2)
-ifneq ($$(strip $$($(1)_files)),)
-$(1)_workdir    := $$($(1)_objdir)/$(1)
-$(1)_workfiles1 := $$(addprefix $$($(1)_workdir)/, $$(addsuffix .done, $$(basename $$(notdir $$($(1)_files1)))))
-$(1)_workfiles2 := $$(addprefix $$($(1)_workdir)/, $$(addsuffix .done, $$(basename $$(notdir $$($(1)_files2)))))
-.NOTPARALLEL: $$($(1)_workfiles1)
-$(1)_precompile += $$($(1)_workfiles1)
-$(1)_compile    += $$($(1)_workfiles2)
-$(1)_CONFIGDEPS := $(CONFIGDEPS)
-ifneq ($$(strip $($(1)_BuildFile)),)
-ALL_BUILDFILES += $($(1)_BuildFile)
-$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
-$$($(1)_objdir)/config: $($(1)_BuildFile)
-	@$$(call BuildClean,$(2),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
-else
-$$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
-endif
-$(1)_config += $$($(1)_objdir)/config
-else
-all_$(1) $(1):
-	@:
-endif
-endef
-
-define JavaProductTail
-ifneq ($$(strip $($(1)_workdir)),)
-$($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
-	@$(CMD_touch) $$@
-$($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
-	@$(CMD_touch) $$@
-$($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_link)
-	@$$(call copy_java_to_java_productstore,$(1),$(1),$(3))
-	@$(CMD_touch) $$@
-all_$(1) $(1): $($(1)_objdir)/link $(all_$(1))
-	@:
-$($(1)_workdir)/%.done: $($(1)_javadir)/%.java $($(1)_config) $(logfile_$(1))
-	$$(call compile_java,$(1),$(1))
-endif
-endef
-
-define JavaProduct
-$(eval $(call JavaProductHead,$(1),$(2),$(3)))
-$(eval $(call JavaProductTail,$(1),$(2),$(3)))
 endef
 
 define CommonDataRules
@@ -1448,7 +1284,7 @@ ifneq ($(strip $8),)
 $(1)$(8)_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
 all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX)
 $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX): $$($(1)$(8)_ids) $(WORKINGDIR)/cache/prod/lib$(1)
-	$$(call link_capabilities,$(1),$(1),$(6),$(1)$(8),$$($(1)$(8)_ids))
+	$$(call link_lib_capabilities,$(1),$(1),$(6),$(1)$(8),$$($(1)$(8)_ids))
 $$(eval $$(call BigObject,$(1),$(1)$(8),$$($(1)$(8)_ids)))
 endif
 endef
@@ -1471,7 +1307,7 @@ $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
-	$$(call compile_cxxI,$(1),$(1))
+	$$(call compile_cxx_capabilities,$(1),$(1))
 ifneq ($$(wildcard $($(1)_objdir)/$(2)r.cc.d),)
 -include $($(1)_objdir)/$(2)r.cc.d
 endif
@@ -1742,6 +1578,11 @@ PLUGIN_REFRESH_CMDS :=
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(RELEASETOP)),)
+POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
+self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_LOC_INCLUDE))
+self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
+endif
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
@@ -1786,6 +1627,32 @@ compile_$(SCRAM_SOURCEDIR): $(addprefix compile_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> Compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 precompile_$(SCRAM_SOURCEDIR): $(addprefix precompile_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> Pre-compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+###########################################################
+define GetMissingSymbolFlags
+  $(if $($(1)_libcheck),$(if $2,$(info @@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)),),$(MISSING_SYMBOL_FLAGS))
+endef
+ifndef SCRAM_NOSYMCHECK
+ifeq ($(strip $(MISSING_SYMBOL_FLAGS)),)
+define check_missing_symbols
+  if [ "X$(1)" = X ] ; then \
+    $(CMD_echo) "@@@@ Checking shared library for missing symbols: $(@F)" &&\
+    $(CMD_echo) "int main(){}" > $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp  &&\
+    $(VERB_ECHO) $(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp &&\
+    ($(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp || ($(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out && $(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
+    $(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out	&&\
+    $(CMD_echo) "@@@@ ----> OK, shared library FULLY-BOUND (no missing symbols): $(@F)" ; \
+  else \
+    $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
+  fi
+endef
+else
+check_missing_symbols:=true
+endif
+else
+define check_missing_symbols
+  $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
+endef
+endif
 ###########################################################
 
 .PHONY: all_% clean_% help_% runtests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
@@ -1848,17 +1715,18 @@ $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_l
 	  for dir in `$(CMD_find) src/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-		$(CMD_echo) "import os" >> $$dir/__init__.py;\
-	        $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "if localrt != None:" >> $$dir/__init__.py;\
-	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
-	      fi;\
+              if [ "$$dir" == "src/$$d/python" ] ; then \
+                if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
+                  $(CMD_echo) "import os" >> $$dir/__init__.py;\
+                  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
+                fi;\
+              fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
+	  if [ ! -f python/$$d/__init__.py ] ; then $(CMD_rm) -f python/$$d; fi;\
 	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
@@ -1883,7 +1751,7 @@ CompilePython: $(WORKINGDIR)/cache/CompilePython
 $(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
 	@$(CMD_echo) ">> All python modules compiled"
 	@$(CMD_touch) $(WORKINGDIR)/cache/CompilePython
-ProjectPluginRefresh: FORCE_TARGET $(wildcard $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file))))
+ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
 	@$(CMD_echo) TARGET:$@
