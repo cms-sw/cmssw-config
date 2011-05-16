@@ -1313,7 +1313,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1845,7 +1845,7 @@ sub library_template_generic ()
   if ($localbf ne "")
   {
     my $ex=$core->data("EXPORT");
-    if(($core->publictype() == 1) && ($ex ne ""))
+    if(($core->publictype() == 1) && ($ex ne "") && ($self->get("plugin_type") eq ""))
     {
       foreach my $data ("INCLUDE","LIB")
       {
