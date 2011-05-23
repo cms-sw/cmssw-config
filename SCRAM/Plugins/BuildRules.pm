@@ -1313,7 +1313,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1845,38 +1845,45 @@ sub library_template_generic ()
   if ($localbf ne "")
   {
     my $ex=$core->data("EXPORT");
-    if(($core->publictype() == 1) && ($ex ne "") && ($self->get("plugin_type") eq ""))
+    if(($core->publictype() == 1) && ($ex ne ""))
     {
-      foreach my $data ("INCLUDE","LIB")
+      if ($self->get("plugin_type") eq "")
       {
-        my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
-	if($dataval ne "")
-	{
-	  my $xdata="";
-	  if ($data eq "INCLUDE"){$xdata=join(" ",@$dataval);}
-	  else
-	  {
-	    foreach my $l (@$dataval)
-	    {
-	      if ($l eq $safename){$xdata=$l;}
-	      else{print STDERR "***ERROR: Exporting library \"$l\" from $localbf is wrong. Please remove this lib from export section of this BuildFile.\n";}
-	    }
-	  }
-	  print $fh "${safename}_EX_${data}   := $xdata\n";
-	}
+        foreach my $data ("INCLUDE","LIB")
+        {
+          my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
+          if($dataval ne "")
+          {
+            my $xdata="";
+            if ($data eq "INCLUDE"){$xdata=join(" ",@$dataval);}
+            else
+            {
+              foreach my $l (@$dataval)
+              {
+                if ($l eq $safename){$xdata=$l;}
+                else{print STDERR "***ERROR: Exporting library \"$l\" from $localbf is wrong. Please remove this lib from export section of this BuildFile.\n";}
+              }
+            }
+            print $fh "${safename}_EX_${data}   := $xdata\n";
+          }
+        }
+        my $noexpstr="";
+        foreach my $d (keys %no_export)
+        {
+          if ($no_export{$d}==1){$noexpstr.=" $d";}
+          else
+          {
+            print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
+                         "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
+          }
+        }
+        if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
+        else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
       }
-      my $noexpstr="";
-      foreach my $d (keys %no_export)
+      else
       {
-        if ($no_export{$d}==1){$noexpstr.=" $d";}
-	else
-	{
-	  print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
-	               "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
-	}
+        print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",
       }
-      if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
-      else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
     }
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
