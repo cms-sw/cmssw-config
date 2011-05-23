@@ -1105,38 +1105,6 @@ sub setValidSourceExtensions ()
     foreach my $e ($self->getSourceExtensions("cxx"))
     {push @{$exts{cxx}},$e;}
   }
-  elsif($class ne "JAVA")
-  {
-    my %tmp=();
-    foreach my $f (split /\s+/,$self->{core}->productfiles())
-    {
-      if($f=~/\.([^\.]+)$/)
-      {
-        my $ext=$1;
-	if(exists $tmp{$ext}){next;}
-	$tmp{$ext}=1;
-	my $found=0;
-	foreach my $t (@exttypes)
-	{
-	  if(exists $self->{cache}{SourceExtensions}{$t}{$ext})
-	  {
-	    push @{$exts{$t}},$ext;
-	    $found=1;
-	  }
-	}
-	if(!$found)
-	{
-	  $unknown{$ext}=1;
-	  print STDERR "ERROR: The file \"$f\" has extensions \"$ext\" which is not supported yet.\n";
-	  print STDERR "       Followings are the valid extensions:\n";
-	  foreach my $t (@exttypes)
-	  {print STDERR "         $t: ",$self->getSourceExtensionsStr($t),"\n";}
-	  print STDERR "       Please either rename your file to match one of the above mentioned\n";
-	  print STDERR "       extensions OR contact the releasse manager to support \"$ext\" too.\n";
-	}
-      }
-    }
-  }
   foreach my $t (@exttypes)
   {
     my $tn="${t}Extensions";
@@ -1466,7 +1434,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
-  $self->{cache}{ProjectConfig}="${ltop}/$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
@@ -1573,7 +1541,7 @@ sub Project_template()
   $self->setPythonProductStore('$(SCRAMSTORENAME_PYTHON)');
   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   #$self->addProductDirMap (prod-type,regexp-prod-src-path,prod-store,search-index (default is 100, samller index means those regexp will be matched first)
-  foreach my $type ("lib","bin","test","python","java","logs","include")
+  foreach my $type ("lib","bin","test","python","logs","include")
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
   $self->addProductDirMap ("scripts",'.+',"SCRAMSTORENAME_BIN");
   $self->updateEnvVarMK();
@@ -1605,8 +1573,15 @@ sub Project_template()
       foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
     }
   }
-  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPDEFINES","CPPFLAGS","LDFLAGS")
-  {print $fh "EDM_${flag}:=\nNON_EDM_${flag}:=\nLCGDICT_${flag}:=\n";}
+  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
+  {
+    foreach my $type ("","REM_")
+    {
+      foreach my $var ("BIN","TEST","EDM","CAPABILITIES","LCGDICT","ROOTDICT")
+      {print $fh "${type}${var}_${flag}:=\n";}
+    }
+    print $fh "REM_${flag}:=\n";
+  }
   foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);
@@ -1872,36 +1847,43 @@ sub library_template_generic ()
     my $ex=$core->data("EXPORT");
     if(($core->publictype() == 1) && ($ex ne ""))
     {
-      foreach my $data ("INCLUDE","LIB")
+      if ($self->get("plugin_type") eq "")
       {
-        my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
-	if($dataval ne "")
-	{
-	  my $xdata="";
-	  if ($data eq "INCLUDE"){$xdata=join(" ",@$dataval);}
-	  else
-	  {
-	    foreach my $l (@$dataval)
-	    {
-	      if ($l eq $safename){$xdata=$l;}
-	      else{print STDERR "***ERROR: Exporting library \"$l\" from $localbf is wrong. Please remove this lib from export section of this BuildFile.\n";}
-	    }
-	  }
-	  print $fh "${safename}_EX_${data}   := $xdata\n";
-	}
+        foreach my $data ("INCLUDE","LIB")
+        {
+          my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
+          if($dataval ne "")
+          {
+            my $xdata="";
+            if ($data eq "INCLUDE"){$xdata=join(" ",@$dataval);}
+            else
+            {
+              foreach my $l (@$dataval)
+              {
+                if ($l eq $safename){$xdata=$l;}
+                else{print STDERR "***ERROR: Exporting library \"$l\" from $localbf is wrong. Please remove this lib from export section of this BuildFile.\n";}
+              }
+            }
+            print $fh "${safename}_EX_${data}   := $xdata\n";
+          }
+        }
+        my $noexpstr="";
+        foreach my $d (keys %no_export)
+        {
+          if ($no_export{$d}==1){$noexpstr.=" $d";}
+          else
+          {
+            print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
+                         "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
+          }
+        }
+        if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
+        else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
       }
-      my $noexpstr="";
-      foreach my $d (keys %no_export)
+      else
       {
-        if ($no_export{$d}==1){$noexpstr.=" $d";}
-	else
-	{
-	  print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
-	               "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
-	}
+        print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",
       }
-      if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
-      else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
     }
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
@@ -2164,32 +2146,6 @@ sub python_template()
             "endif\n",
             "ALL_COMMONRULES += $safepath\n",
             "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
-  return 1;
-}
-
-sub java_template()
-{
-  my $self=shift;
-  if ($self->get("suffix") ne ""){return 1;}
-  $self->initTemplate_common2all ();
-  my $safename=$self->get("safepath");my $path=$self->get("path");
-  my $type="java";
-  $self->set("safename",$safename);$self->set("type",$type);
-  my $localbf=$self->getLocalBuildFile();
-  my $fh=$self->{FH};
-  print $fh "${safename}_SKIP_FILES   := CVS \$(SCRAM_BUILDFILE) \$(SCRAM_BUILDFILE).xml\n";
-  if($localbf ne "")
-  {
-    my $core=$self->core();
-    print $fh "${safename}_BuildFile  := \$(WORKINGDIR)/cache/bf/${localbf}\n",
-              "${safename}_SKIP_FILES += ",$core->flags("SKIP_FILES")," ",$core->flags("SKIP_SCRIPTS"),"\n";
-    my $flag=$core->flags("FILE_COMPILATION_ORDER");
-    if($flag ne ""){print $fh "${safename}_FILE_COMPILATION_ORDER := $flag\n";}
-    my $mk=$core->data("MAKEFILE");
-    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-  }
-  print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC := \$\$(eval \$\$(call JavaProduct,$safename,$path,\$(",$self->getProductStore(),")))\n";
   return 1;
 }
 
