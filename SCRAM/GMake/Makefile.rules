@@ -50,6 +50,8 @@ BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
 ALL_PYTHON_COMPILE          := 
+UPDATE_CLASSVERSION         :=
+ALL_CLASS_VERSION_RULES     :=
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
 ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
@@ -138,6 +140,7 @@ endif
 $(SCRAM_SOURCEDIR) :=
 
 ##############################################################################
+##############################################################################
 define set_cached_var_func_arg_
 cached_var_func_arg$(cached_var_func_arg_count_$(1))_$(1) := $(2)
 cached_var_func_arg_count_$(1) := $(cached_var_func_arg_count_$(1))1
@@ -172,22 +175,22 @@ define GetVariable
 $($(1))
 endef
 define AdjustFlags
-$(foreach f,$3,$(patsubst $(strip $(foreach t,$2,$(REM_$t_$f)) $(REM_$f)),,$($1_$f)) $(foreach t,$2,$($t_$f)))
+$(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f)) $(REM_$f)),$($1_$f)) $(foreach t,$2,$($t_$f)))
 endef
 define ToolCXXFlags
-$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
+$(filter-out $(USER_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
 define ToolFFlags
-$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
+$(filter-out $(USER_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
 define ToolCFlags
-$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
+$(filter-out $(USER_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(CPPFLAGS) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(USER_LDFLAGS) $(LDFLAGS) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) 's|.*:||'),$(warning Calculationg ScramOrderedTools))
@@ -311,7 +314,7 @@ define delete_plugin_build_prod
   if [ "X$(2)" != X ] ; then \
     if [ -f $($(2)_pluginprod) ] ; then \
       $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/$($(2)_plugintype)_$($(2)_pluginrefresh) &&\
-      $(CMD_rm) -f $($(2)_pluginprod) ;\
+      $(CMD_rm) -f $(LOCALTOP)/$($(2)_pluginprod) ;\
     fi ;\
   fi
 endef
@@ -558,10 +561,11 @@ define generate_pywrapper
 endef  
 #LCG dictionary generation
 define generate_lcgdict
-  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  (            $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) || ($(CMD_rm) -f $@ $(@D)/$(5) && exit 1))$(endlog_$(2))
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $7 $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+               $(GENREFLEX) $(4) -s $(3) -o $7 $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  $(CMD_touch) $@ $(endlog_$(2))
 endef
 # ROOt dictionary generation
 define generate_rootdict
@@ -620,7 +624,7 @@ define link_lib_common
   @$(CMD_rm) -f $@.dep.new
 endef
 define link_lib
-  $(call link_lib_common,$1,$2,$3,$4,shared library,$($(1)_CXXFLAGS))
+  $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
 endef  
 define link_lib_edm
   $(call link_lib_common,$1,$2,$3,$4,edm plugin,$(call AdjustFlags,$1,EDM,CXXFLAGS),$(call AdjustFlags,$1,EDM,LDFLAGS))
@@ -654,7 +658,8 @@ define link_lib_capabilities
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
-  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
+  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) &&\
+  $(call check_edm_class_version,$1,$6,$3,$4) $(endlog_$(2))
 endef
 
 ##############################################################################
@@ -1283,8 +1288,14 @@ endif
 ifneq ($(strip $8),)
 $(1)$(8)_CDICT_LDFLAGS   = $$($(1)_LDFLAGS) -l$(1)
 all_$(1)       += $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX)
+ALL_CLASS_VERSION_RULES += $($(1)_objdir)/updateclassversion
+ifneq ($(strip $(UPDATE_CLASSVERSION)),)
+all_$(1)       += $($(1)_objdir)/updateclassversion
+$($(1)_objdir)/updateclassversion: $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX)
+	@$(CMD_touch) $$@
+endif
 $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(8).$(SHAREDSUFFIX): $$($(1)$(8)_ids) $(WORKINGDIR)/cache/prod/lib$(1)
-	$$(call link_lib_capabilities,$(1),$(1),$(6),$(1)$(8),$$($(1)$(8)_ids))
+	$$(call link_lib_capabilities,$(1),$(1),$(6),$(1)$(8),$$($(1)$(8)_ids),$(5))
 $$(eval $$(call BigObject,$(1),$(1)$(8),$$($(1)$(8)_ids)))
 endif
 endef
@@ -1297,14 +1308,16 @@ define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
 $(1)_precompile += $($(1)_objdir)/$(2)r.cc
-$($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
-	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
+$($(1)_objdir)/$(2)lcgdict: $(4) $(3) $($(1)_config)
+	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5),$($(1)_objdir)/$(2)r.cc)
+$($(1)_objdir)/$(2)r.cc: $($(1)_objdir)/$(2)lcgdict
+	@[ -f $$< ] || $(CMD_rm) -f $$@
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
 ifneq ($1,$5)
 $(1)_precompile += $($(1)_objdir)/$(2)i.cc
 $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
-$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
+$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)lcgdict
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxx_capabilities,$(1),$(1))
@@ -1375,6 +1388,9 @@ define SetTargetType
 ifneq ($(strip $(filter bigobj,$(MAKECMDGOALS))),)
   BIGOBJS:=yes
 endif
+ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
+  UPDATE_CLASSVERSION:=yes
+endif
 ifeq ($(strip $(MAKECMDGOALS)),outputlog)
   FAST :=yes
   XFAST:=yes
@@ -1386,7 +1402,7 @@ ifeq ($(strip $(MAKECMDGOALS)),clean)
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out productmap gindices skiptest_% echo_% clean_% fast xfast ufast bigobj outputlog,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out productmap gindices skiptest_% echo_% clean_% fast xfast ufast bigobj outputlog updateclassversion,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1578,6 +1594,11 @@ PLUGIN_REFRESH_CMDS :=
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(RELEASETOP)),)
+POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
+self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_LOC_INCLUDE))
+self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
+endif
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
@@ -1648,6 +1669,57 @@ define check_missing_symbols
   $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
 endef
 endif
+###############################################################################
+ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
+EDM_CHECK_CLASS_VERSION_SCRIPT:=$(if $(strip $(wildcard $(LOCALTOP)/$(EDM_CHECK_CLASS_VERSION))),$(LOCALTOP)/$(EDM_CHECK_CLASS_VERSION),)
+ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
+ifneq ($(strip $(RELEASETOP)),)
+EDM_CHECK_CLASS_VERSION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(EDM_CHECK_CLASS_VERSION))),$(RELEASETOP)/$(EDM_CHECK_CLASS_VERSION),)
+endif
+endif
+ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
+EDM_CHECK_CLASS_VERSION_SCRIPT:=echo ">> Skipped running EDM Class Version test" && true
+endif
+endif
+
+#product,list of def.xmls file,plugin,productstore
+ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
+ifneq ($(strip $(UPDATE_CLASSVERSION)),)
+define update_edm_class_version
+  for x in $2; do \
+    fname=`basename $$x` &&\
+    $(CMD_echo) ">> Generating EDM Class Version for $$x in $(@F)" &&\
+    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x &&\
+    ((cd $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x) || (true)) &&\
+    if [ -f $(@D)/classes_def.xml.generated ] ; then \
+      if [ "X`diff $(@D)/classes_def.xml.generated $$x | wc -l`" != "X0" ] ; then \
+        $(CMD_cp) $(@D)/classes_def.xml.generated $$x.generated &&\
+        $(CMD_echo) ">> New Class Version File:  $$x.generated" ;\
+      fi &&\
+      $(CMD_rm) -f $(@D)/classes_def.xml.generated ;\
+    fi ;\
+  done &&\
+  $(CMD_echo) "@@@@ ----> Generated EDM Class Version" &&
+endef
+else
+define update_edm_class_version
+endef
+endif
+define check_edm_class_version
+  $(call update_edm_class_version,$1,$2,$3,$4) \
+  for x in $2; do \
+    $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
+    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
+    ((cd $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
+  done &&\
+  $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
+endef
+else
+define check_edm_class_version
+endef
+define update_edm_class_version
+endef
+endif
 ###########################################################
 
 .PHONY: all_% clean_% help_% runtests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
@@ -1710,12 +1782,12 @@ $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_l
 	  for dir in `$(CMD_find) src/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-	      if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-		$(CMD_echo) "import os" >> $$dir/__init__.py;\
-	        $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $$dir/__init__.py;\
-	        $(CMD_echo) "if localrt != None:" >> $$dir/__init__.py;\
-	        $(CMD_echo) "  __path__.append(localrt+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
-	      fi;\
+              if [ "$$dir" == "src/$$d/python" ] ; then \
+                if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
+                  $(CMD_echo) "import os" >> $$dir/__init__.py;\
+                  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
+                fi;\
+              fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
@@ -1739,13 +1811,15 @@ runtime:
 	@$(CMD_echo) ">> Runtime environment:"; env
 skiptest_%:
 	@:
+updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULES))
+	@:
 PostBuild: CompilePython ProjectPluginRefresh
 	@:
 CompilePython: $(WORKINGDIR)/cache/CompilePython
 	@:
 $(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
 	@$(CMD_echo) ">> All python modules compiled"
-	@$(CMD_touch) $(WORKINGDIR)/cache/CompilePython
+	@$(CMD_touch) $@
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
