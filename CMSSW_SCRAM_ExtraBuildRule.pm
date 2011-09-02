@@ -32,7 +32,6 @@ sub Project()
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");
-  $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
   print $fh "EDM_CHECK_CLASS_VERSION:=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
@@ -82,8 +81,8 @@ sub Project()
             "doxygen:\n",
             "\t\@rm -rf \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
             "\tmkdir -p \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
-            "\tscriptdir=$(LOCALTOP)/\$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
-            "\t[ -d \$\$scriptdir ] || scriptdir=$(RELEASETOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
+            "\tscriptdir=\$(LOCALTOP)/\$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
+            "\t[ -d \$\$scriptdir ] || scriptdir=\$(RELEASETOP)/\$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
             "\tcd \$\$scriptdir/doxygen &&\\\n",
             "\tcp -t \$(LOCALTOP)/\$(WORKINGDIR)/doxygen cfgfile footer.html header.html doxygen.css DoxygenLayout.xml doxygen ../../script_launcher.sh &&\\\n",
             "\tcd \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
