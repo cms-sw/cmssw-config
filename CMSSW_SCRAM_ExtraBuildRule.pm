@@ -32,6 +32,7 @@ sub Project()
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");
+  $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
   print $fh "EDM_CHECK_CLASS_VERSION:=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
