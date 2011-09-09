@@ -1744,7 +1744,7 @@ endif
 
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
-.PHONY: skiptest_% FixLCGLibs
+.PHONY: skiptest_%
 help_%_python:
 	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
 help_%_src:
@@ -1833,7 +1833,7 @@ skiptest_%:
 	@:
 updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULES))
 	@:
-PostBuild: CompilePython ProjectPluginRefresh FixLCGLibs
+PostBuild: CompilePython ProjectPluginRefresh
 	@:
 CompilePython: $(WORKINGDIR)/cache/CompilePython
 	@:
@@ -1842,9 +1842,6 @@ $(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR
 	@$(CMD_touch) $@
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
-FixLCGLibs:
-	@cd $(LOCALTOP)/$(SCRAMSTORENAME_LIB) &&\
-	find . -name 'libLCG*.so' -type f | sed 's|\./libLCG||' | xargs -I '{}' ln -f -s 'libLCG{}' 'liblcg_{}'
 %:
 	@$(CMD_echo) TARGET:$@
 	@var=$(call GetEchoVariable,$@);\

@@ -1359,8 +1359,13 @@ sub safename_PackageBased ()
 sub safename_SubsystemPackageBased ()
 {
   my $dir=shift;
-  if($dir=~/^([^\/]+)\/([^\/]+)$/){return "${1}${2}";}
-  return "";
+  my $name="";
+  if($dir=~/^([^\/]+)\/([^\/]+)$/)
+  {
+    if ($1 eq "LCG"){$name="lcg_${2}";}
+    else{$name="${1}${2}";}
+  }
+  return $name;
 }
 ########################################
 sub addCacheData ()
