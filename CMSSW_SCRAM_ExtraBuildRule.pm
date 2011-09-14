@@ -32,8 +32,8 @@ sub Project()
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");
-  $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
+  print $fh "EDM_CHECK_CLASS_VERSION:=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n";
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "CPPDEFINES+=-DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
 ######################################################################
@@ -47,7 +47,7 @@ sub Project()
 ######################################################################
 # Documentation targets. Note- must be lower case otherwise conflict with rules
 # for dirs which have the same name:
-  print $fh ".PHONY: userguide referencemanual doc\n",
+  print $fh ".PHONY: userguide referencemanual doc doxygen\n",
             "doc: referencemanual\n",
             "\t\@echo \"Documentation/release notes built for \$(SCRAM_PROJECTNAME) v\$(SCRAM_PROJECTVERSION)\"\n",
             "userguide:\n",
@@ -77,7 +77,20 @@ sub Project()
             "\tcd \$(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\\n",
             "\tdoxygen doxyfile.conf; \\\n",
             "\tcd \$(LOCALTOP); \\\n",
-            "\tls -d src/*/*/doc/*.dox | sed 's|\(.*\).dox|mv \"&\" \"\\1.doc\"|' | /bin/sh;\n";
+            "\tls -d src/*/*/doc/*.dox | sed 's|\(.*\).dox|mv \"&\" \"\\1.doc\"|' | /bin/sh;\n",
+            "doxygen:\n",
+            "\t\@rm -rf \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
+            "\tmkdir -p \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
+            "\tscriptdir=\$(LOCALTOP)/\$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
+            "\t[ -d \$\$scriptdir ] || scriptdir=\$(RELEASETOP)/\$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n",
+            "\tcd \$\$scriptdir/doxygen &&\\\n",
+            "\tcp -t \$(LOCALTOP)/\$(WORKINGDIR)/doxygen cfgfile footer.html header.html doxygen.css DoxygenLayout.xml doxygen ../../script_launcher.sh &&\\\n",
+            "\tcd \$(LOCALTOP)/\$(WORKINGDIR)/doxygen &&\\\n",
+            "\tchmod +rwx doxygen script_launcher.sh &&\\\n",
+            "\tsed -e 's|\@CMSSW_BASE@|\$(LOCALTOP)|g' cfgfile > cfgfile.conf &&\\\n",
+            "\t./doxygen cfgfile.conf &&\\\n",
+            "\t./script_launcher.sh \$(SCRAM_PROJECTVERSION) \$\$scriptdir \$(LOCALTOP) &&\\\n",
+            "\techo \"Reference Manual is generated.\"\n";
 ######################################################################
   print $fh ".PHONY: gindices\n",
             "gindices:\n",
