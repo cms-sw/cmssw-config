@@ -1313,7 +1313,7 @@ sub runTemplate ()
 #############################################
 sub setLCGProjectLibPrefix ()
 {my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_coral (){&safename_LCGProjects(shift,shift,$self->{cache}{LCGProjectLibPrefix});}
 sub safename_LCGProjects ()
 {
   my $self=shift;
@@ -1359,13 +1359,8 @@ sub safename_PackageBased ()
 sub safename_SubsystemPackageBased ()
 {
   my $dir=shift;
-  my $name="";
-  if($dir=~/^([^\/]+)\/([^\/]+)$/)
-  {
-    if ($1 eq "LCG"){$name="lcg_${2}";}
-    else{$name="${1}${2}";}
-  }
-  return $name;
+  if($dir=~/^([^\/]+)\/([^\/]+)$/){return "${1}${2}";}
+  return "";
 }
 ########################################
 sub addCacheData ()
