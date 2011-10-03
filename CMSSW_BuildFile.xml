@@ -31,9 +31,8 @@
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
-<architecture name="_gcc46">
+<architecture name="slc*_gcc46">
    <flags LDFLAGS="-Wl,--icf=all"/>
-   <flags EDM_CXXFLAGS="-fvisibility=hidden"/>
 </architecture>
 <architecture name="osx">
    <flags MISSING_SYMBOL_FLAGS="-Wl,-undefined,error"/>
