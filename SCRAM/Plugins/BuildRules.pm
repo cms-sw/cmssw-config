@@ -1569,15 +1569,17 @@ sub Project_template()
     }
   }
   #Compiler tools variables initilize
+  my $allFlags="";
   foreach my $toolname ("CXX","C","F77")
   {
     my $compiler=$self->getCompiler($toolname);
     if($compiler ne "")
     {
       my $tool = $self->getTool($compiler);
-      foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n";}
+      foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n"; $allFlags.="$flag ";}
     }
   }
+  print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
   foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
   {
     foreach my $type ("","REM_")
