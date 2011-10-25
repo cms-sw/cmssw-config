@@ -568,9 +568,9 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $7 $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-               $(GENREFLEX) $(4) -s $(3) -o $7 $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  $(CMD_touch) $@ $(endlog_$(2))
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+               $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
+  $(endlog_$(2))
 endef
 # ROOt dictionary generation
 define generate_rootdict
@@ -1323,17 +1323,15 @@ define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
 $(1)_extra_files += $($(1)_objdir)/$(2)r.cc
-$($(1)_objdir)/$(2)lcgdict: $(4) $(3) $($(1)_config)
-	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5),$($(1)_objdir)/$(2)r.cc)
-$($(1)_objdir)/$(2)r.cc: $($(1)_objdir)/$(2)lcgdict
-	@[ -f $$< ] || $(CMD_rm) -f $$@
+$($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
+	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$(2)r)
 ifneq ($1,$5)
 $(1)_compile += $($(1)_objdir)/$(2)i.$(OBJEXT)
 $(1)_extra_files += $($(1)_objdir)/$(2)i.cc
 $(5)_ids    += $($(1)_objdir)/$(2)i.$(OBJEXT)
-$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)lcgdict
+$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $($(1)_objdir)/$(2)i.$(OBJEXT): $($(1)_objdir)/$(2)i.cc
 	$$(call compile_cxx_capabilities,$(1),$(1))
