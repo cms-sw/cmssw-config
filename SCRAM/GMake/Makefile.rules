@@ -424,7 +424,7 @@ define edm_register_plugin
     (($(CMD_cp) -f $< $(@D)/$$plugin && $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:EdmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
+    $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
   else \
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
@@ -876,7 +876,7 @@ $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
 endef
 define edmPlugin
-$(eval $(call addPlugin,$1,$2,edm,yes,$3,EdmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
+$(eval $(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
 $(1)_BUILDRULES := _edm
 endef
 define rivetPlugin
