@@ -49,7 +49,6 @@ LD_UNIT_FLAGS               := -z muldefs
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
-ALL_PYTHON_COMPILE          := 
 UPDATE_CLASSVERSION         :=
 ALL_CLASS_VERSION_RULES     :=
 ###################################
@@ -500,38 +499,18 @@ define set_python_timestamp
   done
 endef
 
-define compile_python
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_touch) -t $(OLD_TIMESTAMP) $@ &&\
-  $(CMD_echo) "01:$(CMD_find) $(4)/ -name '*.pyc' -type f 2>/dev/null | $(CMD_xargs) $(CMD_rm) -f " > $(call AutoCleanFile,$@,python) &&\
-  pymods="" &&\
-  for mod in `$(CMD_find) $(4)/ -name '*_cf[if].py' -type f | $(CMD_sed) 's|^$(4)/*||;s|.py$$||'`; do \
-    pyc=$(4)/$$mod.pyc ;\
-    py=$(4)/$$mod.py ;\
-    if [ ! -f $$pyc ] || [ "X`$(call timestamp_cmp,$$py,$$pyc)`" != "X0" ] ;  then pymods="$$mod $$pymods";  fi;\
-  done; \
-  if [ "X$$pymods" != "X" ] ; then \
-    $(CMD_echo) ">> Compiling cfi/cff python modules: $4";\
-    modules=`$(CMD_echo) $(3).$$pymods | $(CMD_sed) 's|/|.|g;s| |,$(3).|g'`;\
-    $(VERB_ECHO) "$(CMD_python) -c 'import $$modules'";\
-    (($(CMD_python) -c "import $$modules" > /dev/null 2>&1 && $(call set_python_timestamp,$4,$$pymods)) || ($(call compile_python_individual,$1,$3,$$pymods,$4)));\
-  fi $(endlog_$(2))
+define compileall_python
+  for dir in cfipython/$(SCRAM_ARCH) python ; do \
+    if [ -d $$dir ] ; then \
+       $(VERB_ECHO) "$(CMD_python) -m compileall -q $$dir" &&\
+       $(CMD_python) -m compileall -q $$dir || (echo HERE1 $$dir && $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error) ;\
+     fi ;\
+  done
 endef
-
-define compile_python_individual
-  $(CMD_rm) -f  $($(1)_objdir)/py.errors &&\
-  for mod in $3; do \
-    pyc=$(4)/$$mod.pyc ;\
-    py=$(4)/$$mod.py ;\
-    $(CMD_echo) ">> Compiling: $$py";\
-    modx=`$(CMD_echo) $(2).$$mod | $(CMD_sed) 's|/|.|g'`;\
-    $(VERB_ECHO) "$(CMD_python) -c 'import $$modx'";\
-    (($(CMD_python) -c "import $$modx" && [ -f $$pyc ] && $(CMD_touch) -r $$py $$pyc) || ($(CMD_echo) "gmake: *** [$$py] Error $$?" && $(CMD_touch) $($(1)_objdir)/py.errors)) ;\
-  done; \
-  if [ -f $($(1)_objdir)/py.errors ] ; then \
-    $(CMD_rm) -f $($(1)_objdir)/py.errors ;\
-    ([ "X$(RELEASETOP)" == "X" ] || exit 1) ;\
-  fi
+define compile_python
+  $(CMD_echo) ">> Compiling python modules $1" &&\
+  $(VERB_ECHO) "$(CMD_python) -m compileall -q $1" &&\
+  $(CMD_python) -m compileall -q $1 || (echo HERE2 $1 && $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error)
 endef
 ##############################################################################
 # Source Generators Rules
@@ -1113,12 +1092,6 @@ $(1)_config += $$($(1)_objdir)/config
 all_$(1) += $(1)_copy_python_scripts
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
-ifeq ($$(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
-$$($(1)_objdir)/cmssw_python_modules: FORCE_TARGET $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
-	$$(call compile_python,$1,$1,$(subst /,.,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2))),$(2))
-	$$(call outputLogFile,$(logfile_$(1)))
-ALL_PYTHON_COMPILE += $$($(1)_objdir)/cmssw_python_modules
-endif
 $(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
 	@:
 else
@@ -1542,11 +1515,11 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@$(CMD_touch) .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db.gz
 	$(CMD_rm) -f .SCRAM/$(SCRAM_ARCH)/RuntimeCache.db*
 	$(CMD_rm) -rf .SCRAM/$(SCRAM_ARCH)/MakeData
-	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] && [ "X$(ALL_PYTHON_DIRS)" != "X" ] ; then \
-	  $(CMD_echo) "Cleaning up the compiled .pyc files in the $(SCRAM_SOURCEDIR) directory.";\
-	  for d in $(ALL_PYTHON_DIRS) ; do \
-	    $(call BuildClean,$(SCRAM_SOURCEDIR)/$$d,,no);\
-	  done;\
+	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
+	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | xargs grep '^#Automatically created by SCRAM' | sed 's|/__init__.py:.*|/__init__.py|' | uniq | xargs rm -f ; fi &&\
+	  if [ -d cfipython/$(SCRAM_ARCH) ] ; then $(CMD_find) cfipython/$(SCRAM_ARCH)  -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) rm -f ; fi ;\
 	fi
 	$(CMD_rm) -rf $(SCRAM_INTwork)
 
@@ -1798,14 +1771,14 @@ echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
 
 $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
-	@[ -d python ] || $(CMD_mkdir) python; \
-	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl ;\
+	@[ -d python ] || $(CMD_mkdir) python &&\
+	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl &&\
 	$(CMD_touch) python/__init__.py
 	@for d in `$(CMD_find) python -name "*" -type l | $(CMD_sed) s'|^python/||'`; do \
-	  for dir in `$(CMD_find) src/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
+	  for dir in `$(CMD_find) $(SCRAM_SOURCEDIR)/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-              if [ "$$dir" == "src/$$d/python" ] ; then \
+              if [ "$$dir" == "$(SCRAM_SOURCEDIR)/$$d/python" ] ; then \
                 if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
                   $(CMD_echo) "import os" >> $$dir/__init__.py;\
                   $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
@@ -1838,11 +1811,22 @@ updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULE
 	@:
 PostBuild: CompilePython ProjectPluginRefresh
 	@:
-CompilePython: $(WORKINGDIR)/cache/CompilePython
-	@:
-$(WORKINGDIR)/cache/CompilePython: FORCE_TARGET $(filter $(WORKINGDIR)/$(THISDIR)/%/cmssw_python_modules,$(ALL_PYTHON_COMPILE))
+ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
+.PHONY: do_python_compile do_python_compileall PyCompile_%
+CompilePython: do_python_compile
+	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
-	@$(CMD_touch) $@
+do_python_compile: $(addprefix PyCompile_$(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))
+	@:
+PyCompile_$(SCRAM_SOURCEDIR)/%: do_python_compileall
+	@$(call compile_python,$(SCRAM_SOURCEDIR)/$*)
+do_python_compileall: $(COMMON_WORKINGDIR)/cache/python_symlinks
+	@$(CMD_rm) -f $(COMMON_WORKINGDIR)/cache/python_error &&\
+	$(call compileall_python)
+else
+CompilePython:
+	@$(CMD_echo) "Skipped python compilaqtion"
+endif
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
 %:
