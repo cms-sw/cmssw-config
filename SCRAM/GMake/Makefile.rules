@@ -492,25 +492,10 @@ define compile_rootdict
   $(basename $@).d > $<.d &&\
   if [ -f $<.d ] ; then $(CMD_sed) 's|$(LOCALTOP)/||' $<.d > $<.d.backup ; $(CMD_mv) $<.d.backup $<.d; fi $(endlog_$(2))
 endef
-# compiling python
-define set_python_timestamp
-  for mod in $2; do \
-    [ -f $(1)/$$mod.pyc ] && $(CMD_touch) -r $(1)/$$mod.py $(1)/$$mod.pyc;\
-  done
-endef
-
-define compileall_python
-  for dir in cfipython/$(SCRAM_ARCH) python ; do \
-    if [ -d $$dir ] ; then \
-       $(VERB_ECHO) "$(CMD_python) -m compileall -q $$dir" &&\
-       $(CMD_python) -m compileall -q $$dir || (echo HERE1 $$dir && $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error) ;\
-     fi ;\
-  done
-endef
 define compile_python
   $(CMD_echo) ">> Compiling python modules $1" &&\
   $(VERB_ECHO) "$(CMD_python) -m compileall -q $1" &&\
-  $(CMD_python) -m compileall -q $1 || (echo HERE2 $1 && $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error)
+  $(CMD_python) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
 endef
 ##############################################################################
 # Source Generators Rules
@@ -1812,20 +1797,18 @@ updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULE
 PostBuild: CompilePython ProjectPluginRefresh
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
-.PHONY: do_python_compile do_python_compileall PyCompile_%
-CompilePython: do_python_compile
+.PHONY: do_python_symlink PyCompile_%
+CompilePython: $(addprefix PyCompile_,$(wildcard cfipython/$(SCRAM_ARCH) python)) $(addprefix PyCompile_$(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))
 	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
-do_python_compile: $(addprefix PyCompile_$(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))
-	@:
-PyCompile_$(SCRAM_SOURCEDIR)/%: do_python_compileall
-	@$(call compile_python,$(SCRAM_SOURCEDIR)/$*)
-do_python_compileall: $(COMMON_WORKINGDIR)/cache/python_symlinks
-	@$(CMD_rm) -f $(COMMON_WORKINGDIR)/cache/python_error &&\
-	$(call compileall_python)
+PyCompile_$(SCRAM_SOURCEDIR)/% PyCompile_cfipython/% PyCompile_%: do_python_symlink
+	@$(call compile_python,$(patsubst PyCompile_%,%,$@))
+do_python_symlink: $(COMMON_WORKINGDIR)/cache/python_symlinks
+	@$(CMD_rm) -f $(COMMON_WORKINGDIR)/cache/python_error
+	@$(CMD_echo) ">> Done python_symlink"
 else
 CompilePython:
-	@$(CMD_echo) "Skipped python compilaqtion"
+	@$(CMD_echo) ">> Skipped python compilation"
 endif
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
