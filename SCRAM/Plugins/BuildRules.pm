@@ -356,7 +356,7 @@ sub createSymLinks()
   my $fh=$self->filehandle();
   print $fh "CONFIGDEPS += \$(COMMON_WORKINGDIR)/cache/project_links\n",
             "\$(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET\n",
-            "\t\@echo '>>Creating project symlinks';\\\n",
+            "\t\@echo '>> Creating project symlinks';\\\n",
             "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D) &&\\\n";
   my @dirs=$self->getSymLinks();
   if (scalar(@dirs)==0){return;}
