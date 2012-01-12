@@ -20,6 +20,7 @@ $cache{ignorefiles}{LIBDIR}{"python.+"}="d";
 $cache{ignorefiles}{LIBDIR}{"modules"}="d";
 $cache{ignorefiles}{LIBDIR}{"pkgconfig"}="d";
 $cache{ignorefiles}{LIBDIR}{"archive"}="d";
+$cache{ignorefiles}{LIBDIR}{'__.SYMDEF\s+SORTED'}="f";
 $cache{ignorefiles}{PYTHONPATH}{"CVS"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{".package-checksum"}="f";

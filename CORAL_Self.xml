@@ -3,7 +3,7 @@
   <environment name="LIBDIR"  value="$LOCALTOP/$SCRAM_ARCH/lib"/>
   <environment name="LIBDIR"  value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE" value="$LOCALTOP/include/LCG"              handler="warn"/>
-  <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler"/>
+  <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler x11"/>
   <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags NO_EXTERNAL_RUNTIME="@LD_LIBRARY_PATH@"/>
