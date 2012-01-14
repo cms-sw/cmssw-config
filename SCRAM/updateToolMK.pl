@@ -72,6 +72,7 @@ foreach my $t (keys %tools)
   my $sproj=$c->{SCRAM_PROJECT} || 0;
   my @tvars=@toolvar;
   if(($t eq "self") || ($t eq $proj_name)){push @tvars,"LIBDIR";}
+  elsif(&isSymlinkSkipped($tcache,$t)){push @tvars,"LIBDIR";}
   open(TFILE,">${tooldir}/${t}.mk") || die "Can not open file for writing: ${tooldir}/${t}.mk\n";
   print TFILE "$t             := $t\n";
   print TFILE "ALL_TOOLS      += $t\n";
@@ -176,6 +177,14 @@ if (($reltop ne "") && (exists $tools{self}))
 }
 
 ##############################################################
+sub isSymlinkSkipped()
+{
+  my ($cache,$tool)=@_;
+  my $tools=$cache->{SETUP}{self}{FLAGS}{SKIP_TOOLS_SYMLINK} || [];
+  foreach my $t (@$tools){if ($t eq $tool){return 1;}}
+  return 0;
+}
+
 sub mkprocessfile ()
 {
   my $infile=shift;
