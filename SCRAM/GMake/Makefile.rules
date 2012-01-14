@@ -194,7 +194,7 @@ define ToolCPPFlags
 $(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
 endef
 define ToolLDFlags
-$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$(filter $(LOCALTOP)/%,$($(1)_LOC_FLAGS_LIBDIR_ALL)))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define ScramOrderedTools
 $(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) 's|.*:||'),$(warning Calculationg ScramOrderedTools))
