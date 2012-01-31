@@ -22,6 +22,7 @@
 <use name="self"/>
 
 <flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
+<flags ROOTDICT_CXXFLAGS="-Wno-unknown-pragmas"/>
 
 <flags REM_LCGDICT_CXXFLAGS="-O%"/>
 <flags REM_LCGDICT_CPPFLAGS="-O%"/>
