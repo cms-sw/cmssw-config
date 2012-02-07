@@ -26,7 +26,7 @@
 
 <flags REM_LCGDICT_CXXFLAGS="-O%"/>
 <flags REM_LCGDICT_CPPFLAGS="-O%"/>
-<flags LCGDICT_CXXFLAGS="-Os"/>
+<flags LCGDICT_CXXFLAGS="-Os -Wno-unused-variable"/>
 
 <architecture name="slc">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
