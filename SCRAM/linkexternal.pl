@@ -25,7 +25,7 @@ $cache{ignorefiles}{PYTHONPATH}{"CVS"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{".package-checksum"}="f";
 
-$cache{runtime_map}{LIBDIR}="@LD_LIBRARY_PATH@";
+$cache{runtime_map}{LIBDIR}=["LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"];
 
 if(&GetOptions(
                "--update=s",\@update,
@@ -162,14 +162,17 @@ if(exists $cache{toolcache}{SETUP})
       }
       if (exists $tc->{RUNTIME})
       {
-	my $y=$cache{runtime_map}{$x} || $x;
-	if(exists $tc->{RUNTIME}{"PATH:${y}"})
+        my $xp = $cache{runtime_map}{$x} || [$x];
+        foreach my $y (@$xp)
         {
-	  foreach my $dir (@{$tc->{RUNTIME}{"PATH:${y}"}})
-	  {
-	    $nbases{$dir}=1;
-	    $cache{"${x}_BASES"}{$t}{$dir}=1;
-	  }
+          if(exists $tc->{RUNTIME}{"PATH:${y}"})
+          {
+            foreach my $dir (@{$tc->{RUNTIME}{"PATH:${y}"}})
+            {
+              $nbases{$dir}=1;
+              $cache{"${x}_BASES"}{$t}{$dir}=1;
+            }
+          }
         }
       }
     }

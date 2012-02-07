@@ -50,8 +50,6 @@ $cache{KEYS}{PROJECT_TOOL_CONF}=$toolbox;
 $cache{KEYS}{PROJECT_CONFIG_BASE}=$config;
 $cache{KEYS}{SCRAM_VERSION}=$scram;
 
-$cache{EXKEYS}{LD_LIBRARY_PATH}{osx}="DYLD_FALLBACK_LIBRARY_PATH";
-
 foreach my $k (keys %keys){$cache{KEYS}{$k}=$keys{$k};}
 
 my $regexp="";
