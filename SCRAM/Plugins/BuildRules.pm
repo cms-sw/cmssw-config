@@ -1843,8 +1843,9 @@ sub library_template_generic ()
     $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
   }
+  $locuse = $self->updateF77Dependency($locuse,$safename);
   print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
-  print $fh "${safename}_LOC_USE := ${locuse} \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
+  print $fh "${safename}_LOC_USE := $locuse\n";
   $self->processTemplate("Extra_template");
   if ($localbf ne "")
   {
@@ -2002,8 +2003,9 @@ sub binary_template_generic()
   my $locuse = $self->getCacheData("USE");
   my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
   if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
+  $locuse = $self->updateF77Dependency($locuse,$safename);
   print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
-  print $fh "${safename}_LOC_USE := $locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
+  print $fh "${safename}_LOC_USE := $locuse\n";
   my $mk=$core->data("MAKEFILE");
   if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   $self->setValidSourceExtensions();
@@ -2134,8 +2136,9 @@ sub python_template()
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
+  $locuse = $self->updateF77Dependency($locuse,$safename);
   print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
-  print $fh "${safename}_LOC_USE := $locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
+  print $fh "${safename}_LOC_USE := $locuse\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
             "ALL_PRODS += ${safename}\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
@@ -2150,5 +2153,13 @@ sub python_template()
 
 sub test_template()
 {&binary_template(shift);}
+
+sub updateF77Dependency ()
+{
+  my ($self,$locuse,$safename)=@_;
+  my $f77 = $self->getCompiler("F77");
+  if ($locuse!~/^\s*($f77|.+\s+$f77)(\s+.+|\s*)$/){$locluse = "$locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),$f77,)";}
+  return $locuse;
+}
 
 1;
