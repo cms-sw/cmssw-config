@@ -1815,6 +1815,7 @@ sub library_template_generic ()
   my $localbf = $self->getLocalBuildFile();
   my %no_export=();
   my $locuse = $self->getCacheData("USE");
+  my $skipFiles = "";
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -1838,13 +1839,20 @@ sub library_template_generic ()
       $locuse = "$locuse ".join(" ",@$dataval);
       foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
     }
-    my $flag=$core->flags("SKIP_FILES");
-    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
-    $flag=$self->isLibSymLoadChecking ();
+    $skipFiles=$core->flags("SKIP_FILES");
+    if($skipFiles ne ""){print $fh "${safename}_SKIP_FILES   := $skipFiles\n";}
+    my $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
   }
   $locuse = $self->updateF77Dependency($locuse,$safename);
-  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  if ($skipFiles ne "")
+  {
+    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  }
+  else
+  {
+    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
+  }
   print $fh "${safename}_LOC_USE := $locuse\n";
   $self->processTemplate("Extra_template");
   if ($localbf ne "")
@@ -2114,6 +2122,7 @@ sub python_template()
             "$safename := self/${path}\n";
   my $localbf = $self->getLocalBuildFile();
   my $locuse = $self->getCacheData("USE");
+  my $skipFiles = "";
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -2129,15 +2138,22 @@ sub python_template()
     }
     my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
     if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
-    my $flag=$core->flags("SKIP_FILES");
-    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
-    $flag=$self->isLibSymLoadChecking ();
+    $skipFiles=$core->flags("SKIP_FILES");
+    if($skipFiles ne ""){print $fh "${safename}_SKIP_FILES   := $skipFiles\n";}
+    my $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
   $locuse = $self->updateF77Dependency($locuse,$safename);
-  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  if ($skipFiles ne "")
+  {
+    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  }
+  else
+  {
+    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
+  }
   print $fh "${safename}_LOC_USE := $locuse\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
             "ALL_PRODS += ${safename}\n",
