@@ -1814,6 +1814,7 @@ sub library_template_generic ()
   my $safename=$self->get("safename");
   my $localbf = $self->getLocalBuildFile();
   my %no_export=();
+  my $locuse = $self->getCacheData("USE");
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -1831,23 +1832,19 @@ sub library_template_generic ()
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
     }
-    foreach my $data ("USE")
+    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+    if($dataval ne "")
     {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-      if($dataval ne "")
-      {
-        print $fh " ",join(" ",@$dataval);
-        foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
-      }
-      print $fh "\n";
+      $locuse = "$locuse ".join(" ",@$dataval);
+      foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
     }
     my $flag=$core->flags("SKIP_FILES");
     if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
     $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
   }
-  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  print $fh "${safename}_LOC_USE := ${locuse} \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
   $self->processTemplate("Extra_template");
   if ($localbf ne "")
   {
@@ -1899,10 +1896,11 @@ sub library_template_generic ()
   my $safepath=$self->get("safepath"); my $path=$self->get("path");
   my $store1= $self->getProductStore("scripts");
   my $store2= $self->getProductStore("lib");
+  my $store3= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(if \$(${safename}_files_exts),\$(${safename}_files_exts),\$(SRC_FILES_SUFFIXES))))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$($store3)))\n";
 }
 
 sub binary_template ()
@@ -1930,7 +1928,6 @@ sub binary_template ()
 	  my $prodfiles = $core->productfiles();
 	  print $fh "ifeq (\$(strip \$($safename)),)\n",
 	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
-                    "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n",
 		    "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
@@ -2002,13 +1999,11 @@ sub binary_template_generic()
     my $dataval=$self->fixData($core->value($data),$data,$localbf);
     if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
   }
-  foreach my $data ("USE")
-  {
-    my $dataval=$self->fixData($core->value($data),$data,$localbf);
-    print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-    if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
-    print $fh "\n";
-  }
+  my $locuse = $self->getCacheData("USE");
+  my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+  if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
+  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
+  print $fh "${safename}_LOC_USE := $locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
   my $mk=$core->data("MAKEFILE");
   if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   $self->setValidSourceExtensions();
@@ -2019,7 +2014,7 @@ sub binary_template_generic()
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += ${safename}\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files)))),$type,\$(${store3})))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),$type,\$(${store3})))\n";
 }
 
 sub src2store_copy()
@@ -2116,6 +2111,7 @@ sub python_template()
   print $fh "ifeq (\$(strip \$(${safename})),)\n",
             "$safename := self/${path}\n";
   my $localbf = $self->getLocalBuildFile();
+  my $locuse = $self->getCacheData("USE");
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -2129,13 +2125,8 @@ sub python_template()
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
     }
-    foreach my $data ("USE")
-    {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-      if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
-      print $fh "\n";
-    }
+    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+    if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
     my $flag=$core->flags("SKIP_FILES");
     if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
     $flag=$self->isLibSymLoadChecking ();
@@ -2143,7 +2134,8 @@ sub python_template()
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
-  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
+  print $fh "${safename}_LOC_USE := $locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),".$self->getCompiler("F77").",)\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
             "ALL_PRODS += ${safename}\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",

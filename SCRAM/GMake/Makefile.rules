@@ -1008,20 +1008,26 @@ $$(call $$(wrongtool),****WARNING: Invalid tool $(1). Please fix $$(call FindBui
 endif
 endef
 
-#safename,path,safepath,scriptstore,scripts,productstore,fileext,type,logprodstore
+#safename
+define CompileRules
+$(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
+$(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
+$(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
+endef
+
+#safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
 define Binary
 $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
 ALL_BINARIES += $(1)
 $(1)_product := $(1)
-$$(eval $$(call CommonBinaryTail,$(1),$(2),$(6),$(8),$(9),$(3)))
-$(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),$(7)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1))))
-$(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),$(7)),$(eval $(call CCompileRule,$(1),$(ext),$(1))))
+$$(eval $$(call CommonBinaryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
+$$(eval $$(call CompileRules,$(1)))
 endef
 
-#safename,path,safepath,scriptstore,scripts,libstore,fileext,logprodstore
+#safename,path,safepath,scriptstore,scripts,libstore,logprodstore
 define Library
 $(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5)))
-$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
+$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(3)))
 endef
 
 #safename,path,safepath,scriptstore,scripts
@@ -1030,16 +1036,14 @@ $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 endef
 
-#safename,path,libstore,fileext,logprodstore,safepath
+#safename,path,libstore,logprodstore,safepath
 define LibraryTail
-$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(5),$(6)))
+$(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(4),$(5)))
 ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
 	@:
-$(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),$(4)),    $(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
-$(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),$(4)),      $(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
-$(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$(4)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
+$$(eval $$(call CompileRules,$(1)))
 else
 $(1) all_$(1): $$(all_$(1))
 	@:
@@ -1117,7 +1121,7 @@ endef
 define PythonProductTail
 $(1)_product := $(1).$(SHAREDSUFFIX)
 $$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4),$(5)))
-$(foreach ext,$(CXXSRC_FILES_SUFFIXES),$(eval $(call CXXCompileRule,$(1),$(ext),$(1))))
+$$(eval $$(call CompileRules,$(1)))
 .PRECIOUS: $($(1)_objdir)/%_boost.cc
 $($(1)_objdir)/%_boost.cc: $($(1)_srcdir)/%.pyste $($(1)_config)
 	$$(call pyste2boost,$(1),$(1))
