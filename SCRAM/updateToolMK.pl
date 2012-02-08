@@ -54,7 +54,7 @@ $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/
 $mkprocess{editlines}[$skline++]{value} = '$line="${1}\$(wildcard ${2}) ${base}/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^.+_EX_INCLUDE\s+:=\s+.*\$\(LOCALTOP\)/;
 $mkprocess{editlines}[$skline++]{value} = '$line=~s/\$\(LOCALTOP\)/\$(RELEASETOP)/g';
-$mkprocess{editlines}[$skline]{reg}     = qr/^(.+_LOC_USE\s+:=.+)\s+\$\(ifs+\$\(strip\s+\$\(filter\s+.+\)$/;
+$mkprocess{editlines}[$skline]{reg}     = qr/^(.+_LOC_USE\s+:=.+)\s+\$\(if\s+\$\(strip\s+\$\(filter\s+.+$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="$1"';
 $mkprocess{editcount}=$skline;
 
