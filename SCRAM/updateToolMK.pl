@@ -46,8 +46,10 @@ $mkprocess{skipcount}=$skline; $skline = 0;
 
 $mkprocess{editlines}[$skline]{reg}     = qr/^\s*ALL_PRODS(\s+\+=.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="ALL_EXTERNAL_PRODS${1}"';
+$mkprocess{editlines}[$skline]{cont}    = 1;
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self(\s*.*)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}${2}"';
+$mkprocess{editlines}[$skline]{cont}    = 1;
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self\/(.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}/${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$/;
@@ -219,7 +221,7 @@ sub mkprocessfile ()
 	{
 	  my $v=$data->{editlines}[$i]{value};
 	  eval $v;
-	  last;
+	  if (!exists $data->{editlines}[$i]{cont}){last;}
 	}
       }
       print $oref "$line\n";
