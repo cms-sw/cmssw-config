@@ -41,6 +41,7 @@ $mkprocess{skiplines}[$skline++] = qr/ALL_COMMONRULES\s+\+=/;
 $mkprocess{skiplines}[$skline++] = qr/.+_PACKAGE\s+:=\s+self\//;
 $mkprocess{skiplines}[$skline++] = qr/\$\(call\s+(RootDict|LCGDict|LexYACC|CodeGen|Iglet|AddMOC|.+Plugin),/;
 $mkprocess{skiplines}[$skline++] = qr/NON_XML_BUILDFILE\s+\+=/;
+$mkprocess{skiplines}[$skline++] = qr/_files_exts\s+[:+]=/;
 $mkprocess{skipcount}=$skline; $skline = 0;
 
 $mkprocess{editlines}[$skline]{reg}     = qr/^\s*ALL_PRODS(\s+\+=.+)$/;
@@ -53,6 +54,8 @@ $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/
 $mkprocess{editlines}[$skline++]{value} = '$line="${1}\$(wildcard ${2}) ${base}/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^.+_EX_INCLUDE\s+:=\s+.*\$\(LOCALTOP\)/;
 $mkprocess{editlines}[$skline++]{value} = '$line=~s/\$\(LOCALTOP\)/\$(RELEASETOP)/g';
+$mkprocess{editlines}[$skline]{reg}     = qr/^(.+_LOC_USE\s+:=.+)\s+\$\(ifs+\$\(strip\s+\$\(filter\s+.+\)$/;
+$mkprocess{editlines}[$skline++]{value} = '$line="$1"';
 $mkprocess{editcount}=$skline;
 
 my $tooldir=".SCRAM/${arch}/MakeData/Tools";
