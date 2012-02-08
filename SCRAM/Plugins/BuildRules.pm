@@ -2158,7 +2158,7 @@ sub updateF77Dependency ()
 {
   my ($self,$locuse,$safename)=@_;
   my $f77 = $self->getCompiler("F77");
-  if ($locuse!~/^\s*($f77|.+\s+$f77)(\s+.+|\s*)$/){$locluse = "$locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),$f77,)";}
+  if ($locuse!~/^\s*($f77|.+\s+$f77)(\s+.+|\s*)$/){$locuse = "$locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),$f77,)";}
   return $locuse;
 }
 
