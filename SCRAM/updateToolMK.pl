@@ -50,7 +50,7 @@ $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self\/(.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}/${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$/;
-$mkprocess{editlines}[$skline++]{value} = '$line="${1}\$(wildcard ${2}) ${base}/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
+$mkprocess{editlines}[$skline++]{value} = '$line="${1}\$($basevar)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^.+_EX_INCLUDE\s+:=\s+.*\$\(LOCALTOP\)/;
 $mkprocess{editlines}[$skline++]{value} = '$line=~s/\$\(LOCALTOP\)/\$(RELEASETOP)/g';
 $mkprocess{editcount}=$skline;
@@ -192,6 +192,8 @@ sub mkprocessfile ()
   my $data=shift;
   my $tool=$data->{tool};
   my $base=$data->{base};
+  my $basevar=uc($tool)."_BASE";
+  if ($tool eq "self"){$basevar="RELEASETOP";}
   my $iref; my $oref;
   open($iref,$infile) || die "Can not open file for reading: $infile";
   open($oref,">$outfile") || die "Can not open file for writing: $outfile";
@@ -216,7 +218,7 @@ sub mkprocessfile ()
 	{
 	  my $v=$data->{editlines}[$i]{value};
 	  eval $v;
-	  last;
+	  if (!exists $data->{editlines}[$i]{cont}){last;}
 	}
       }
       print $oref "$line\n";
