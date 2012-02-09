@@ -1633,6 +1633,7 @@ sub Project_template()
   print $fh "CXXSRC_FILES_SUFFIXES       := ",join(" ",$self->getSourceExtensions("cxx")),"\n",
             "CSRC_FILES_SUFFIXES         := ",join(" ",$self->getSourceExtensions("c")),"\n",
             "FORTRANSRC_FILES_SUFFIXES   := ",join(" ",$self->getSourceExtensions("fortran")),"\n",
+            "FORTRAN_COMPILER_TOOL       := ",$self->getCompiler("F77"),"\n",
             "SRC_FILES_SUFFIXES          := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)\n",
 	    "\n",
             "ifeq (\$(strip \$(GENREFLEX)),)\n",
@@ -1815,7 +1816,6 @@ sub library_template_generic ()
   my $localbf = $self->getLocalBuildFile();
   my %no_export=();
   my $locuse = $self->getCacheData("USE");
-  my $skipFiles = "";
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -1839,19 +1839,10 @@ sub library_template_generic ()
       $locuse = "$locuse ".join(" ",@$dataval);
       foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
     }
-    $skipFiles=$core->flags("SKIP_FILES");
-    if($skipFiles ne ""){print $fh "${safename}_SKIP_FILES   := $skipFiles\n";}
-    my $flag=$self->isLibSymLoadChecking ();
+    my $flag=$core->flags("SKIP_FILES");
+    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
+    $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
-  }
-  $locuse = $self->updateF77Dependency($locuse,$safename);
-  if ($skipFiles ne "")
-  {
-    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
-  }
-  else
-  {
-    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
   }
   print $fh "${safename}_LOC_USE := $locuse\n";
   $self->processTemplate("Extra_template");
@@ -2011,8 +2002,6 @@ sub binary_template_generic()
   my $locuse = $self->getCacheData("USE");
   my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
   if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
-  $locuse = $self->updateF77Dependency($locuse,$safename);
-  print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
   print $fh "${safename}_LOC_USE := $locuse\n";
   my $mk=$core->data("MAKEFILE");
   if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
@@ -2119,10 +2108,10 @@ sub python_template()
   my $fh=$self->{FH};
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$(${safename})),)\n",
-            "$safename := self/${path}\n";
+            "$safename := self/${path}\n",
+            "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
   my $localbf = $self->getLocalBuildFile();
   my $locuse = $self->getCacheData("USE");
-  my $skipFiles = "";
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -2138,21 +2127,12 @@ sub python_template()
     }
     my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
     if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
-    $skipFiles=$core->flags("SKIP_FILES");
-    if($skipFiles ne ""){print $fh "${safename}_SKIP_FILES   := $skipFiles\n";}
-    my $flag=$self->isLibSymLoadChecking ();
+    my $flag=$core->flags("SKIP_FILES");
+    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
+    $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-  }
-  $locuse = $self->updateF77Dependency($locuse,$safename);
-  if ($skipFiles ne "")
-  {
-    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(filter-out \$(${safename}_SKIP_FILES),\$(${safename}_files)))))\n";
-  }
-  else
-  {
-    print $fh "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n";
   }
   print $fh "${safename}_LOC_USE := $locuse\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
@@ -2169,13 +2149,5 @@ sub python_template()
 
 sub test_template()
 {&binary_template(shift);}
-
-sub updateF77Dependency ()
-{
-  my ($self,$locuse,$safename)=@_;
-  my $f77 = $self->getCompiler("F77");
-  if ($locuse!~/^\s*($f77|.+\s+$f77)(\s+.+|\s*)$/){$locuse = "$locuse \$(if \$(strip \$(filter \$(FORTRANSRC_FILES_SUFFIXES),\$(${safename}_files_exts))),$f77,)";}
-  return $locuse;
-}
 
 1;
