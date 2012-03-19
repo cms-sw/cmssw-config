@@ -8,7 +8,7 @@
   <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags EXTERNAL_SYMLINK="CMSSW_SEARCH_PATH"/>
-  <flags NO_EXTERNAL_RUNTIME="@LD_LIBRARY_PATH@"/>
+  <flags NO_EXTERNAL_RUNTIME="LD_LIBRARY_PATH"/>
   <flags NO_EXTERNAL_RUNTIME="PATH"/>
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
@@ -17,8 +17,8 @@
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
  <runtime name="LOCALRT"               value="$LOCALTOP"/>
  <runtime name="CMSSW_VERSION"         value="$SCRAM_PROJECTVERSION"/>
- <runtime name="@LD_LIBRARY_PATH@"     value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
- <runtime name="@LD_LIBRARY_PATH@"     value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
+ <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
+ <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
  <runtime name="PATH"                  value="$LOCALTOP/bin/$SCRAM_ARCH"             type="path"/>
  <runtime name="PATH"                  value="$LOCALTOP/external/$SCRAM_ARCH/bin"    type="path" handler="warn"/>
  <runtime name="PYTHONPATH"            value="$LOCALTOP/python"                      type="path"/>
