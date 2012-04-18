@@ -4,7 +4,7 @@
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
   <environment name="INCLUDE"       value="$LOCALTOP/include/LCG"              handler="warn"/>
-  <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler x11"/>
+  <flags SKIP_TOOLS_SYMLINK="cxxcompiler ccompiler x11 dpm"/>
   <flags EXTERNAL_SYMLINK="PATH"/>
   <flags EXTERNAL_SYMLINK="LIBDIR"/>
   <flags EXTERNAL_SYMLINK="CMSSW_SEARCH_PATH"/>

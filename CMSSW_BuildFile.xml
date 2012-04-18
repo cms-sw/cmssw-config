@@ -22,16 +22,18 @@
 <use name="self"/>
 
 <flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
+<flags ROOTDICT_CXXFLAGS="-Wno-unknown-pragmas"/>
 
 <flags REM_LCGDICT_CXXFLAGS="-O%"/>
 <flags REM_LCGDICT_CPPFLAGS="-O%"/>
-<flags LCGDICT_CXXFLAGS="-Os"/>
+<flags REM_LCGDICT_CXXFLAGS="-fipa%"/>
+<flags LCGDICT_CXXFLAGS="-Os -Wno-unused-variable"/>
 
 <architecture name="slc">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
-<architecture name="slc.*_gcc46">
+<architecture name="slc.*_gcc4[6789]">
    <flags LDFLAGS="-Wl,--icf=all"/>
 </architecture>
 <architecture name="osx">
