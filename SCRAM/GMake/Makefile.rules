@@ -51,6 +51,8 @@ OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
 UPDATE_CLASSVERSION         :=
 ALL_CLASS_VERSION_RULES     :=
+HOOK_Package_START          := true
+HOOK_Package_END            := true
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
 ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
@@ -438,19 +440,19 @@ define compile_cxx_common
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
   $(VERB_ECHO) $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ &&\
-  (             $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
+               $(CXX) $(CXX_MMD) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2))
 endef
 define compile_c_common
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
   $(VERB_ECHO) $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ &&\
-  (             $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
+               $(CC) $(C_MMD) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2))
 endef
 define compile_fortran_common
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
   $(VERB_ECHO) $(FC) $(F77_MMD) -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ &&\
-  (             $(FC) $(F77_MMD) -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2)))
+               $(FC) $(F77_MMD) -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS) $< -o $@ $(5) $(endlog_$(2))
 endef
 ##############################################################################
 define compile_cxx
@@ -795,14 +797,14 @@ redirectlog_$(2) :=
 endif
 msg_$(2): $$(logfile_$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
-	$(CMD_echo) ">> Entering Package $(1)"
+	$(CMD_echo) ">> Entering Package $(1)" && $(HOOK_Package_START)
 $(1) src/$(1) $(2) all_$(2): msg_$(2) $(addprefix all_,$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/src/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
-	$(CMD_echo) ">> Package $(1) built"
+	$(CMD_echo) ">> Package $(1) built" && $(HOOK_Package_END)
 ifeq ($$(filter $(2)_test,$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."

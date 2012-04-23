@@ -1622,7 +1622,8 @@ sub Project_template()
   foreach my $flag (keys %$flags)
   {
     my $val=join(" ",@{$flags->{$flag}});
-    print $fh "$flag+=$val\n";
+    if ($flag=~/^HOOK_.+_(START|END)$/){print $fh "$flag:=$val\n";}
+    else{print $fh "$flag+=$val\n";}
   }
 
   # Makefile section of toplevel BuildFile
