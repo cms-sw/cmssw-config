@@ -796,11 +796,11 @@ else
 logfile_$(2) := 
 redirectlog_$(2) := 
 endif
-$(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/msg: $$(logfile_$(2)) FORCE_TARGET
+$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARGET
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1,) &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
-$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/msg $(addprefix all_,$(subdirs_$(2)))
+$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $(addprefix all_,$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
@@ -916,7 +916,7 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(1)_config += $(WORKINGDIR)/cache/log/$(2)/$(1)/msg $$($(1)_objdir)/config $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$($(3)_parent)/msg,)
+$(1)_config += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $$($(1)_objdir)/config $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
@@ -957,8 +957,8 @@ ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
 endif
 endif
-$(WORKINGDIR)/cache/log/$(2)/$(1)/msg: $(logfile_$(1)) FORCE_TARGET
-	@$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1,) $(endlog_$(1))
+$(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
+	@$$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1,) $$(endlog_$(1))
 precompile_$(6):: $($(1)_objdir)/precompile $($(1)_extra_files)
 	@:
 compile_$(6):: $($(1)_objdir)/compile
