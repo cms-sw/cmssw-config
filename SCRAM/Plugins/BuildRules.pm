@@ -1798,6 +1798,7 @@ sub library_template ()
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$($parent)),)\n",
             "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_parent := $parent\n",
             "${safepath}_INIT_FUNC := \$\$(eval \$\$(call CommonProductRules,${safepath},${path},$class))\n",
             "${safename} := self/${parent}\n",
             "${parent} := ${safename}\n",
@@ -1977,7 +1978,9 @@ sub binary_template ()
       else{$self->set("type",lc($ptype));$common->unsupportedProductType ();}
     }
   }
+  my $parent=$self->get("parent");
   print $fh "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_parent := $parent\n",
             "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
   return 1;
 }
@@ -2135,9 +2138,11 @@ sub python_template()
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
+  my $parent=$self->get("parent");
   print $fh "${safename}_LOC_USE := $locuse\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
             "ALL_PRODS += ${safename}\n",
+            "${safepath}_parent := $parent\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
 	    "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n",
             "else\n",
