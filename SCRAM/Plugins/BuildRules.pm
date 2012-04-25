@@ -1965,6 +1965,8 @@ sub binary_template ()
 	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
 	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
 	      }
+	      $fval = $core->flags("PRE_TEST");
+	      if ($fval ne ""){print $fh "${safename}_PRE_TEST := $fval\n";}
 	      $self->set("type","test");
 	    }
 	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}
