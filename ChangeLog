@@ -1,6 +1,10 @@
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Initial commit: Based on V04-01-00 tag which contians changes for
+	- Convert any LD_LIBRARY_PATH to DYLD_FALLBACK_LIBRARY_PATH on osx
+	archs. This allows us to have osx* and slc* archs in single dev area,
+	although it is unlikely that someone will do this but at least there
+	is no restriction from SCRAM side now
 	- Allow external scripts (hooks) to be called at Package/Product
 	start/end time. One needs to have HOOK_PACKAGE/PRODUCT flag set in
 	config/BuildFile.xml. SCRAM will call
