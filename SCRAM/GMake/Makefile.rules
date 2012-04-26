@@ -1590,6 +1590,7 @@ self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DI
 self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
 endif
 $(foreach f,$(ALL_COMPILER_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
+LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
