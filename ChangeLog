@@ -1,0 +1,21 @@
+2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Initial commit: Based on V04-01-00 tag which contians changes for
+	- Allow external scripts (hooks) to be called at Package/Product
+	start/end time. One needs to have HOOK_PACKAGE/PRODUCT flag set in
+	config/BuildFile.xml. SCRAM will call
+	'$(HOOK_PACKAGE) -e|-s -p <Package|ProductName>' if HOOK_PACKAGE|PRODUCT
+	is set.
+	- Unit test dependency added e.g. 
+	<bin file="Test2"><flags PRE_TEST="Test1"/></bin>
+	will run Test1 first
+	- For fortran file compilation/linking, automatically add f77_compiler
+	dependency
+	- Drop CMSSW LIBDIR which does not exist e.g. in dev area
+	external/<arch>/lib does not exists (unless tool changed). This will
+	avoid following kind of warnings on osx archs
+	ld: warning: directory not found for option '-L<path>/external/<arch>/lib'
+	- config/SCRAM/Plugins are now moved back to SCRAM itself.
+
+
+
