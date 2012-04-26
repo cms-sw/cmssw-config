@@ -1,6 +1,6 @@
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* Initial commit: Based on V04-01-00 tag which contians changes for
+	* V04-01-00:
 	- Convert any LD_LIBRARY_PATH to DYLD_FALLBACK_LIBRARY_PATH on osx
 	archs. This allows us to have osx* and slc* archs in single dev area,
 	although it is unlikely that someone will do this but at least there
@@ -20,6 +20,3 @@
 	avoid following kind of warnings on osx archs
 	ld: warning: directory not found for option '-L<path>/external/<arch>/lib'
 	- config/SCRAM/Plugins are now moved back to SCRAM itself.
-
-
-
