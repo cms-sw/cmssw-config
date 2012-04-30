@@ -1813,7 +1813,7 @@ PostBuild: CompilePython ProjectPluginRefresh
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%
-CompilePython: $(addprefix PyCompile_,$(wildcard cfipython/$(SCRAM_ARCH) python)) $(addprefix PyCompile_$(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))
+CompilePython: $(addprefix PyCompile_,$(wildcard cfipython/$(SCRAM_ARCH)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR)) python) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
 	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
 PyCompile_$(SCRAM_SOURCEDIR)/% PyCompile_cfipython/% PyCompile_%: do_python_symlink
