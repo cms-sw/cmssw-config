@@ -941,6 +941,18 @@ sub searchLexYacc ()
   return 0;
 }
 
+sub autoGenerateClassesH ()
+{
+  my $self=shift;
+  $self->{cache}{AutoGenerateClassesHeader}=shift;
+}
+
+sub isAutoGenerateClassesH ()
+{
+  my $self=shift;
+  return $self->{cache}{AutoGenerateClassesHeader};
+}
+
 sub searchLCGRootDict ()
 {
   my $self=shift;
@@ -965,6 +977,7 @@ sub searchLCGRootDict ()
   }
   my $hfile=$core->flags("LCG_DICT_HEADER");
   my $xfile=$core->flags("LCG_DICT_XML");
+  my %xmldef=();
   if($hfile=~/^\s*$/)
   {
     if($stubdir ne ""){$hfile="${stubdir}/classes.h";}
@@ -975,18 +988,37 @@ sub searchLCGRootDict ()
     if($stubdir ne ""){$xfile="${stubdir}/classes_def.xml";}
     else{$xfile="classes_def.xml";}
   }
-  my $h1="";
-  my $x1="";
   my @h=();
   my @x=();
-  foreach my $f (split /\s+/,$hfile){if(-f "${path}/${f}"){$h1.="$f ";push @h,"\$(LOCALTOP)/${path}/${f}";$flag|=1;}}
-  foreach my $f (split /\s+/,$xfile){if(-f "${path}/${f}"){$x1.="$f ";push @x,"\$(LOCALTOP)/${path}/${f}";$flag|=2;}}
+  foreach my $f (split /\s+/,$xfile){push @x,"${path}/${f}";}
+  foreach my $f (split /\s+/,$hfile){push @h,"${path}/${f}";}
+  my $xc=scalar(@x);
+  if ((scalar(@h) == $xc) && ($xc>0))
+  {
+    for(my $i=0;$i<$xc;$i++)
+    {
+      if (-f $x[$i])
+      {
+        if (-f $h[$i]){$xmldef{$x[$i]}=$h[$i];}
+	elsif($self->isAutoGenerateClassesH()){$xmldef{$x[$i]}="\$(WORKINGDIR)/classes/".$x[$i].".h";}
+	else{$xmldef{$x[$i]}="";}
+      }
+    }
+  }
+  @h=(); @x=();
+  foreach my $f (keys %xmldef)
+  {
+    push @x,"\$(LOCALTOP)/".$f;
+    $f=$xmldef{$f};
+    if ($f){push @h,"\$(LOCALTOP)/${f}";}
+  }
   $rootmap = $core->flags("ROOTMAP");
   if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
   else{$rootmap=0;}
-  if ((scalar(@h) == scalar(@x)) && ($flag==3))
+  $xc=scalar(@x);
+  if ((scalar(@h) == $xc) && ($xc>0))
   {
-    for(my $i=0;$i<scalar(@h);$i++)
+    for(my $i=0;$i<$xc;$i++)
     {
       my $f=$h[$i]; $f=~s/^.+?\/([^\/]+)$/$1/;$f=~s/^(.+)\.[^\.]+$/$1/;
       push @$headers,$f;
@@ -1010,7 +1042,7 @@ sub searchLCGRootDict ()
       if((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne "")){exit 1;}
     }
   }
-  elsif($flag>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$h1\") does not match NO. of .xml (\"$x1\") files.\n";}
+  elsif($xc>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$hfile\") does not match NO. of .xml (\"$xfile\") files.\n";}
   my $dref;
   my $bn=$self->{cache}{BuildFile};
   opendir($dref, $dir) || die "ERROR: Can not open \"$dir\" directory. \"${path}/${bn}\" is refering for files in this directory.";
@@ -1440,6 +1472,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
   $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{AutoGenerateClassesHeader}=0;
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);

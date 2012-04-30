@@ -54,6 +54,7 @@ UPDATE_CLASSVERSION         :=
 ALL_CLASS_VERSION_RULES     :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
+CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
 ALL_CMDS                    := sh awk cat chmod cp dirname echo find g++ g77 gcc grep ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs
@@ -275,6 +276,7 @@ define BuildClean
       if [ "X$3" == "X" ] ; then $(CMD_cat) $(WORKINGDIR)/$(1)/.AUTOCLEAN; fi;\
       $(CMD_sh) $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
       $(CMD_rm) -rf $(WORKINGDIR)/$(1); \
+      $(CMD_rm) -rf $(WORKINGDIR)/classes/$(1); \
     fi;\
   fi
 endef
@@ -534,9 +536,17 @@ define generate_pywrapper
   @$(CMD_mv) $@.tmp $@
 endef  
 #LCG dictionary generation
+define generate_classes_h
+  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
+  $(CMD_echo) ">> Generating LCG reflex dict header file $(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$<)" &&\
+  $(VERB_ECHO) $(CLASSES_H_GENERATOR) $< &&\
+  (             $(CLASSES_H_GENERATOR) $< > $@ || (rm -f $@ && exit 1)) \
+  $(endlog_$(2))
+endef
+
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
-  $(CMD_echo) ">> Building LCG reflex dict from header file $4" &&\
+  $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
   $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
                $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
   $(endlog_$(2))
@@ -1295,6 +1305,10 @@ define LCGDictRule
 $(1)_files  += $($(1)_objdir)/$(2)r.cc
 $(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
 $(1)_extra_files += $($(1)_objdir)/$(2)r.cc
+ifneq ($(strip $(filter $(LOCALTOP)/$(WORKINGDIR)/classes/%,$3)),)
+$3: $4
+	$$(call generate_classes_h)
+endif
 $($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
 $($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
@@ -1594,7 +1608,7 @@ LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
-$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell $(CMD_find) $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^0[0-9]:" | $(CMD_sed) "s|^0[0-9]:||" |$(CMD_sort) | $(CMD_uniq) >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell $(CMD_rm) -rf $(WORKINGDIR)/$(d))),))
+$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell $(CMD_find) $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^0[0-9]:" | $(CMD_sed) "s|^0[0-9]:||" |$(CMD_sort) | $(CMD_uniq) >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell $(CMD_rm) -rf $(WORKINGDIR)/classes/$(d) $(WORKINGDIR)/$(d))),))
 $(foreach d,$(REMOVED_DIRS),$(if $(wildcard $(WORKINGDIR)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),$(shell $(CMD_touch) $(SCRAM_INTwork)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),))
 $(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_mkdir) -p $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_touch) $(DIRCACHE_MKDIR)/RmvDirCache.mk)
 endif
