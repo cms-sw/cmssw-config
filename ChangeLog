@@ -4,7 +4,7 @@
 	- Added build rules for running genClassesH script of classes_def.xml
 	exists but classes.h does not.
 	- cleanup unused variables for LCGDict.
-	- Enable autoGenerateClassesH for CMSSW 
+	- Enable autoGenerateClassesH for CMSSW
 
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
