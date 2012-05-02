@@ -961,7 +961,6 @@ sub searchLCGRootDict ()
   my $stubdir="";
   my $lcgheader=[];
   my $lcgxml=[];
-  my $headers=[];
   my $rootmap=0;
   my $genreflex_args="\$(GENREFLEX_ARGS)";
   my $rootdict="";
@@ -1020,8 +1019,6 @@ sub searchLCGRootDict ()
   {
     for(my $i=0;$i<$xc;$i++)
     {
-      my $f=$h[$i]; $f=~s/^.+?\/([^\/]+)$/$1/;$f=~s/^(.+)\.[^\.]+$/$1/;
-      push @$headers,$f;
       push @$lcgheader,$h[$i];
       push @$lcgxml,$x[$i];
     }
@@ -1057,7 +1054,6 @@ sub searchLCGRootDict ()
   closedir($dref);
   $stash->set('classes_def_xml', $lcgxml);
   $stash->set('classes_h', $lcgheader);
-  $stash->set('headers', $headers);
   $stash->set('rootmap', $rootmap);
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
@@ -1806,7 +1802,7 @@ sub lcgdict_template()
     $capabilities="Capabilities";
   }    
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
-	    join(" ",@{$self->get("headers")}),",",join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
+	    join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
 	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
 }
 
