@@ -1,6 +1,6 @@
 2012-04-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* V04-01-02: Auto generation of classes.h files
+	* V04-01-01: Auto generation of classes.h files
 	- Added build rules for running genClassesH script of classes_def.xml
 	exists but classes.h does not.
 	- cleanup unused variables for LCGDict.
