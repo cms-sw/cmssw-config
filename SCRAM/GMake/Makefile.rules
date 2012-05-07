@@ -293,6 +293,7 @@ define copy_build_product
   fi &&\
   $(CMD_echo) "Copying $@ to productstore area:" &&\
   $(CMD_echo) "01:$(CMD_rm) -f $(1)/$(@F)" > $(call AutoCleanFile,$@,prod) &&\
+  $(CMD_rm) -f $(LOCALTOP)/$(1)/$(@F) &&\
   $(CMD_cp) $@ $(LOCALTOP)/$(1) || ($(CMD_rm) -f $@ && $(CMD_echo) ">> Deleted: $@" && exit 1)
 endef
 
