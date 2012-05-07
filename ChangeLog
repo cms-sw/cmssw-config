@@ -1,14 +1,12 @@
 2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* V04-01-xx: Delete product (lib.binary/test) before copy.
-
-2012-04-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
-
 	* V04-01-01: Auto generation of classes.h files
 	- Added build rules for running genClassesH script of classes_def.xml
 	exists but classes.h does not.
 	- cleanup unused variables for LCGDict.
 	- Enable autoGenerateClassesH for CMSSW
+	- Delete product (lib.binary/test) before copy.
+
 
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
