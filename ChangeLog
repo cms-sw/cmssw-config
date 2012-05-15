@@ -6,7 +6,7 @@
 	- cleanup unused variables for LCGDict.
 	- Enable autoGenerateClassesH for CMSSW
 	- Delete product (lib.binary/test) before copy.
-
+ 
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-01-00:
