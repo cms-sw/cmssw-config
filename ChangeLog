@@ -1,3 +1,8 @@
+2012-05-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-01-02: Do not recursively export an external tool if
+	NO_RECURSIVE_EXPORT flag is set for it.
+
 2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-01-01: Auto generation of classes.h files

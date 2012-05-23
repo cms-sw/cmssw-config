@@ -1912,8 +1912,9 @@ sub library_template_generic ()
                          "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
           }
         }
-        if ($noexpstr ne ""){print $fh "${safename}_EX_USE   := \$(filter-out $noexpstr,\$(${safename}_LOC_USE))\n";}
-        else{print $fh "${safename}_EX_USE   := \$(${safename}_LOC_USE)\n";}
+	my $exptools="\$(${safename}_LOC_USE)";
+        if ($noexpstr ne ""){$exptools="\$(filter-out $noexpstr,$exptools)";}
+	print $fh "${safename}_EX_USE   := \$(foreach d,$exptools,\$(if \$(\$(d)_LOC_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
       }
       else
       {
