@@ -527,7 +527,7 @@ define compile_lcgdict
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
   $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
   (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 's#^.*/$(3).o:#$<:#g' -e 's# .*$(3).cc ##g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -s 's#:#:\\\n  #' -e 's#.*/$(3).o:#$<:#g' -e 's# .*$(3).cc #  #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx $(endlog_$(2))
   @$(call processMMDData,$1,$2,$<.d,$<.dx) && $(CMD_rm) -f $(basename $@).d
 endef
 # Root Dictionary compilation
