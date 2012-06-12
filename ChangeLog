@@ -1,5 +1,6 @@
 2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V04-02-XX: Bug fix, properly set ROOTCINT if not set via tool.
 	* V04-02-01: Replace hard coded value for llvm analyzer tool name.
 
 	* V04-02-00: 

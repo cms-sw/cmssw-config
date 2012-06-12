@@ -676,11 +676,15 @@ sub addVariables ()
   my $keys=shift;
   my $force=shift || 0;
   my $skipCompilerCheck=shift || 0;
-  my $type="";
+  my $type="global";
   my $basevar=uc($t)."_BASE"; $basevar=~s/-/_/g;
   if(exists $self->{cache}{toolcache}{SETUP}{$t}{VARIABLES})
   {
-    if(exists $self->{cache}{toolcache}{SETUP}{$t}{$basevar}){push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};}
+    if(exists $self->{cache}{toolcache}{SETUP}{$t}{$basevar})
+    {
+      push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};
+      $self->{cache}{ToolVariables}{$type}{$basevar}=1;
+    }
     if (($self->isMultipleCompilerSupport()) && (!$skipCompilerCheck) && ($self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER}))
     {
       $type=$t;
@@ -704,7 +708,7 @@ sub shouldAddToolVariables()
   my ($self,$var,$type)=@_;
   if (!$type){$type="global";}
   if(exists $self->{cache}{ToolVariables}{$type}{$var}){return 0;}
-  $self->{cache}{ToolVariables}{$type}{$var}=1;
+  $self->{cache}{ToolVariables}{$type}{$var}=1;  
   return 1;
 }
 
