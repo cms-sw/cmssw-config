@@ -1,10 +1,16 @@
 ifndef THISDIR
 $(error "You must pass in a value for THISDIR (normally current dir name from LOCALTOP).")
 endif
+ifndef SCRAM_ADMIN_DIR
+SCRAM_ADMIN_DIR:= .SCRAM/$(SCRAM_ARCH)
+endif
+ifndef SCRAM_TOOLS_DIR
+SCRAM_TOOLS_DIR:= $(SCRAM_ADMIN_DIR)/timestamps
+endif
 SCRAM_MAKEFILE := $(firstword $(MAKEFILE_LIST))
-ToolTimeStamps := $(wildcard .SCRAM/$(SCRAM_ARCH)/timestamps/*)
+ToolTimeStamps := $(wildcard $(SCRAM_TOOLS_DIR)/*)
 DIRCACHE_MKDIR := $(SCRAM_INTwork)/MakeData
-PUB_DIRCACHE_MKDIR := .SCRAM/$(SCRAM_ARCH)/MakeData
+PUB_DIRCACHE_MKDIR := $(SCRAM_ADMIN_DIR)/MakeData
 TOOLS_MKDIR    := $(PUB_DIRCACHE_MKDIR)/Tools
 $(SCRAM_INTwork)/Makefile: $(TOOLS_MKDIR).mk
 	@echo -include $(PUB_DIRCACHE_MKDIR)/variables.mk           > $@.tmp &&\

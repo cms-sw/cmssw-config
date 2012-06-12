@@ -1,3 +1,17 @@
+2012-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-00: 
+	 - Allow multiple compilers support. Default compiler is gcc
+	while one can run "scram b COMPILER=<name> to switch to a different
+	compiler.
+	 - Bug fix, if compilation failed then try to atleast generate compiler
+	generate dependency file (.d) by using -MM flag.
+	 - Drop headers for externals from the compiler generated dependency
+	file.
+	 - Support for llvm and llvm-analyzer compilers.
+	 - Bug fix, while building patch release make sure that src/<package> for
+	a python/<package> exists.
+
 2012-05-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-01-02: Do not recursively export an external tool if

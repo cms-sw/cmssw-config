@@ -221,14 +221,11 @@ sub fixData ()
   if (scalar(@$data)==0){return "";}
   if(defined $section){$section="export";}
   else{$section="non-export";}
-  my $ltop=$self->{cache}{LocalTop};
-  my $rtop="";
   my $udata={};
-  if($self->{cache}{ReleaseArea} == 0)
-  {$rtop=$ENV{RELEASETOP};}
   if ($type eq "INCLUDE")
   {
     my $ldir=dirname($bf);
+    my $ltop=$self->{cache}{LocalTop};
     foreach my $d (@$data)
     {
       my $x=$d;
@@ -247,10 +244,7 @@ sub fixData ()
       $x=~s/^\s*//;$x=~s/\s*$//;
       my $lx=lc($x);
       if($lx eq $self->{cache}{CXXCompiler}){next;}
-      my $found=0;
-      foreach my $dir ($ltop,$rtop)
-      {if(($dir ne "") && (-f "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/timestamps/${lx}")){$found=1;last;}}
-      if(!$found){$lx=$x;}
+      if(!$self->isToolAvailable($lx)){$lx=$x;}
       if(!exists $udata->{$lx}){$udata->{$lx}=1;push @$ndata,$lx;}
       else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"use\" in \"$section\" section of \"$bf\".\n";}
     }
@@ -636,14 +630,42 @@ sub addAllVariables ()
 {
   my $self=shift;
   my @keys=();
+  my %skipTools=();
+  if ($self->isMultipleCompilerSupport())
+  {
+    push @keys, "SCRAM_ADMIN_DIR          := .SCRAM/\$(SCRAM_ARCH)";
+    push @keys, "SCRAM_TOOLS_DIR          := \$(SCRAM_ADMIN_DIR)/timestamps";
+    push @keys, "SCRAM_MULTIPLE_COMPILERS := yes";
+    push @keys, "SCRAM_DEFAULT_COMPILER   := ".$self->getCompiler("");
+    push @keys, "SCRAM_COMPILER := \$(SCRAM_DEFAULT_COMPILER)";
+    push @keys, "ifdef COMPILER";
+    push @keys, "SCRAM_COMPILER := \$(COMPILER)";
+    push @keys, "endif";
+    foreach my $f ($self->getCompilerTypes()){push @keys, "${f}_TYPE_COMPILER := ".$self->getCompiler($f);}
+    push @keys,"ifndef SCRAM_IGNORE_MISSING_COMPILERS";
+    foreach my $f ($self->getCompilerTypes())
+    {
+      my $c=$self->getCompiler($f);
+      push @keys, "\$(if \$(wildcard \$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-\$(${f}_TYPE_COMPILER)),,\$(info ****WARNING: You have selected \$(SCRAM_COMPILER) as compiler but there is no \$(SCRAM_COMPILER)-\$(${f}_TYPE_COMPILER) tool setup. Default compiler \$(SCRAM_DEFAULT_COMPILER)-\$(${f}_TYPE_COMPILER) will be used to comple $f files))";
+    }
+    push @keys,"endif";
+    if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
+    {
+      my $defCompiler = $self->getCompiler("");
+      foreach my $f ($self->getCompilerTypes())
+      {
+        my $c="${defCompiler}-".$self->getCompiler($f);
+        if (exists $self->{cache}{toolcache}{SETUP}{$c}){$self->addVariables($c,\@keys,0,1);}
+        $skipTools{$c}=1;
+      }
+    }
+  }
   my $selfbase="$ENV{SCRAM_PROJECTNAME}_BASE";
   $self->shouldAddToolVariables($selfbase);
   push @keys,"$ENV{SCRAM_PROJECTNAME}_BASE:=$ENV{LOCALTOP}";
   $self->addVariables("self",\@keys,1);
-  if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
-  {
-    foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}}){if ($t ne "self"){$self->addVariables($t,\@keys,0);}}
-  }
+  $skipTools{self}=1;
+  foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}}){if (!exists $skipTools{$t}){$self->addVariables($t,\@keys,0);}}
   return @keys;
 }
 
@@ -653,24 +675,36 @@ sub addVariables ()
   my $t=shift;
   my $keys=shift;
   my $force=shift || 0;
+  my $skipCompilerCheck=shift || 0;
+  my $type="";
+  my $basevar=uc($t)."_BASE"; $basevar=~s/-/_/g;
   if(exists $self->{cache}{toolcache}{SETUP}{$t}{VARIABLES})
   {
+    if(exists $self->{cache}{toolcache}{SETUP}{$t}{$basevar}){push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};}
+    if (($self->isMultipleCompilerSupport()) && (!$skipCompilerCheck) && ($self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER}))
+    {
+      $type=$t;
+      my $ctool=$t; $ctool=~s/\-[^-]+$//;
+      push @$keys,"ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool})";
+    }
     foreach my $v (@{$self->{cache}{toolcache}{SETUP}{$t}{VARIABLES}})
     {
+      if ($v eq $basevar){next;}
       if(exists $self->{cache}{toolcache}{SETUP}{$t}{$v})
       {
-	if(($force) || ($self->shouldAddToolVariables($v))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
+	if(($force) || ($self->shouldAddToolVariables($v, $type))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
       }
     }
+    if ($type eq $t){push @$keys,"endif";} 
   }
 }
 
 sub shouldAddToolVariables()
 {
-  my $self=shift;
-  my $var=shift;
-  if(exists $self->{cache}{ToolVariables}{$var}){return 0;}
-  $self->{cache}{ToolVariables}{$var}=1;
+  my ($self,$var,$type)=@_;
+  if (!$type){$type="global";}
+  if(exists $self->{cache}{ToolVariables}{$type}{$var}){return 0;}
+  $self->{cache}{ToolVariables}{$type}{$var}=1;
   return 1;
 }
 
@@ -793,6 +827,8 @@ sub getBuildFileName ()
   return $self->{cache}{BuildFile};
 }
 
+sub isMultipleCompilerSupport(){my ($self)=@_; return $self->{cache}{MultipleCompilerSupport};}
+
 sub setCompiler ()
 {
   my $self=shift;
@@ -810,12 +846,55 @@ sub getCompiler ()
   return "";
 }
 
-sub shouldAddCompilerFlag ()
+sub getCompilers ()
 {
   my $self=shift;
-  my $flag=shift;
-  if(exists $self->{cache}{CompilerFlags}{$flag}){return 0;}
-  $self->{cache}{CompilerFlags}{$flag}=1;
+  my $type=uc(shift);
+  my $defCompiler=$self->getCompiler($type);
+  my %compilers = ();
+  if ($self->isMultipleCompilerSupport())
+  {
+    if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
+    {
+      foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}})
+      {
+        if (exists $self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER})
+        {
+	  if ($t=~/^(.+)-${defCompiler}$/){$compilers{$t}=$1;}
+        }
+      }
+    }
+  }
+  else{$compilers{$defCompiler}="";}
+  return %compilers;
+}
+
+sub getCompilerTypes(){my ($self)=@_;return @{$self->{cache}{CompilerTypes}};}
+
+sub addVirtualCompilers()
+{
+  my $self=shift;
+  my $fh=$self->{FH};
+  foreach my $f ($self->getCompilerTypes())
+  {
+    my $c=$self->getCompiler($f);
+    print $fh "$c := $c\n",
+              "ALL_TOOLS  += $c\n",
+	      "ifneq (\$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),)\n",
+	      "${c}_LOC_USE   := \$(SCRAM_COMPILER)-$c\n",
+	      "else\n",
+	      "${c}_LOC_USE   := \$(SCRAM_DEFAULT_COMPILER)-$c\n",
+	      "endif\n",
+              "${c}_EX_USE    := \$(${c}_LOC_USE)\n",
+              "${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
+  } 
+}
+
+sub shouldAddCompilerFlag ()
+{
+  my ($self,$tool,$flag)=@_;
+  if(exists $self->{cache}{CompilerFlags}{$tool}{$flag}){return 0;}
+  $self->{cache}{CompilerFlags}{$tool}{$flag}=1;
   return 1;
 }
 
@@ -1075,7 +1154,7 @@ sub getGenReflexPath ()
   my $genrflx="";
   foreach my $t ("ROOTRFLX","ROOTCORE")
   {
-    if(exists $self->{cache}{ToolVariables}{"${t}_BASE"})
+    if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
     {$genrflx="\$(${t}_BASE)/root/bin/genreflex";last;}
   }
   return $genrflx;
@@ -1087,7 +1166,7 @@ sub getRootCintPath ()
   my $cint="";
   foreach my $t ("ROOTCORE", "ROOTRFLX")
   {
-    if(exists $self->{cache}{ToolVariables}{"${t}_BASE"})
+    if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
     {$cint="\$(${t}_BASE)/bin/rootcint";last;}
   }
   return $cint;
@@ -1464,6 +1543,14 @@ sub initTemplate_PROJECT ()
     if($odir1 ne ""){$odir=$odir1;}
   }
   my $stash=$self->{context}->stash();
+  $self->{cache}{Compiler}="gcc";
+  $self->{cache}{CompilerTypes}=[];
+  foreach  my $type ("CXX","C","F77")
+  {
+    push @{$self->{cache}{CompilerTypes}},$type;
+    $self->{cache}{"${type}Compiler"}=lc($type)."compiler";
+  }
+  $self->{cache}{MultipleCompilerSupport}=!$self->isToolAvailable($self->{cache}{CXXCompiler}) || 0;
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
@@ -1484,9 +1571,6 @@ sub initTemplate_PROJECT ()
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
-  $self->{cache}{CXXCompiler}="cxxcompiler";
-  $self->{cache}{CCompiler}="ccompiler";
-  $self->{cache}{F77Compiler}="f77compiler";
   $self->setRootReflex ("rootrflx");
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
   {$self->{cache}{BuildFile}=$ENV{SCRAM_BUILDFILE};}
@@ -1598,16 +1682,14 @@ sub Project_template()
     }
   }
   #Compiler tools variables initilize
-  my $allFlags="";
-  foreach my $toolname ("CXX","C","F77")
+  my %allFlagsHash=();
+  foreach my $toolname ($self->getCompilerTypes())
   {
-    my $compiler=$self->getCompiler($toolname);
-    if($compiler ne "")
-    {
-      my $tool = $self->getTool($compiler);
-      foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n"; $allFlags.="$flag ";}
-    }
+    my %compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %compilers){foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}}){$allFlagsHash{$flag}=1;}}
   }
+  my $allFlags="";
+  foreach my $flag (sort keys %allFlagsHash){print $fh "$flag :=\n"; $allFlags.="$flag ";}
   print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
   foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
   {
@@ -1618,24 +1700,29 @@ sub Project_template()
     }
     print $fh "REM_${flag}:=\n";
   }
-  foreach my $toolname ("CXX","C","F77")
+  my $multiCompiler = $self->isMultipleCompilerSupport();
+  foreach my $toolname ($self->getCompilerTypes())
   {
-    my $compiler=$self->getCompiler($toolname);
-    if($compiler ne "")
+    my %compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %compilers)
     {
+      my $ctool = $compilers{$compiler} || "gcc";
+      if ($multiCompiler){print $fh "ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool}) ## $compiler\n";}
       my $tool = $self->getTool($compiler);
       foreach my $flag (keys %{$tool->{FLAGS}})
       {
 	if (($toolname eq "F77") && ($flag!~/^FC.+/)){next;}
-	if($self->shouldAddCompilerFlag($flag))
+	if($self->shouldAddCompilerFlag($ctool,$flag))
 	{
 	  my $addtype="+";
 	  if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
 	  print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
 	}
       }
+      if ($multiCompiler){print $fh "endif\n";}
     }
   }
+  if ($multiCompiler){$self->addVirtualCompilers();}
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
   {
@@ -1663,7 +1750,6 @@ sub Project_template()
   print $fh "CXXSRC_FILES_SUFFIXES       := ",join(" ",$self->getSourceExtensions("cxx")),"\n",
             "CSRC_FILES_SUFFIXES         := ",join(" ",$self->getSourceExtensions("c")),"\n",
             "FORTRANSRC_FILES_SUFFIXES   := ",join(" ",$self->getSourceExtensions("fortran")),"\n",
-            "FORTRAN_COMPILER_TOOL       := ",$self->getCompiler("F77"),"\n",
             "SRC_FILES_SUFFIXES          := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)\n",
 	    "\n",
             "ifeq (\$(strip \$(GENREFLEX)),)\n",
@@ -1681,8 +1767,8 @@ sub Project_template()
 	    "\n",
             "LIBDIR+=\$(self_EX_LIBDIR)\n",
             "ifdef RELEASETOP\n",
-            "ifeq (\$(strip \$(wildcard \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk)),)\n",
-            "\$(error Release area has been removed/modified as \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk is missing.)\n",
+            "ifeq (\$(strip \$(wildcard \$(RELEASETOP)/\$(PUB_DIRCACHE_MKDIR)/DirCache.mk)),)\n",
+            "\$(error Release area has been removed/modified as \$(RELEASETOP)/\$(PUB_DIRCACHE_MKDIR)/DirCache.mk is missing.)\n",
             "endif\n",
             "endif\n",
             "LIBTYPE:= ",$core->data("LIBTYPE"),"\n",
