@@ -889,7 +889,7 @@ define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
 endef
 
-ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-llvm-analyzer)
+ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(self_LOC_FLAGS_LLVM_ANALYZER))
 define CXXCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile FORCE_LLVM_CHECK
 	$$(call analyze_cxx,$(1),$(3))
