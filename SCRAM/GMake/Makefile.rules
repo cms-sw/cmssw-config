@@ -110,9 +110,9 @@ ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
 OS_RUNTIME_LIBRARY_PATH := DYLD_FALLBACK_LIBRARY_PATH
 endif
 endif
-ifndef MODULEFLAGS
+ifndef CXXSHAREDFLAGS
 ifeq ($(filter-out slc%,$(SCRAM_ARCH)),)
-MODULEFLAGS                 := -shared
+CXXSHAREDFLAGS                 := -shared
 endif
 endif
 SHARED_LIB_LOAD_CHECK := 
@@ -640,8 +640,8 @@ endef
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(5) $@" &&\
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(MODULEFLAGS) $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(MODULEFLAGS) $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -663,16 +663,16 @@ endef
 define link_pylib
   @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $(MODULEFLAGS) $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef  
 #Shared Capabilities library
 define link_lib_capabilities
   @$(startlog_$(2))$(CMD_echo) ">> Building capability library $@" &&\
-  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(MODULEFLAGS) $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
