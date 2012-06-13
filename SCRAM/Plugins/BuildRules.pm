@@ -626,6 +626,35 @@ sub checkPluginFlag ()
   return;
 }
 ######################################################
+sub dumpCompilersFlags()
+{
+  my ($self,$keys)=@_;
+  #Compiler tools variables initilize
+  my %allFlagsHash=();
+  foreach my $toolname ($self->getCompilerTypes())
+  {
+    my $compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %$compilers)
+    {
+      foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}})
+      {
+        if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){next;}
+        $allFlagsHash{$flag}=1;
+      }
+    }
+  }
+  my $allFlags="";
+  foreach my $flag (sort keys %allFlagsHash)
+  {
+    $allFlags.="$flag ";
+    foreach my $type ("","REM_")
+    {
+      foreach my $var ("","BIN_","TEST_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
+    }
+  }
+  push @$keys,"ALL_COMPILER_FLAGS := $allFlags";
+}
+
 sub addAllVariables ()
 {
   my $self=shift;
@@ -637,6 +666,7 @@ sub addAllVariables ()
   push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)";
   push @keys, "SCRAM_ADMIN_DIR           := .SCRAM/\$(SCRAM_ARCH)";
   push @keys, "SCRAM_TOOLS_DIR           := \$(SCRAM_ADMIN_DIR)/timestamps";
+  $self->dumpCompilersFlags(\@keys);
   my $f77deps=$self->getCompiler("F77");
   $self->{cache}{InvalidUses}={};
   foreach my $f ($self->getCompilerTypes())
@@ -1690,41 +1720,10 @@ sub Project_template()
       $self->addCacheData($var,$vals);
     }
   }
-  #Compiler tools variables initilize
-  my %allFlagsHash=();
-  foreach my $toolname ($self->getCompilerTypes())
+  foreach my $tn ($self->getCompilerTypes())
   {
-    my $compilers = $self->getCompilers($toolname);
-    foreach my $compiler (keys %$compilers){foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}}){$allFlagsHash{$flag}=1;}}
-  }
-  my $allFlags="";
-  foreach my $flag (sort keys %allFlagsHash)
-  {
-    $allFlags.="$flag ";
-    foreach my $type ("","REM_")
-    {
-      foreach my $var ("","BIN_","TEST_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){print $fh "${type}${var}${flag}:=\n";}
-    }
-  }
-  print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
-  my $multiCompiler = $self->isMultipleCompilerSupport();
-  foreach my $toolname ($self->getCompilerTypes())
-  {
-    my $compilers = $self->getCompilers($toolname);
-    foreach my $compiler (keys %$compilers)
-    {
-      my $ctool = $compilers->{$compiler} || "gcc";
-      if ($multiCompiler){print $fh "ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool}) ## $compiler\n";}
-      my $tool = $self->getTool($compiler);
-      foreach my $flag (keys %{$tool->{FLAGS}})
-      {
-        if (($toolname eq "F77") && ($flag eq "FFLAGS")){next;}
-	my $addtype="+";
-	if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
-	print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
-      }
-      if ($multiCompiler){print $fh "endif\n";}
-    }
+    my $c = $self->getCompiler($tn);
+    print $fh "\$(foreach f,\$(ALL_COMPILER_FLAGS),\$(eval \$f += \$(${c}_LOC_FLAGS_\$f_ALL)))\n";
   }
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")

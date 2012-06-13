@@ -54,9 +54,10 @@ ALL_CLASS_VERSION_RULES     :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
+DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk cat chmod cp dirname echo find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr uname uniq xargs cd 
+ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs
 SHELL                       := /bin/sh
 BASECMD_which               := which
 ifdef CXX
@@ -99,11 +100,9 @@ ifndef F77_MM
 F77_MM:=$(patsubst %D,%,$(F77_MMD))
 endif
 ###################################
-ifndef SHAREDSUFFIX
 SHAREDSUFFIX := so
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
 SHAREDSUFFIX := dylib
-endif
 endif
 ifndef OS_RUNTIME_LIBRARY_PATH
 OS_RUNTIME_LIBRARY_PATH := LD_LIBRARY_PATH
@@ -240,7 +239,7 @@ $$(eval $$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):$(if $(stri
 else
 $(1)_ORDER:=$(3)
 endif
-$$(foreach scope,EX LOC,$$(foreach type,INCLUDE LIB LIBDIR FLAGS_CPPDEFINES FLAGS_CPPFLAGS FLAGS_CXXFLAGS FLAGS_LDFLAGS FLAGS_CFLAGS FLAGS_FFLAGS,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),1))))
+$$(foreach scope,EX LOC,$$(foreach type,INCLUDE LIB LIBDIR $(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),1))))
 $$(foreach scope,EX LOC,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_USE_ALL,FindToolDependency:$(1):$$(scope),)))
 $$(eval $$(call AddCachedVariable,$(1)_CXXFLAGS,ToolCXXFlags:$(1),))
 $$(eval $$(call AddCachedVariable,$(1)_CPPFLAGS,ToolCPPFlags:$(1),))
@@ -280,7 +279,7 @@ define checklibs
   if [ "X$(xliberr)" != "X" ] ; then \
     $(CMD_echo) "****ERROR: Skipping build of $1 generated from $($(1)_PACKAGE) as it is explicitly linking following library/libraries." ;\
     for x in $(xliberr) ; do $(CMD_echo) "    -> $$x" | $(CMD_sed) 's|:self/| from |';  done;\
-    false;\
+    $(CMD_false);\
   fi
 endef
 ##############################################################################
@@ -405,7 +404,7 @@ ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
   endef
 else
   define install_name_tool
-    true
+    $(CMD_true)
   endef
 endif
 
@@ -432,9 +431,9 @@ define rivet_register_plugin
     $(call install_name_tool,$(@F),$<) &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
-    echo "--- Registered Rivet Plugin: $(1)"; \
+    $(CMD_echo) "--- Registered Rivet Plugin: $(1)"; \
   else \
-    rm -f $@ ;\
+    $(CMD_rm) -f $@ ;\
   fi $(endlog_$(2))
 endef
 
@@ -470,7 +469,7 @@ define compile_c_common
   $(call run_compile_command,$1,$2,$3,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),C)
 endef
 define compile_fortran_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FCSHAREDOBJECTFLAGS),F77)
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),F77)
 endef
 
 #LLVM Analyzer Rules
@@ -576,7 +575,7 @@ define generate_classes_h
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Generating LCG reflex dict header file $(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$<)" &&\
   $(VERB_ECHO) $(CLASSES_H_GENERATOR) $< &&\
-  (             $(CLASSES_H_GENERATOR) $< > $@ || (rm -f $@ && exit 1)) \
+  (             $(CLASSES_H_GENERATOR) $< > $@ || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
@@ -626,11 +625,14 @@ endef
 define processMMDData
   @$(startlog_$(2))$(CMD_rm) -f $3 && $(CMD_touch) $3 &&\
   for dep in $4 ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) 's|$(LOCALTOP)/||;s|^  */.*||' $$dep | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; $(CMD_rm) -f $$dep; fi ; \
+    if [ -f $$dep ] ; then $(CMD_sed) 's|$(LOCALTOP)/||;$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),s|^  */.*||,)' $$dep | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; $(CMD_rm) -f $$dep; fi ; \
   done &&\
-  $(CMD_tr) ' ' '\012' <  $3 | $(CMD_sed) -e 's/^'\\\\'$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' > $3.new &&\
-  $(CMD_sort) $3.new | $(CMD_uniq) >> $3 &&\
-  $(CMD_rm) -f $3.new $(endlog_$(2))
+  $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) $(endlog_$(2))
+endef
+define addMMDDepsRules
+  $(CMD_tr) ' ' '\012' <  $1 | $(CMD_sed) -e 's/^'\\\\'$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' > $1.new &&\
+  $(CMD_sort) $1.new | $(CMD_uniq) >> $1 &&\
+  $(CMD_rm) -f $1.new
 endef
 ##############################################################################
 # Library linking Rules
@@ -978,7 +980,7 @@ ifeq ($(strip $(4)),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
 	$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
-	@$$(startlog_$(1)) $(if $(HOOK_PRODUCT),$(HOOK_PRODUCT) -e -p $1,true) $$(endlog_$(1))
+	@$$(startlog_$(1)) $(if $(HOOK_PRODUCT),$(HOOK_PRODUCT) -e -p $1,$(CMD_true)) $$(endlog_$(1))
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3),BIN)
 endif
@@ -1470,8 +1472,8 @@ $(eval $(call UpdateMakeGoalTypes))
 .PHONY: ToolUpdated_% ToolUpdated ExternalLinks Non-xml\ BuildFile\ check
 Non-xml\ BuildFile\ check:
 	@if [ "X$(NON_XML_BUILDFILE)" != "X" ] ; then \
-	  echo "****ERROR: Non-XML BuildFiles found. Please convert these to xml format using 'scram build -c'";\
-          $(foreach bf,$(NON_XML_BUILDFILE),echo "          => $(bf)";) \
+	  $(CMD_echo) "****ERROR: Non-XML BuildFiles found. Please convert these to xml format using 'scram build -c'";\
+          $(foreach bf,$(NON_XML_BUILDFILE),$(CMD_echo) "          => $(bf)";) \
 	  [ "X$(RELEASETOP)" = "X" ] || exit 1 ;\
 	fi
 FORCE_TARGET:  Non-xml\ BuildFile\ check
@@ -1568,9 +1570,9 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	$(CMD_rm) -rf $(SCRAM_ADMIN_DIR)/MakeData
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
 	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
-	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | xargs grep '^#Automatically created by SCRAM' | sed 's|/__init__.py:.*|/__init__.py|' | uniq | xargs rm -f ; fi &&\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | $(CMD_xargs) $(CMD_grep) '^#Automatically created by SCRAM' | $(CMD_sed) 's|/__init__.py:.*|/__init__.py|' | $(CMD_uniq) | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
 	  if [ -d cfipython/$(SCRAM_ARCH) ] ; then $(CMD_find) cfipython/$(SCRAM_ARCH)  -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
-	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) rm -f ; fi ;\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi ;\
 	fi
 	$(CMD_rm) -rf $(SCRAM_INTwork)
 
@@ -1708,7 +1710,7 @@ define check_missing_symbols
   fi
 endef
 else
-check_missing_symbols:=true
+check_missing_symbols:=$(CMD_true)
 endif
 else
 define check_missing_symbols
@@ -1724,7 +1726,7 @@ EDM_CHECK_CLASS_VERSION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(EDM_CHEC
 endif
 endif
 ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=echo ">> Skipped running EDM Class Version test" && true
+EDM_CHECK_CLASS_VERSION_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Version test" && $(CMD_true)
 endif
 endif
 
@@ -1736,7 +1738,7 @@ define update_edm_class_version
     fname=`basename $$x` &&\
     $(CMD_echo) ">> Generating EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x &&\
-    (($(CMD_cd) $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x) || (true)) &&\
+    (($(CMD_cd) $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x) || ($(CMD_true))) &&\
     if [ -f $(@D)/classes_def.xml.generated ] ; then \
       if [ "X`diff $(@D)/classes_def.xml.generated $$x | wc -l`" != "X0" ] ; then \
         $(CMD_cp) $(@D)/classes_def.xml.generated $$x.generated &&\
@@ -1762,10 +1764,10 @@ define check_edm_class_version
 endef
 else
 define check_edm_class_version
-true
+$(CMD_true)
 endef
 define update_edm_class_version
-true
+$(CMD_true)
 endef
 endif
 ###########################################################
