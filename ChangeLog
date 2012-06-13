@@ -1,8 +1,11 @@
-2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+2012-06-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-XX: Bug fix
 	- Properly set ROOTCINT if not set via tool.
 	- Properly generate lcg dict compiler generate source dependency.
+	- Properly initialize compiler flags
+	- Print warning if package directly depened on compiler tools except
+	f77compiler.
 	* V04-02-01: Replace hard coded value for llvm analyzer tool name.
 
 	* V04-02-00: 

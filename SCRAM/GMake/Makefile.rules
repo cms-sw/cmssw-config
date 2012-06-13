@@ -19,7 +19,6 @@ ALL_PACKAGES       :=
 ALL_PYTHON_DIRS    :=
 ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
-ALL_TOOLS          :=
 ALL_PRODS          :=
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 FAST:=
@@ -527,7 +526,7 @@ define compile_lcgdict
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
   $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
   (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -s 's#:#:\\\n  #' -e 's#.*/$(3).o:#$<:#g' -e 's# .*$(3).cc #  #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx $(endlog_$(2))
+  @$(startlog_$(2))[ -f $(basename $@).d ] && $(CMD_sed) -e 's# .*/$(3).cc ##g' -e 's#:#: \\\n  #' -e 's#.*/$(3).o:#$<:#g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx $(endlog_$(2))
   @$(call processMMDData,$1,$2,$<.d,$<.dx) && $(CMD_rm) -f $(basename $@).d
 endef
 # Root Dictionary compilation
@@ -1631,6 +1630,7 @@ PLUGIN_REFRESH_CMDS :=
 ###############################################################################
 -include $(TOOLS_MKDIR).mk
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
+$(foreach x,$(ALL_TOOLS),$(eval $($(x)_INIT_FUNC)))
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
@@ -1653,7 +1653,6 @@ $(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvD
 endif
 ####### Update Tools and Prods rules ##############
 ifeq ($(strip $(UFAST)),)
-$(foreach x,$(ALL_TOOLS),$(eval $($(x)_INIT_FUNC)))
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
 $(foreach x,$(ALL_EXTERNAL_PRODS),$(eval $(call ProductCommonVarsExternal,$(x)))$(eval $($(x)_INIT_FUNC)))
@@ -1905,8 +1904,4 @@ checker: $(LLVM_STATIC_PLUGIN)
 endif
 endif
 %:
-	@$(CMD_echo) TARGET:$@
-	@var=$(call GetEchoVariable,$@);\
-	if [ "X$$var" != "X" ] ; then \
-	  $(CMD_echo) "$$var = $(subst ",\",$($(patsubst echo_%,%,$@)))";\
-	fi
+	@$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@)

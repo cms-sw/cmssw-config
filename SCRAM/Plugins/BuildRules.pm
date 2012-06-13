@@ -243,7 +243,7 @@ sub fixData ()
       my $x=$u;
       $x=~s/^\s*//;$x=~s/\s*$//;
       my $lx=lc($x);
-      if($lx eq $self->{cache}{CXXCompiler}){next;}
+      if (exists $self->{cache}{InvalidUses}{$lx}){print STDERR "***WARNING: Invalid direct dependency on tool '$lx'. Please cleanup \"$bf\".\n";}
       if(!$self->isToolAvailable($lx)){$lx=$x;}
       if(!exists $udata->{$lx}){$udata->{$lx}=1;push @$ndata,$lx;}
       else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"use\" in \"$section\" section of \"$bf\".\n";}
@@ -631,15 +631,28 @@ sub addAllVariables ()
   my $self=shift;
   my @keys=();
   my %skipTools=();
+  push @keys, "CXXSRC_FILES_SUFFIXES     := ".join(" ",$self->getSourceExtensions("cxx"));
+  push @keys, "CSRC_FILES_SUFFIXES       := ".join(" ",$self->getSourceExtensions("c"));
+  push @keys, "FORTRANSRC_FILES_SUFFIXES := ".join(" ",$self->getSourceExtensions("fortran"));
+  push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)";
+  push @keys, "SCRAM_ADMIN_DIR           := .SCRAM/\$(SCRAM_ARCH)";
+  push @keys, "SCRAM_TOOLS_DIR           := \$(SCRAM_ADMIN_DIR)/timestamps";
+  my $f77deps=$self->getCompiler("F77");
+  $self->{cache}{InvalidUses}={};
+  foreach my $f ($self->getCompilerTypes())
+  {
+    my $compilers = $self->getCompilers($f);
+    my $c=$self->getCompiler($f);
+    if ($c ne $f77deps){$self->{cache}{InvalidUses}{$c}=1;}
+    foreach $c (keys %$compilers){if ($c ne $f77deps){$self->{cache}{InvalidUses}{$c}=1;}}
+  }
   if ($self->isMultipleCompilerSupport())
   {
-    push @keys, "SCRAM_ADMIN_DIR          := .SCRAM/\$(SCRAM_ARCH)";
-    push @keys, "SCRAM_TOOLS_DIR          := \$(SCRAM_ADMIN_DIR)/timestamps";
     push @keys, "SCRAM_MULTIPLE_COMPILERS := yes";
-    push @keys, "SCRAM_DEFAULT_COMPILER   := ".$self->getCompiler("");
-    push @keys, "SCRAM_COMPILER := \$(SCRAM_DEFAULT_COMPILER)";
+    push @keys, "SCRAM_DEFAULT_COMPILER    := ".$self->getCompiler("");
+    push @keys, "SCRAM_COMPILER            := \$(SCRAM_DEFAULT_COMPILER)";
     push @keys, "ifdef COMPILER";
-    push @keys, "SCRAM_COMPILER := \$(COMPILER)";
+    push @keys, "SCRAM_COMPILER            := \$(COMPILER)";
     push @keys, "endif";
     foreach my $f ($self->getCompilerTypes()){push @keys, "${f}_TYPE_COMPILER := ".$self->getCompiler($f);}
     push @keys,"ifndef SCRAM_IGNORE_MISSING_COMPILERS";
@@ -659,6 +672,7 @@ sub addAllVariables ()
         $skipTools{$c}=1;
       }
     }
+    $self->addVirtualCompilers(\@keys);
   }
   my $selfbase="$ENV{SCRAM_PROJECTNAME}_BASE";
   $self->shouldAddToolVariables($selfbase);
@@ -854,8 +868,8 @@ sub getCompilers ()
 {
   my $self=shift;
   my $type=uc(shift);
+  if (exists $self->{cache}{Compilers}{$type}){return $self->{cache}{Compilers}{$type};}
   my $defCompiler=$self->getCompiler($type);
-  my %compilers = ();
   if ($self->isMultipleCompilerSupport())
   {
     if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
@@ -864,42 +878,33 @@ sub getCompilers ()
       {
         if (exists $self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER})
         {
-	  if ($t=~/^(.+)-${defCompiler}$/){$compilers{$t}=$1;}
+	  if ($t=~/^(.+)-${defCompiler}$/){$self->{cache}{Compilers}{$type}{$t}=$1;}
         }
       }
     }
   }
-  else{$compilers{$defCompiler}="";}
-  return %compilers;
+  else{$self->{cache}{Compilers}{$type}{$defCompiler}="";}
+  return $self->{cache}{Compilers}{$type};
 }
 
 sub getCompilerTypes(){my ($self)=@_;return @{$self->{cache}{CompilerTypes}};}
 
 sub addVirtualCompilers()
 {
-  my $self=shift;
-  my $fh=$self->{FH};
+  my ($self,$keys)=@_;
   foreach my $f ($self->getCompilerTypes())
   {
     my $c=$self->getCompiler($f);
-    print $fh "$c := $c\n",
-              "ALL_TOOLS  += $c\n",
-	      "ifneq (\$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),)\n",
-	      "${c}_LOC_USE   := \$(SCRAM_COMPILER)-$c\n",
-	      "else\n",
-	      "${c}_LOC_USE   := \$(SCRAM_DEFAULT_COMPILER)-$c\n",
-	      "endif\n",
-              "${c}_EX_USE    := \$(${c}_LOC_USE)\n",
-              "${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
+    push @$keys,"\n$c := $c";
+    push @$keys,"ALL_TOOLS  += $c";
+    push @$keys,"ifneq (\$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),)";
+    push @$keys,"${c}_LOC_USE   := \$(SCRAM_COMPILER)-$c";
+    push @$keys,"else";
+    push @$keys,"${c}_LOC_USE   := \$(SCRAM_DEFAULT_COMPILER)-$c";
+    push @$keys,"endif";
+    push @$keys,"${c}_EX_USE    := \$(${c}_LOC_USE)";
+    push @$keys,"${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
   } 
-}
-
-sub shouldAddCompilerFlag ()
-{
-  my ($self,$tool,$flag)=@_;
-  if(exists $self->{cache}{CompilerFlags}{$tool}{$flag}){return 0;}
-  $self->{cache}{CompilerFlags}{$tool}{$flag}=1;
-  return 1;
 }
 
 sub isReleaseArea ()
@@ -1689,44 +1694,38 @@ sub Project_template()
   my %allFlagsHash=();
   foreach my $toolname ($self->getCompilerTypes())
   {
-    my %compilers = $self->getCompilers($toolname);
-    foreach my $compiler (keys %compilers){foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}}){$allFlagsHash{$flag}=1;}}
+    my $compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %$compilers){foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}}){$allFlagsHash{$flag}=1;}}
   }
   my $allFlags="";
-  foreach my $flag (sort keys %allFlagsHash){print $fh "$flag :=\n"; $allFlags.="$flag ";}
-  print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
-  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
+  foreach my $flag (sort keys %allFlagsHash)
   {
+    $allFlags.="$flag ";
     foreach my $type ("","REM_")
     {
-      foreach my $var ("BIN","TEST","EDM","CAPABILITIES","LCGDICT","ROOTDICT")
-      {print $fh "${type}${var}_${flag}:=\n";}
+      foreach my $var ("","BIN_","TEST_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){print $fh "${type}${var}${flag}:=\n";}
     }
-    print $fh "REM_${flag}:=\n";
   }
+  print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
   my $multiCompiler = $self->isMultipleCompilerSupport();
   foreach my $toolname ($self->getCompilerTypes())
   {
-    my %compilers = $self->getCompilers($toolname);
-    foreach my $compiler (keys %compilers)
+    my $compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %$compilers)
     {
-      my $ctool = $compilers{$compiler} || "gcc";
+      my $ctool = $compilers->{$compiler} || "gcc";
       if ($multiCompiler){print $fh "ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool}) ## $compiler\n";}
       my $tool = $self->getTool($compiler);
       foreach my $flag (keys %{$tool->{FLAGS}})
       {
-	if (($toolname eq "F77") && ($flag!~/^FC.+/)){next;}
-	if($self->shouldAddCompilerFlag($ctool,$flag))
-	{
-	  my $addtype="+";
-	  if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
-	  print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
-	}
+        if (($toolname eq "F77") && ($flag eq "FFLAGS")){next;}
+	my $addtype="+";
+	if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
+	print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
       }
       if ($multiCompiler){print $fh "endif\n";}
     }
   }
-  if ($multiCompiler){$self->addVirtualCompilers();}
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
   {
@@ -1751,12 +1750,7 @@ sub Project_template()
   if($mk ne ""){foreach my $line (@$mk){print $fh "$line\n";}}
   print $fh "\n\n";
   
-  print $fh "CXXSRC_FILES_SUFFIXES       := ",join(" ",$self->getSourceExtensions("cxx")),"\n",
-            "CSRC_FILES_SUFFIXES         := ",join(" ",$self->getSourceExtensions("c")),"\n",
-            "FORTRANSRC_FILES_SUFFIXES   := ",join(" ",$self->getSourceExtensions("fortran")),"\n",
-            "SRC_FILES_SUFFIXES          := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)\n",
-	    "\n",
-            "ifeq (\$(strip \$(GENREFLEX)),)\n",
+  print $fh "ifeq (\$(strip \$(GENREFLEX)),)\n",
             "GENREFLEX:=",$self->getGenReflexPath(),"\n",
             "endif\n",
             "ifeq (\$(strip \$(GENREFLEX_CPPFLAGS)),)\n",
