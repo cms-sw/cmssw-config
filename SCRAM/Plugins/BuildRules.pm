@@ -927,11 +927,7 @@ sub addVirtualCompilers()
     my $c=$self->getCompiler($f);
     push @$keys,"\n$c := $c";
     push @$keys,"ALL_TOOLS  += $c";
-    push @$keys,"ifneq (\$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),)";
-    push @$keys,"${c}_LOC_USE   := \$(SCRAM_COMPILER)-$c";
-    push @$keys,"else";
-    push @$keys,"${c}_LOC_USE   := \$(SCRAM_DEFAULT_COMPILER)-$c";
-    push @$keys,"endif";
+    push @$keys,"${c}_LOC_USE   := \$(if \$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),\$(SCRAM_COMPILER)-$c,\$(SCRAM_DEFAULT_COMPILER)-$c)";
     push @$keys,"${c}_EX_USE    := \$(${c}_LOC_USE)";
     push @$keys,"${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
   } 

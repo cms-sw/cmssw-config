@@ -7,7 +7,12 @@
 	- Print warning if package directly depened on compiler tools except
 	f77compiler.
 	- Removed unused MODULEFLAGS, it is same as CXXSHAREDFLAGS.
+
+2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* V04-02-01: Replace hard coded value for llvm analyzer tool name.
+
+2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-00: 
 	 - Allow multiple compilers support. Default compiler is gcc
