@@ -18,6 +18,7 @@
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
   <flags LLVM_ANALYZER="llvm-analyzer"/>
+  <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
  </client>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>

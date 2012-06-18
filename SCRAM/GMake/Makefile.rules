@@ -1,3 +1,4 @@
+-include $(TOOLS_MKDIR).mk
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
 .PHONY: FORCE_TARGET
@@ -1630,7 +1631,6 @@ SHARED_LIB_LOAD_CHECK :=
 endif
 PLUGIN_REFRESH_CMDS :=
 ###############################################################################
--include $(TOOLS_MKDIR).mk
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 $(foreach x,$(ALL_TOOLS),$(eval $($(x)_INIT_FUNC)))
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
@@ -1894,7 +1894,7 @@ checker:
 	@$(CMD_echo) "**** ERROR: Can not run llvm analyzer as $(self_LOC_FLAGS_LLVM_ANALYZER)-$(CXX_TYPE_COMPILER) tool does not exist"
 else
 LLVM_ANALYZER_BASEDIR:=$($(shell $(CMD_echo) $(self_LOC_FLAGS_LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_'))
-checker: $(LLVM_STATIC_PLUGIN)
+checker: $(self_LOC_FLAGS_LLVM_PLUGIN)
 	@+$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
 	if [ "X$<" == "X" ] ; then $(CMD_echo) "**** ERROR: LLVM static plugin is not set for this project." ; exit 1; fi ;\
 	plugin=$(if $(wildcard $(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX)),$(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX),$(if $(RELEASETOP),$(wildcard $(RELEASETOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX)),)) &&\
