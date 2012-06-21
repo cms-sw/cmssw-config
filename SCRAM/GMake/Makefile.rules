@@ -1898,4 +1898,4 @@ checker: $(self_LOC_FLAGS_LLVM_PLUGIN)
 endif
 endif
 %:
-	@$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@)
+	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
