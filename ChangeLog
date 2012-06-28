@@ -1,3 +1,9 @@
+2012-06-28 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-03: By default do not run llvm-analyzer on generated e.g.
+        xr.cc, LinkDef.cc etc. files. Set RUN_LLVM_ANALYZER_ON_ALL=yes
+	if one needs to analyze generated code.
+
 2012-06-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-02: Bug fix

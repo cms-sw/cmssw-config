@@ -119,6 +119,9 @@ endif
 endif
 SHARED_LIB_LOAD_CHECK := 
 ##############################################################################
+ifndef RUN_LLVM_ANALYZER_ON_ALL
+RUN_LLVM_ANALYZER_ON_ALL:=no
+endif
 ifndef SCRAMSTORENAME_LIB
 SCRAMSTORENAME_LIB:=lib
 endif
@@ -1250,6 +1253,7 @@ $(1) all_$(1): $($(1))
 	@:
 endef
 
+ifneq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(self_LOC_FLAGS_LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
 define AddMOC
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$($(1)_objdir)/moc
 $(1)_FILE_MOC	  := $(foreach suffix,h cc cpp cxx,$(patsubst %.$(suffix),%_$(suffix)_moc.cc,$(filter %.$(suffix),$(2))))
@@ -1338,8 +1342,8 @@ $(if $(2),$(eval rflx_name:=$(rflx_name)x)$(eval $(call LCGDictRule,$(1),$(5)$(r
 endef
 
 define LCGDictRule
-$(1)_files  += $($(1)_objdir)/$(2)r.cc
-$(1)_objs   += $($(1)_objdir)/$(2)r.$(OBJEXT)
+$(1)_files  := $($(1)_objdir)/$(2)r.cc        $($(1)_files)
+$(1)_objs   := $($(1)_objdir)/$(2)r.$(OBJEXT) $($(1)_objs)
 $(1)_extra_files += $($(1)_objdir)/$(2)r.cc
 ifneq ($(strip $(filter $(LOCALTOP)/$(WORKINGDIR)/classes/%,$3)),)
 $3: $4
@@ -1416,6 +1420,7 @@ $($(1)_objdir)/%_T_Context.$(OBJEXT): $($(1)_objdir)/%_T_Context.cpp $($(1)_objd
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cpp $($(1)_objdir)/precompile
 	$$(call compile_cxx,$(1),$(1))
 endef
+endif   #If not llvm-analyzer
 ##############################################################################
 define SetTargetType
 ifneq ($(strip $(filter bigobj,$(MAKECMDGOALS))),)
