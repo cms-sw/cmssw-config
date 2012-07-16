@@ -1,4 +1,6 @@
 -include $(TOOLS_MKDIR).mk
+LLVM_ANALYZER := $(self_LOC_FLAGS_LLVM_ANALYZER)
+##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
 .PHONY: FORCE_TARGET
@@ -892,7 +894,7 @@ define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
 endef
 
-ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(self_LOC_FLAGS_LLVM_ANALYZER))
+ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
 define CXXCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile FORCE_LLVM_CHECK
 	$$(call analyze_cxx,$(1),$(3))
@@ -1253,7 +1255,7 @@ $(1) all_$(1): $($(1))
 	@:
 endef
 
-ifneq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(self_LOC_FLAGS_LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
+ifneq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
 define AddMOC
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$($(1)_objdir)/moc
 $(1)_FILE_MOC	  := $(foreach suffix,h cc cpp cxx,$(patsubst %.$(suffix),%_$(suffix)_moc.cc,$(filter %.$(suffix),$(2))))
@@ -1884,22 +1886,29 @@ FORCE_LLVM_CHECK:
 	@:
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)),)
 checker:
-	@$(CMD_echo) "**** ERROR: Can not run llvm analyzer as this project does not support multiple compilers"
+	@$(CMD_echo) "**** ERROR: Can not run llvm analyzer as this project does not support multiple compilers" && exit 1
 else
-ifeq ($(strip $(filter $(self_LOC_FLAGS_LLVM_ANALYZER)-$(CXX_TYPE_COMPILER),$(ALL_TOOLS))),)
+ifeq ($(strip $(filter $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER),$(ALL_TOOLS))),)
 checker:
-	@$(CMD_echo) "**** ERROR: Can not run llvm analyzer as $(self_LOC_FLAGS_LLVM_ANALYZER)-$(CXX_TYPE_COMPILER) tool does not exist"
+	@$(CMD_echo) "**** ERROR: Can not run llvm analyzer as $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER) tool does not exist" && exit 1
 else
-LLVM_ANALYZER_BASEDIR:=$($(shell $(CMD_echo) $(self_LOC_FLAGS_LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_'))
-checker: $(self_LOC_FLAGS_LLVM_PLUGIN)
+ifeq ($(strip $(LLVM_PLUGIN)),)
+checker:
+	@(CMD_echo) "**** ERROR: LLVM static plugin is not set for this project" && exit 1
+else
+checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	@+$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
-	if [ "X$<" == "X" ] ; then $(CMD_echo) "**** ERROR: LLVM static plugin is not set for this project." ; exit 1; fi ;\
-	plugin=$(if $(wildcard $(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX)),$(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX),$(if $(RELEASETOP),$(wildcard $(RELEASETOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$<.$(SHAREDSUFFIX)),)) &&\
-	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$<.$(SHAREDSUFFIX)" ; exit 1; fi ;\
+	plugin=$(if $(wildcard $(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)),$(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX),$(if $(RELEASETOP),$(wildcard $(RELEASETOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)),)) &&\
+	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)" ; exit 1; fi ;\
+	LLVM_BASE=$($(shell $(CMD_echo) $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_')) &&\
 	$(CMD_cd) $(THISDIR) && $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis && $(CMD_mkdir) -p $(LOCALTOP)/llvm-analysis &&\
-	$(LLVM_ANALYZER_BASEDIR)/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
-	  $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
-	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(self_LOC_FLAGS_LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes
+	$(VERB_ECHO) $$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
+	  $(LLVM_CHECKERS) $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
+	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
+	$$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
+	  $(LLVM_CHECKERS) $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
+	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes
+endif
 endif
 endif
 %:
