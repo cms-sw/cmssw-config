@@ -1,3 +1,7 @@
+2012-07-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-04: By default enable all cms and threadsafety llvm checkers.
+
 2012-06-28 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-03: By default do not run llvm-analyzer on generated e.g.
