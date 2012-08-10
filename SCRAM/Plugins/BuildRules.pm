@@ -221,14 +221,11 @@ sub fixData ()
   if (scalar(@$data)==0){return "";}
   if(defined $section){$section="export";}
   else{$section="non-export";}
-  my $ltop=$self->{cache}{LocalTop};
-  my $rtop="";
   my $udata={};
-  if($self->{cache}{ReleaseArea} == 0)
-  {$rtop=$ENV{RELEASETOP};}
   if ($type eq "INCLUDE")
   {
     my $ldir=dirname($bf);
+    my $ltop=$self->{cache}{LocalTop};
     foreach my $d (@$data)
     {
       my $x=$d;
@@ -246,11 +243,8 @@ sub fixData ()
       my $x=$u;
       $x=~s/^\s*//;$x=~s/\s*$//;
       my $lx=lc($x);
-      if($lx eq $self->{cache}{CXXCompiler}){next;}
-      my $found=0;
-      foreach my $dir ($ltop,$rtop)
-      {if(($dir ne "") && (-f "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/timestamps/${lx}")){$found=1;last;}}
-      if(!$found){$lx=$x;}
+      if (exists $self->{cache}{InvalidUses}{$lx}){print STDERR "***WARNING: Invalid direct dependency on tool '$lx'. Please cleanup \"$bf\".\n";}
+      if(!$self->isToolAvailable($lx)){$lx=$x;}
       if(!exists $udata->{$lx}){$udata->{$lx}=1;push @$ndata,$lx;}
       else{print STDERR "***WARNING: Multiple usage of \"$lx\". Please cleanup \"use\" in \"$section\" section of \"$bf\".\n";}
     }
@@ -632,18 +626,90 @@ sub checkPluginFlag ()
   return;
 }
 ######################################################
+sub dumpCompilersFlags()
+{
+  my ($self,$keys)=@_;
+  #Compiler tools variables initilize
+  my %allFlagsHash=();
+  foreach my $toolname ($self->getCompilerTypes())
+  {
+    my $compilers = $self->getCompilers($toolname);
+    foreach my $compiler (keys %$compilers)
+    {
+      foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}})
+      {
+        if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){next;}
+        $allFlagsHash{$flag}=1;
+      }
+    }
+  }
+  my $allFlags="";
+  foreach my $flag (sort keys %allFlagsHash)
+  {
+    $allFlags.="$flag ";
+    foreach my $type ("","REM_")
+    {
+      foreach my $var ("","BIN_","TEST_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
+    }
+  }
+  push @$keys,"ALL_COMPILER_FLAGS := $allFlags";
+}
+
 sub addAllVariables ()
 {
   my $self=shift;
   my @keys=();
+  my %skipTools=();
+  push @keys, "CXXSRC_FILES_SUFFIXES     := ".join(" ",$self->getSourceExtensions("cxx"));
+  push @keys, "CSRC_FILES_SUFFIXES       := ".join(" ",$self->getSourceExtensions("c"));
+  push @keys, "FORTRANSRC_FILES_SUFFIXES := ".join(" ",$self->getSourceExtensions("fortran"));
+  push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)";
+  push @keys, "SCRAM_ADMIN_DIR           := .SCRAM/\$(SCRAM_ARCH)";
+  push @keys, "SCRAM_TOOLS_DIR           := \$(SCRAM_ADMIN_DIR)/timestamps";
+  $self->dumpCompilersFlags(\@keys);
+  my $f77deps=$self->getCompiler("F77");
+  $self->{cache}{InvalidUses}={};
+  foreach my $f ($self->getCompilerTypes())
+  {
+    my $compilers = $self->getCompilers($f);
+    my $c=$self->getCompiler($f);
+    if ($c ne $f77deps){$self->{cache}{InvalidUses}{$c}=1;}
+    foreach $c (keys %$compilers){if ($c ne $f77deps){$self->{cache}{InvalidUses}{$c}=1;}}
+  }
+  if ($self->isMultipleCompilerSupport())
+  {
+    push @keys, "SCRAM_MULTIPLE_COMPILERS := yes";
+    push @keys, "SCRAM_DEFAULT_COMPILER    := ".$self->getCompiler("");
+    push @keys, "SCRAM_COMPILER            := \$(SCRAM_DEFAULT_COMPILER)";
+    push @keys, "ifdef COMPILER";
+    push @keys, "SCRAM_COMPILER            := \$(COMPILER)";
+    push @keys, "endif";
+    foreach my $f ($self->getCompilerTypes()){push @keys, "${f}_TYPE_COMPILER := ".$self->getCompiler($f);}
+    push @keys,"ifndef SCRAM_IGNORE_MISSING_COMPILERS";
+    foreach my $f ($self->getCompilerTypes())
+    {
+      my $c=$self->getCompiler($f);
+      push @keys, "\$(if \$(wildcard \$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-\$(${f}_TYPE_COMPILER)),,\$(info ****WARNING: You have selected \$(SCRAM_COMPILER) as compiler but there is no \$(SCRAM_COMPILER)-\$(${f}_TYPE_COMPILER) tool setup. Default compiler \$(SCRAM_DEFAULT_COMPILER)-\$(${f}_TYPE_COMPILER) will be used to comple $f files))";
+    }
+    push @keys,"endif";
+    if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
+    {
+      my $defCompiler = $self->getCompiler("");
+      foreach my $f ($self->getCompilerTypes())
+      {
+        my $c="${defCompiler}-".$self->getCompiler($f);
+        if (exists $self->{cache}{toolcache}{SETUP}{$c}){$self->addVariables($c,\@keys,0,1);}
+        $skipTools{$c}=1;
+      }
+    }
+    $self->addVirtualCompilers(\@keys);
+  }
   my $selfbase="$ENV{SCRAM_PROJECTNAME}_BASE";
   $self->shouldAddToolVariables($selfbase);
   push @keys,"$ENV{SCRAM_PROJECTNAME}_BASE:=$ENV{LOCALTOP}";
   $self->addVariables("self",\@keys,1);
-  if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
-  {
-    foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}}){if ($t ne "self"){$self->addVariables($t,\@keys,0);}}
-  }
+  $skipTools{self}=1;
+  foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}}){if (!exists $skipTools{$t}){$self->addVariables($t,\@keys,0);}}
   return @keys;
 }
 
@@ -653,24 +719,40 @@ sub addVariables ()
   my $t=shift;
   my $keys=shift;
   my $force=shift || 0;
+  my $skipCompilerCheck=shift || 0;
+  my $type="global";
+  my $basevar=uc($t)."_BASE"; $basevar=~s/-/_/g;
   if(exists $self->{cache}{toolcache}{SETUP}{$t}{VARIABLES})
   {
+    if(exists $self->{cache}{toolcache}{SETUP}{$t}{$basevar})
+    {
+      push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};
+      $self->{cache}{ToolVariables}{$type}{$basevar}=1;
+    }
+    if (($self->isMultipleCompilerSupport()) && (!$skipCompilerCheck) && ($self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER}))
+    {
+      $type=$t;
+      my $ctool=$t; $ctool=~s/\-[^-]+$//;
+      push @$keys,"ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool})";
+    }
     foreach my $v (@{$self->{cache}{toolcache}{SETUP}{$t}{VARIABLES}})
     {
+      if ($v eq $basevar){next;}
       if(exists $self->{cache}{toolcache}{SETUP}{$t}{$v})
       {
-	if(($force) || ($self->shouldAddToolVariables($v))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
+	if(($force) || ($self->shouldAddToolVariables($v, $type))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
       }
     }
+    if ($type eq $t){push @$keys,"endif";} 
   }
 }
 
 sub shouldAddToolVariables()
 {
-  my $self=shift;
-  my $var=shift;
-  if(exists $self->{cache}{ToolVariables}{$var}){return 0;}
-  $self->{cache}{ToolVariables}{$var}=1;
+  my ($self,$var,$type)=@_;
+  if (!$type){$type="global";}
+  if(exists $self->{cache}{ToolVariables}{$type}{$var}){return 0;}
+  $self->{cache}{ToolVariables}{$type}{$var}=1;  
   return 1;
 }
 
@@ -793,6 +875,8 @@ sub getBuildFileName ()
   return $self->{cache}{BuildFile};
 }
 
+sub isMultipleCompilerSupport(){my ($self)=@_; return $self->{cache}{MultipleCompilerSupport};}
+
 sub setCompiler ()
 {
   my $self=shift;
@@ -810,13 +894,43 @@ sub getCompiler ()
   return "";
 }
 
-sub shouldAddCompilerFlag ()
+sub getCompilers ()
 {
   my $self=shift;
-  my $flag=shift;
-  if(exists $self->{cache}{CompilerFlags}{$flag}){return 0;}
-  $self->{cache}{CompilerFlags}{$flag}=1;
-  return 1;
+  my $type=uc(shift);
+  if (exists $self->{cache}{Compilers}{$type}){return $self->{cache}{Compilers}{$type};}
+  my $defCompiler=$self->getCompiler($type);
+  if ($self->isMultipleCompilerSupport())
+  {
+    if((exists $self->{cache}{toolcache}) && (exists $self->{cache}{toolcache}{SETUP}))
+    {
+      foreach my $t (keys %{$self->{cache}{toolcache}{SETUP}})
+      {
+        if (exists $self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER})
+        {
+	  if ($t=~/^(.+)-${defCompiler}$/){$self->{cache}{Compilers}{$type}{$t}=$1;}
+        }
+      }
+    }
+  }
+  else{$self->{cache}{Compilers}{$type}{$defCompiler}="";}
+  return $self->{cache}{Compilers}{$type};
+}
+
+sub getCompilerTypes(){my ($self)=@_;return @{$self->{cache}{CompilerTypes}};}
+
+sub addVirtualCompilers()
+{
+  my ($self,$keys)=@_;
+  foreach my $f ($self->getCompilerTypes())
+  {
+    my $c=$self->getCompiler($f);
+    push @$keys,"\n$c := $c";
+    push @$keys,"ALL_TOOLS  += $c";
+    push @$keys,"${c}_LOC_USE   := \$(if \$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),\$(SCRAM_COMPILER)-$c,\$(SCRAM_DEFAULT_COMPILER)-$c)";
+    push @$keys,"${c}_EX_USE    := \$(${c}_LOC_USE)";
+    push @$keys,"${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
+  } 
 }
 
 sub isReleaseArea ()
@@ -941,6 +1055,18 @@ sub searchLexYacc ()
   return 0;
 }
 
+sub autoGenerateClassesH ()
+{
+  my $self=shift;
+  $self->{cache}{AutoGenerateClassesHeader}=shift;
+}
+
+sub isAutoGenerateClassesH ()
+{
+  my $self=shift;
+  return $self->{cache}{AutoGenerateClassesHeader};
+}
+
 sub searchLCGRootDict ()
 {
   my $self=shift;
@@ -949,7 +1075,6 @@ sub searchLCGRootDict ()
   my $stubdir="";
   my $lcgheader=[];
   my $lcgxml=[];
-  my $headers=[];
   my $rootmap=0;
   my $genreflex_args="\$(GENREFLEX_ARGS)";
   my $rootdict="";
@@ -965,6 +1090,7 @@ sub searchLCGRootDict ()
   }
   my $hfile=$core->flags("LCG_DICT_HEADER");
   my $xfile=$core->flags("LCG_DICT_XML");
+  my %xmldef=();
   if($hfile=~/^\s*$/)
   {
     if($stubdir ne ""){$hfile="${stubdir}/classes.h";}
@@ -975,21 +1101,38 @@ sub searchLCGRootDict ()
     if($stubdir ne ""){$xfile="${stubdir}/classes_def.xml";}
     else{$xfile="classes_def.xml";}
   }
-  my $h1="";
-  my $x1="";
   my @h=();
   my @x=();
-  foreach my $f (split /\s+/,$hfile){if(-f "${path}/${f}"){$h1.="$f ";push @h,"\$(LOCALTOP)/${path}/${f}";$flag|=1;}}
-  foreach my $f (split /\s+/,$xfile){if(-f "${path}/${f}"){$x1.="$f ";push @x,"\$(LOCALTOP)/${path}/${f}";$flag|=2;}}
+  foreach my $f (split /\s+/,$xfile){push @x,"${path}/${f}";}
+  foreach my $f (split /\s+/,$hfile){push @h,"${path}/${f}";}
+  my $xc=scalar(@x);
+  if ((scalar(@h) == $xc) && ($xc>0))
+  {
+    for(my $i=0;$i<$xc;$i++)
+    {
+      if (-f $x[$i])
+      {
+        if (-f $h[$i]){$xmldef{$x[$i]}=$h[$i];}
+	elsif($self->isAutoGenerateClassesH()){$xmldef{$x[$i]}="\$(WORKINGDIR)/classes/".$x[$i].".h";}
+	else{$xmldef{$x[$i]}="";}
+      }
+    }
+  }
+  @h=(); @x=();
+  foreach my $f (keys %xmldef)
+  {
+    push @x,"\$(LOCALTOP)/".$f;
+    $f=$xmldef{$f};
+    if ($f){push @h,"\$(LOCALTOP)/${f}";}
+  }
   $rootmap = $core->flags("ROOTMAP");
   if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
   else{$rootmap=0;}
-  if ((scalar(@h) == scalar(@x)) && ($flag==3))
+  $xc=scalar(@x);
+  if ((scalar(@h) == $xc) && ($xc>0))
   {
-    for(my $i=0;$i<scalar(@h);$i++)
+    for(my $i=0;$i<$xc;$i++)
     {
-      my $f=$h[$i]; $f=~s/^.+?\/([^\/]+)$/$1/;$f=~s/^(.+)\.[^\.]+$/$1/;
-      push @$headers,$f;
       push @$lcgheader,$h[$i];
       push @$lcgxml,$x[$i];
     }
@@ -1010,7 +1153,7 @@ sub searchLCGRootDict ()
       if((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne "")){exit 1;}
     }
   }
-  elsif($flag>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$h1\") does not match NO. of .xml (\"$x1\") files.\n";}
+  elsif($xc>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$hfile\") does not match NO. of .xml (\"$xfile\") files.\n";}
   my $dref;
   my $bn=$self->{cache}{BuildFile};
   opendir($dref, $dir) || die "ERROR: Can not open \"$dir\" directory. \"${path}/${bn}\" is refering for files in this directory.";
@@ -1025,7 +1168,6 @@ sub searchLCGRootDict ()
   closedir($dref);
   $stash->set('classes_def_xml', $lcgxml);
   $stash->set('classes_h', $lcgheader);
-  $stash->set('headers', $headers);
   $stash->set('rootmap', $rootmap);
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
@@ -1047,7 +1189,7 @@ sub getGenReflexPath ()
   my $genrflx="";
   foreach my $t ("ROOTRFLX","ROOTCORE")
   {
-    if(exists $self->{cache}{ToolVariables}{"${t}_BASE"})
+    if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
     {$genrflx="\$(${t}_BASE)/root/bin/genreflex";last;}
   }
   return $genrflx;
@@ -1059,7 +1201,7 @@ sub getRootCintPath ()
   my $cint="";
   foreach my $t ("ROOTCORE", "ROOTRFLX")
   {
-    if(exists $self->{cache}{ToolVariables}{"${t}_BASE"})
+    if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
     {$cint="\$(${t}_BASE)/bin/rootcint";last;}
   }
   return $cint;
@@ -1436,10 +1578,19 @@ sub initTemplate_PROJECT ()
     if($odir1 ne ""){$odir=$odir1;}
   }
   my $stash=$self->{context}->stash();
+  $self->{cache}{Compiler}="gcc";
+  $self->{cache}{CompilerTypes}=[];
+  foreach  my $type ("CXX","C","F77")
+  {
+    push @{$self->{cache}{CompilerTypes}},$type;
+    $self->{cache}{"${type}Compiler"}=lc($type)."compiler";
+  }
+  $self->{cache}{MultipleCompilerSupport}=!$self->isToolAvailable($self->{cache}{CXXCompiler}) || 0;
   $self->{cache}{SymLinkPython}=0;
   $self->{cache}{ProjectName}=$ENV{SCRAM_PROJECTNAME};
   $self->{cache}{LocalTop}=$ltop;
   $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
+  $self->{cache}{AutoGenerateClassesHeader}=0;
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
@@ -1455,9 +1606,6 @@ sub initTemplate_PROJECT ()
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
-  $self->{cache}{CXXCompiler}="cxxcompiler";
-  $self->{cache}{CCompiler}="ccompiler";
-  $self->{cache}{F77Compiler}="f77compiler";
   $self->setRootReflex ("rootrflx");
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
   {$self->{cache}{BuildFile}=$ENV{SCRAM_BUILDFILE};}
@@ -1568,44 +1716,10 @@ sub Project_template()
       $self->addCacheData($var,$vals);
     }
   }
-  #Compiler tools variables initilize
-  my $allFlags="";
-  foreach my $toolname ("CXX","C","F77")
+  foreach my $tn ($self->getCompilerTypes())
   {
-    my $compiler=$self->getCompiler($toolname);
-    if($compiler ne "")
-    {
-      my $tool = $self->getTool($compiler);
-      foreach my $flag (keys %{$tool->{FLAGS}}){print $fh "$flag :=\n"; $allFlags.="$flag ";}
-    }
-  }
-  print $fh "ALL_COMPILER_FLAGS := $allFlags\n";
-  foreach my $flag ("CXXFLAGS","FFLAGS","CFLAGS","CPPFLAGS","LDFLAGS")
-  {
-    foreach my $type ("","REM_")
-    {
-      foreach my $var ("BIN","TEST","EDM","CAPABILITIES","LCGDICT","ROOTDICT")
-      {print $fh "${type}${var}_${flag}:=\n";}
-    }
-    print $fh "REM_${flag}:=\n";
-  }
-  foreach my $toolname ("CXX","C","F77")
-  {
-    my $compiler=$self->getCompiler($toolname);
-    if($compiler ne "")
-    {
-      my $tool = $self->getTool($compiler);
-      foreach my $flag (keys %{$tool->{FLAGS}})
-      {
-	if (($toolname eq "F77") && ($flag!~/^FC.+/)){next;}
-	if($self->shouldAddCompilerFlag($flag))
-	{
-	  my $addtype="+";
-	  if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){$addtype=":";}
-	  print $fh "$flag ${addtype}= \$(${compiler}_LOC_FLAGS_${flag})\n";
-	}
-      }
-    }
+    my $c = $self->getCompiler($tn);
+    print $fh "\$(foreach f,\$(ALL_COMPILER_FLAGS),\$(eval \$f += \$(${c}_LOC_FLAGS_\$f_ALL)))\n";
   }
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
@@ -1622,7 +1736,8 @@ sub Project_template()
   foreach my $flag (keys %$flags)
   {
     my $val=join(" ",@{$flags->{$flag}});
-    print $fh "$flag+=$val\n";
+    if ($flag=~/^HOOK_.+$/){print $fh "$flag:=$val\n";}
+    else{print $fh "$flag+=$val\n";}
   }
 
   # Makefile section of toplevel BuildFile
@@ -1630,12 +1745,7 @@ sub Project_template()
   if($mk ne ""){foreach my $line (@$mk){print $fh "$line\n";}}
   print $fh "\n\n";
   
-  print $fh "CXXSRC_FILES_SUFFIXES       := ",join(" ",$self->getSourceExtensions("cxx")),"\n",
-            "CSRC_FILES_SUFFIXES         := ",join(" ",$self->getSourceExtensions("c")),"\n",
-            "FORTRANSRC_FILES_SUFFIXES   := ",join(" ",$self->getSourceExtensions("fortran")),"\n",
-            "SRC_FILES_SUFFIXES          := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)\n",
-	    "\n",
-            "ifeq (\$(strip \$(GENREFLEX)),)\n",
+  print $fh "ifeq (\$(strip \$(GENREFLEX)),)\n",
             "GENREFLEX:=",$self->getGenReflexPath(),"\n",
             "endif\n",
             "ifeq (\$(strip \$(GENREFLEX_CPPFLAGS)),)\n",
@@ -1650,8 +1760,8 @@ sub Project_template()
 	    "\n",
             "LIBDIR+=\$(self_EX_LIBDIR)\n",
             "ifdef RELEASETOP\n",
-            "ifeq (\$(strip \$(wildcard \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk)),)\n",
-            "\$(error Release area has been removed/modified as \$(RELEASETOP)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk is missing.)\n",
+            "ifeq (\$(strip \$(wildcard \$(RELEASETOP)/\$(PUB_DIRCACHE_MKDIR)/DirCache.mk)),)\n",
+            "\$(error Release area has been removed/modified as \$(RELEASETOP)/\$(PUB_DIRCACHE_MKDIR)/DirCache.mk is missing.)\n",
             "endif\n",
             "endif\n",
             "LIBTYPE:= ",$core->data("LIBTYPE"),"\n",
@@ -1771,7 +1881,7 @@ sub lcgdict_template()
     $capabilities="Capabilities";
   }    
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
-	    join(" ",@{$self->get("headers")}),",",join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
+	    join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
 	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
 }
 
@@ -1796,6 +1906,7 @@ sub library_template ()
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$($parent)),)\n",
             "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_parent := $parent\n",
             "${safepath}_INIT_FUNC := \$\$(eval \$\$(call CommonProductRules,${safepath},${path},$class))\n",
             "${safename} := self/${parent}\n",
             "${parent} := ${safename}\n",
@@ -1814,6 +1925,7 @@ sub library_template_generic ()
   my $safename=$self->get("safename");
   my $localbf = $self->getLocalBuildFile();
   my %no_export=();
+  my $locuse = $self->getCacheData("USE");
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -1831,23 +1943,18 @@ sub library_template_generic ()
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
     }
-    foreach my $data ("USE")
+    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+    if($dataval ne "")
     {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-      if($dataval ne "")
-      {
-        print $fh " ",join(" ",@$dataval);
-        foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
-      }
-      print $fh "\n";
+      $locuse = "$locuse ".join(" ",@$dataval);
+      foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
     }
     my $flag=$core->flags("SKIP_FILES");
     if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
     $flag=$self->isLibSymLoadChecking ();
     if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
   }
-  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  print $fh "${safename}_LOC_USE := $locuse\n";
   $self->processTemplate("Extra_template");
   if ($localbf ne "")
   {
@@ -1900,10 +2007,11 @@ sub library_template_generic ()
   my $safepath=$self->get("safepath"); my $path=$self->get("path");
   my $store1= $self->getProductStore("scripts");
   my $store2= $self->getProductStore("lib");
+  my $store3= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$(if \$(${safename}_files_exts),\$(${safename}_files_exts),\$(SRC_FILES_SUFFIXES))))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$($store3)))\n";
 }
 
 sub binary_template ()
@@ -1931,7 +2039,6 @@ sub binary_template ()
 	  my $prodfiles = $core->productfiles();
 	  print $fh "ifeq (\$(strip \$($safename)),)\n",
 	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
-                    "${safename}_files_exts := \$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files))))\n",
 		    "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
@@ -1967,6 +2074,8 @@ sub binary_template ()
 	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
 	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
 	      }
+	      $fval = $core->flags("PRE_TEST");
+	      if ($fval ne ""){print $fh "${safename}_PRE_TEST := $fval\n";}
 	      $self->set("type","test");
 	    }
 	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}
@@ -1980,7 +2089,9 @@ sub binary_template ()
       else{$self->set("type",lc($ptype));$common->unsupportedProductType ();}
     }
   }
+  my $parent=$self->get("parent");
   print $fh "ALL_COMMONRULES += $safepath\n",
+            "${safepath}_parent := $parent\n",
             "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
   return 1;
 }
@@ -2003,13 +2114,10 @@ sub binary_template_generic()
     my $dataval=$self->fixData($core->value($data),$data,$localbf);
     if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
   }
-  foreach my $data ("USE")
-  {
-    my $dataval=$self->fixData($core->value($data),$data,$localbf);
-    print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-    if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
-    print $fh "\n";
-  }
+  my $locuse = $self->getCacheData("USE");
+  my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+  if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
+  print $fh "${safename}_LOC_USE := $locuse\n";
   my $mk=$core->data("MAKEFILE");
   if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   $self->setValidSourceExtensions();
@@ -2020,7 +2128,7 @@ sub binary_template_generic()
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   print $fh "${safename}_PACKAGE := self/${path}\n";
   print $fh "ALL_PRODS += ${safename}\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),\$(sort \$(patsubst .%,%,\$(suffix \$(${safename}_files)))),$type,\$(${store3})))\n";
+            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),$type,\$(${store3})))\n";
 }
 
 sub src2store_copy()
@@ -2115,8 +2223,10 @@ sub python_template()
   my $fh=$self->{FH};
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$(${safename})),)\n",
-            "$safename := self/${path}\n";
+            "$safename := self/${path}\n",
+            "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
   my $localbf = $self->getLocalBuildFile();
+  my $locuse = $self->getCacheData("USE");
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
@@ -2130,13 +2240,8 @@ sub python_template()
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
     }
-    foreach my $data ("USE")
-    {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      print $fh "${safename}_LOC_${data}   := ",$self->getCacheData($data);
-      if($dataval ne ""){print $fh " ",join(" ",@$dataval);}
-      print $fh "\n";
-    }
+    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+    if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
     my $flag=$core->flags("SKIP_FILES");
     if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
     $flag=$self->isLibSymLoadChecking ();
@@ -2144,9 +2249,11 @@ sub python_template()
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
-  else{print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE"),"\n";}
+  my $parent=$self->get("parent");
+  print $fh "${safename}_LOC_USE := $locuse\n";
   print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
             "ALL_PRODS += ${safename}\n",
+            "${safepath}_parent := $parent\n",
             "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
 	    "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n",
             "else\n",
