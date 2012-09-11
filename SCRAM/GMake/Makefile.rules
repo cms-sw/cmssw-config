@@ -1907,7 +1907,8 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
 	$$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
 	  $(LLVM_CHECKERS) $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
-	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes
+	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
+        $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
 endif
 endif
 endif
