@@ -1771,7 +1771,7 @@ endef
 endif
 ###########################################################
 
-.PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog
+.PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
 .PHONY: skiptest_%
 help_%_python:
@@ -1857,6 +1857,13 @@ bigobj: $(ALL_BIGOBJS)
 outputlog:
 	$(eval DO_BUILD_LOG:=)
 	@$(call outputlog,,,)
+buildlog:
+	@for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR) -name "build.log" -type f` ; do \
+	  pack=`dirname $$f` &&\
+	  for l in `$(CMD_find) $$pack -name "*" -type f | grep -v "$$pack/build.log"` ; do \
+	    $(CMD_cat) $$l >> $$f && $(CMD_cat) $$l && $(CMD_rm) -f $$l ;\
+	  done;\
+	done
 runtime:
 	@$(CMD_echo) ">> Runtime environment:"; env
 skiptest_%:
@@ -1902,13 +1909,11 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)" ; exit 1; fi ;\
 	LLVM_BASE=$($(shell $(CMD_echo) $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_')) &&\
 	$(CMD_cd) $(THISDIR) && $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis && $(CMD_mkdir) -p $(LOCALTOP)/llvm-analysis &&\
-	$(VERB_ECHO) $$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
-	  $(LLVM_CHECKERS) $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
+	$(VERB_ECHO) $$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin $(LLVM_CHECKERS) $(USER_LLVM_CHECKERS) \
 	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
-	$$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin \
-	  $(LLVM_CHECKERS) $(if $(strip $(USER_LLVM_CHECKERS)),$(USER_LLVM_CHECKERS),$(self_LOC_FLAGS_LLVM_CHECKERS)) \
-	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
-        $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
+	$$LLVM_BASE/bin/scan-build              -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin $(LLVM_CHECKERS) $(USER_LLVM_CHECKERS) \
+	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes && $(DO_BUILD_LOG) $(SCRAM) build buildlog &&\
+	  $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
 endif
 endif
 endif
