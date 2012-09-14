@@ -31,7 +31,6 @@
 
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
-<flags LLVM_CHECKERS="-enable-checker cms"/>
 
 <architecture name="slc">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
