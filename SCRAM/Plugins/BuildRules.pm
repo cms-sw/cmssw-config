@@ -631,6 +631,7 @@ sub dumpCompilersFlags()
   my ($self,$keys)=@_;
   #Compiler tools variables initilize
   my %allFlagsHash=();
+  foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}}){$allFlagsHash{$flag}=1;}
   foreach my $toolname ($self->getCompilerTypes())
   {
     my $compilers = $self->getCompilers($toolname);
@@ -1580,6 +1581,8 @@ sub initTemplate_PROJECT ()
   my $stash=$self->{context}->stash();
   $self->{cache}{Compiler}="gcc";
   $self->{cache}{CompilerTypes}=[];
+  $self->{cache}{DefaultCompilerFlags}=[];
+  foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS"){push @{$self->{cache}{DefaultCompilerFlags}},$flag;}
   foreach  my $type ("CXX","C","F77")
   {
     push @{$self->{cache}{CompilerTypes}},$type;
@@ -1929,7 +1932,7 @@ sub library_template_generic ()
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-    foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+    foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
     {
       my $v=$core->flags($flag);
       if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
@@ -2104,7 +2107,7 @@ sub binary_template_generic()
   my $core=$self->core();
   my $fh=$self->{FH};
   print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-  foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+  foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
   {
     my $v=$core->flags($flag);
     if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
@@ -2230,7 +2233,7 @@ sub python_template()
   if($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-    foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS")
+    foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
     {
       my $v=$core->flags($flag);
       if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
