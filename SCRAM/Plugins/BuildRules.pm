@@ -2019,7 +2019,7 @@ sub library_template_generic ()
 
 sub binary_template ()
 {
-  my $self=shift;
+  my ($self,$autoPlugin)=@_;
   if($self->get("suffix") ne ""){return 1;}
   $self->initTemplate_common2all();
   my $core=$self->core();
@@ -2039,10 +2039,17 @@ sub binary_template ()
 	  my $safename=$self->fixProductName($prod);
 	  $self->set("safename",$safename);
 	  $core->thisproductdata($safename,$ptype);
-	  my $prodfiles = $core->productfiles();
-	  print $fh "ifeq (\$(strip \$($safename)),)\n",
-	            "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
-		    "$safename := self/${path}\n";
+	  print $fh "ifeq (\$(strip \$($safename)),)\n";
+	  if (defined $autoPlugin)
+	  {
+            print $fh "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
+	  }
+	  else
+	  {
+            my $prodfiles = $core->productfiles();
+	    print $fh "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n";
+          }
+	  print $fh "$safename := self/${path}\n";
           $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
 	  print $fh "else\n",
@@ -2204,7 +2211,18 @@ sub lexyacc_template ()
 }
 
 sub plugins_template()
-{&binary_template(shift);}
+{
+  my $self=shift;
+  my $core=$self->{core};
+  my $autoPlugin=undef;
+  if (!$core->hasbuildproducts())
+  {
+    my $name=$core->parent()."Auto"; $name=~s/\/+//g;
+    $core->addbuildproduct($name," ","lib","LIBRARY");
+    $autoPlugin=1;
+  }
+  $self->binary_template($autoPlugin);
+}
 
 sub python_template()
 {
