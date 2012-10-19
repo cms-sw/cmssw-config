@@ -1,3 +1,28 @@
+2012-10-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-10: Generate default <Package>Auto plugin from plugins
+	sub-directory is no explicit product is requested in
+	<Package>/plugins/BuildFile.xml
+
+2012-10-10 Giulio Eulisse <Giulio.Eulisse@cern.ch>
+
+	* V04-02-08: Add -DDISABLE_BOOST_ASSERTS to CXXFLAGS
+
+2012-09-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-07: Always treat CXXFLAGS, CFLAGS, FFLAGS, CPPDEFINES, LDFLAGS
+	and CPPFLAGS as known compilers flags.
+
+2012-09-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-06: Remove cms llvm checker category (it is not available)
+	checker rule now dumps the build logs of individual products in to
+	their build.log files.
+
+2012-09-11 Giulio Eulisse <Giulio.Eulisse@cern.ch>
+
+	* V04-02-05: Remove llvm-analysis/*/failures files
+
 2012-07-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-04: By default enable all cms and threadsafety llvm checkers.
