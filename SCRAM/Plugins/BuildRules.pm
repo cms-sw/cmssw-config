@@ -541,7 +541,6 @@ sub checkPluginFlag ()
           $xflags{$pflag}=1;
 	  $plugin=$flags->{$pflag}[0];
 	  $plugintype=$ptype;
-	  if($pflag eq "SEAL_PLUGIN_NAME"){$plugin=1;}
 	  if($plugin!~/^[01]$/)
 	  {
             print STDERR "****ERROR: Only allowed values for \"$pflag\" flag are \"0\" OR \"1\". Please fix this for \"$libname\" library in \"$bf[@bf-1]\" file.\n";
@@ -2217,6 +2216,14 @@ sub plugins_template()
   my $autoPlugin=undef;
   if (!$core->hasbuildproducts())
   {
+    my $flags = $core->allflags();
+    foreach my $ptype (keys %{$self->{cache}{SupportedPlugins}})
+    {
+      foreach my $pflag (@{$self->{cache}{SupportedPlugins}{$ptype}{Flag}})
+      {
+        if((exists $flags->{$pflag}) && ($flags->{$pflag}[0] eq "0")){return 1;}
+      }
+    }
     my $name=$core->parent()."Auto"; $name=~s/\/+//g;
     $core->addbuildproduct($name," ","lib","LIBRARY");
     $autoPlugin=1;
