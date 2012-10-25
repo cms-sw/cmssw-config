@@ -1,3 +1,7 @@
+2012-10-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-11: -Wl,--icf=all LDFLAGS is now oonly set for slc5.* archs.
+
 2012-10-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-10: Generate default <Package>Auto plugin from plugins
