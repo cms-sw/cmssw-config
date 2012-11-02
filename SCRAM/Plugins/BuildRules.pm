@@ -2213,8 +2213,7 @@ sub plugins_template()
 {
   my $self=shift;
   my $core=$self->{core};
-  my $autoPlugin=undef;
-  if (!$core->hasbuildproducts())
+  if (($self->getLocalBuildFile() ne "") && (!$core->hasbuildproducts()))
   {
     my $flags = $core->allflags();
     foreach my $ptype (keys %{$self->{cache}{SupportedPlugins}})
