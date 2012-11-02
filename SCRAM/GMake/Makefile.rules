@@ -887,8 +887,12 @@ $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
 endef
 define edmPlugin
-$(eval $(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
+ifneq ($(strip $($(1)_files)),)
+$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
 $(1)_BUILDRULES := _edm
+else
+$$(info gmake: *** [$(patsubst self/%,%,$($(1)_PACKAGE)) contains only $(SCRAM_BUILDFILE).xml without any sources. Better to remove the $(SCRAM_BUILDFILE).xml too or do not tag this directory] Error 1)
+endif
 endef
 define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
