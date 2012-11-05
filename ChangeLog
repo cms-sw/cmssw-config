@@ -1,3 +1,8 @@
+2012-11-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-12/13: Now scram prints "gamke *** [ ] Error 1" type error message when it
+	founds plugins/BuildFile.xml without any source files.
+
 2012-10-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-11: -Wl,--icf=all LDFLAGS is now oonly set for slc5.* archs.
