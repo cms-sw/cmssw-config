@@ -1453,23 +1453,8 @@ sub runTemplate ()
 #############################################
 # generating library safe name for a package
 #############################################
-sub setLCGProjectLibPrefix ()
-{my $self=shift;$self->{cache}{LCGProjectLibPrefix}=shift;}
-sub safename_coral (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
-sub safename_LCGProjects ()
-{
-  my $self=shift;
-  my $dir=shift;
-  my $prefix=shift || "lcg_";
-  my $sname=$prefix;
-  my $class=$self->{context}->stash()->get('class');
-  if ($class eq "LIBRARY"){$sname.=basename(dirname($dir));}
-  elsif($class eq "PYTHON"){$sname.="Py".basename(dirname($dir));}
-  else{$sname.=basename($dir);}
-  return $sname;
-}
-
-sub safename_cmssw (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_coral ()  {return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_cmssw ()  {return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 sub safename_default (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 
 sub safename_CMSProjects ()
@@ -1478,17 +1463,17 @@ sub safename_CMSProjects ()
   my $func=shift;
   my $dir=shift;
   my $class=$self->{context}->stash()->get('class');
+  my $val = "";
   if (($class eq "LIBRARY") || ($class eq "PYTHON"))
   {
     my $src=$ENV{SCRAM_SOURCEDIR};
     my $rel=quotemeta($ENV{LOCALTOP});
     $dir=dirname($dir);
     $dir=~s/^${rel}\/${src}\/(.+)$/$1/;
-    my $val=&$func($dir);
+    $val=&$func($dir);
     if($class eq "PYTHON"){$val="Py$val";}
-    return $val;
   }
-  return "";
+  return $val;
 }
 
 sub safename_PackageBased ()
@@ -1593,6 +1578,7 @@ sub initTemplate_PROJECT ()
   $self->{cache}{LocalTop}=$ltop;
   $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->{cache}{AutoGenerateClassesHeader}=0;
+  $self->{cache}{BuildProducts}="BuildProducts";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
@@ -1700,6 +1686,10 @@ sub Project_template()
   {$self->addProductDirMap ($type,'.+',"SCRAMSTORENAME_".uc($type));}
   $self->addProductDirMap ("scripts",'.+',"SCRAMSTORENAME_BIN");
   $self->updateEnvVarMK();
+  $self->object2ProductsMap();
+  
+  if ($self->isBigLibs()){print $fh "BIGLIBS := yes\n";}
+  else{print $fh "BIGLIBS := \n";}
 
   # LIB/INCLUDE/USE from toplevel BuildFile
   foreach my $var ("LIB","INCLUDE","USE")
@@ -1726,6 +1716,7 @@ sub Project_template()
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
   {
+    print $fh "LCGDICT_DEPS := $rflx\n";
     my $tool = $self->getTool($rflx);
     foreach my $flag (keys %{$tool->{FLAGS}})
     {
@@ -1812,12 +1803,22 @@ sub Project_template()
 
 sub plugin_template ()
 {
-  my $self=shift;
+  my ($self,$cap)=@_;
   $self->checkPluginFlag();
   if ($self->get("plugin_name") ne "")
   {
+    my $safename = $self->get("safename");
+    my $ptype = $self->get("plugin_type");
+    my $pname = $self->get("plugin_name");
     my $fh=$self->{FH};
-    print $fh $self->get("safename"),"_PRE_INIT_FUNC += \$\$(eval \$\$(call ",$self->get("plugin_type"),"Plugin,",$self->get("plugin_name"),",",$self->get("safename"),",\$(",$self->get("plugin_dir"),")))\n";
+    if ($self->isBigLibs())
+    {
+      my $class = $self->get("class");
+      print $fh "${pname}_prodtype := ${class}${ptype}${cap}\n";
+    }
+    else{
+    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call ${ptype}Plugin,$pname,$safename,\$(",$self->get("plugin_dir"),"),",$self->get("path"),"))\n";
+    }
   }
   return;
 }
@@ -1869,6 +1870,7 @@ sub lcgdict_template()
 {
   my $self=shift;
   my $safename=$self->get("safename");
+  my $class=$self->get("class");
   my $fh=$self->{FH};
   my $ptype=$self->getLCGCapabilitiesPluginType();
   my $capabilities="";
@@ -1878,10 +1880,16 @@ sub lcgdict_template()
     $self->pushstash();
     $self->set("plugin_name_force",1);
     $self->set("plugin_type",$self->getLCGCapabilitiesPluginType());
-    $self->plugin_template();
+    $self->plugin_template("cap");
     $self->popstash();
     $capabilities="Capabilities";
-  }    
+    if ($self->isBigLibs())
+    {
+      my $path=$self->get("path");
+      my $bprod = $self->getObjectProducts("${path}/${safename}");
+      print $fh "${bprod}_bigobjs += ${safename}${capabilities}\n";
+    }
+  }
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
 	    join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
 	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
@@ -1905,6 +1913,7 @@ sub library_template ()
   my $path=$self->get("path"); my $safepath=$self->get("safepath");my $safename=$self->get("safename");
   my $parent=$self->get("parent");my $class=$self->get("class");
   my $fh=$self->{FH};
+  if ($self->getObjectProducts("${path}/${safename}") eq ""){return 1;}
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$($parent)),)\n",
             "ALL_COMMONRULES += $safepath\n",
@@ -1919,16 +1928,13 @@ sub library_template ()
   return 1;
 }
 
-sub library_template_generic ()
+sub dumpBuildFileLOC ()
 {
-  my $self=shift;
-  my $fh=$self->{FH};
-  my $core=$self->core();
-  my $safename=$self->get("safename");
-  my $localbf = $self->getLocalBuildFile();
-  my %no_export=();
-  my $locuse = $self->getCacheData("USE");
-  if($localbf ne "")
+  my ($self,$core,$fh,$localbf,$safename,$path,$no_export,$lib,$bigprod)=@_;
+  my $locuse = "";
+  my $class = $self->get("class");
+  if ($self->isBigLibs()){print $fh "${safename}_CLASS         := ${class}.",$self->get("type")||"lib","\n";}
+  if ($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
     foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
@@ -1936,11 +1942,13 @@ sub library_template_generic ()
       my $v=$core->flags($flag);
       if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
     }
-    foreach my $d (@{$core->flagsdata("NO_EXPORT")})
+    foreach my $data ("INCLUDE")
     {
-      foreach my $x (split(" ",$d)){$no_export{$x}=0;}
+      my $dataval=$self->fixData($core->value($data),$data,$localbf);
+      if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
     }
-    foreach my $data ("INCLUDE","LIB")
+    if ($lib){foreach my $d (@{$core->flagsdata("NO_EXPORT")}){foreach my $x (split(" ",$d)){$no_export->{$x}=0;}}}
+    foreach my $data ("LIB")
     {
       my $dataval=$self->fixData($core->value($data),$data,$localbf);
       if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
@@ -1948,17 +1956,41 @@ sub library_template_generic ()
     my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
     if($dataval ne "")
     {
-      $locuse = "$locuse ".join(" ",@$dataval);
-      foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export{$d}=1;}}
+      $locuse = join(" ",@$dataval);
+      if ($lib){foreach my $d (@$dataval){if (exists $no_export{$d}){$no_export->{$d}=1;}}}
+    }
+    if ($lib)
+    {
+      my $flag=$self->isLibSymLoadChecking ();
+      if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
     }
     my $flag=$core->flags("SKIP_FILES");
     if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
-    $flag=$self->isLibSymLoadChecking ();
-    if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
   }
-  print $fh "${safename}_LOC_USE := $locuse\n";
-  $self->processTemplate("Extra_template");
-  if ($localbf ne "")
+  if (($self->isBigLibs()) && (!$bigprod))
+  {
+    my $bprod = $self->getObjectProducts("${path}/${safename}");
+    print $fh "${safename}_bigprod := $bprod\n";
+    if ($lib)
+    {
+      print $fh "${bprod}_bigobjs += $safename\n";
+    }
+  }
+  print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE")," $locuse\n";
+}
+
+sub dumpBuildFileData ()
+{
+  my ($self,$lib)=@_;
+  my $fh=$self->{FH};
+  my $core=$self->core();
+  my $safename=$self->get("safename");
+  my $localbf = $self->getLocalBuildFile();
+  my %no_export=();
+  my $path=$self->get("path");
+  $self->dumpBuildFileLOC ($core,$fh,$localbf,$safename,$path,\%no_export,$lib,undef);
+  if ($lib){$self->processTemplate("Extra_template");}
+  if (($lib) && ($localbf ne ""))
   {
     my $ex=$core->data("EXPORT");
     if(($core->publictype() == 1) && ($ex ne ""))
@@ -1967,6 +1999,7 @@ sub library_template_generic ()
       {
         foreach my $data ("INCLUDE","LIB")
         {
+	  if (($self->isBigLibs()) && ($data eq "LIB")) {next;}
           my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
           if($dataval ne "")
           {
@@ -1997,24 +2030,43 @@ sub library_template_generic ()
         if ($noexpstr ne ""){$exptools="\$(filter-out $noexpstr,$exptools)";}
 	print $fh "${safename}_EX_USE   := \$(foreach d,$exptools,\$(if \$(\$(d)_LOC_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
       }
-      else
-      {
-        print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",
-      }
+      else{print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",}
     }
+  }
+  if ($localbf ne "")
+  {
     my $mk=$core->data("MAKEFILE");
     if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
   }
   $self->setValidSourceExtensions();
-  my $safepath=$self->get("safepath"); my $path=$self->get("path");
+  print $fh "${safename}_PACKAGE := self/${path}\nALL_PRODS += $safename\n";
+  my $safepath=$self->get("safepath");
   my $store1= $self->getProductStore("scripts");
-  my $store2= $self->getProductStore("lib");
-  my $store3= $self->getProductStore("logs");
+  my $store2= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
-  print $fh "${safename}_PACKAGE := self/${path}\n";
-  print $fh "ALL_PRODS += $safename\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store2),\$($store3)))\n";
+  my $class=$self->get("class");
+  if ($lib)
+  {
+    my $store3= $self->getProductStore("lib");
+    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store3),\$($store2)))\n";
+    if($self->isBigLibs() && ($self->get("plugin_type") eq "")){print $fh "${safename}_prodtype := $class\n";}
+  }
+  elsif ($class ne "PYTHON")
+  {
+    my $type=$self->get("type");
+    my $store3= $self->getProductStore($type);
+    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store3}),$type,\$(${store2})))\n";
+  }
+  else
+  {
+    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
+	      "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n";
+  }
 }
+
+sub library_template_generic () {&dumpBuildFileData(shift,1);}
+
+sub binary_template_generic() {&dumpBuildFileData(shift);}
 
 sub binary_template ()
 {
@@ -2037,6 +2089,7 @@ sub binary_template ()
 	{
 	  my $safename=$self->fixProductName($prod);
 	  $self->set("safename",$safename);
+          if ($self->getObjectProducts("${path}/${safename}") eq ""){next;}
 	  $core->thisproductdata($safename,$ptype);
 	  print $fh "ifeq (\$(strip \$($safename)),)\n";
 	  if (defined $autoPlugin)
@@ -2062,6 +2115,7 @@ sub binary_template ()
 	{
 	  my $safename=$self->fixProductName($prod);
 	  $self->set("safename",$safename);
+          if ($self->getObjectProducts("${path}/${safename}") eq ""){next;}
 	  $core->thisproductdata($safename,$ptype);
 	  my $prodfiles = $core->productfiles();
 	  if ($prodfiles ne "")
@@ -2103,41 +2157,6 @@ sub binary_template ()
             "${safepath}_parent := $parent\n",
             "${safepath}_INIT_FUNC += \$\$(eval \$\$(call CommonProductRules,$safepath,$path,$class))\n";
   return 1;
-}
-
-sub binary_template_generic()
-{
-  my $self=shift;
-  my $safename=$self->get("safename");
-  my $localbf=$self->getLocalBuildFile();
-  my $core=$self->core();
-  my $fh=$self->{FH};
-  print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-  foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
-  {
-    my $v=$core->flags($flag);
-    if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
-  }
-  foreach my $data ("INCLUDE","LIB")
-  {
-    my $dataval=$self->fixData($core->value($data),$data,$localbf);
-    if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
-  }
-  my $locuse = $self->getCacheData("USE");
-  my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
-  if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
-  print $fh "${safename}_LOC_USE := $locuse\n";
-  my $mk=$core->data("MAKEFILE");
-  if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-  $self->setValidSourceExtensions();
-  my $path=$self->get("path"); my $safepath=$self->get("safepath");my $type=$self->get("type");
-  my $store1= $self->getProductStore("scripts");
-  my $store2= $self->getProductStore($type);
-  my $store3= $self->getProductStore("logs");
-  my $ins_script=$core->flags("INSTALL_SCRIPTS");
-  print $fh "${safename}_PACKAGE := self/${path}\n";
-  print $fh "ALL_PRODS += ${safename}\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Binary,${safename},${path},${safepath},\$(${store1}),${ins_script},\$(${store2}),$type,\$(${store3})))\n";
 }
 
 sub src2store_copy()
@@ -2228,7 +2247,7 @@ sub plugins_template()
     $core->addbuildproduct($name," ","lib","LIBRARY");
     $autoPlugin=1;
   }
-  $self->binary_template($autoPlugin);
+  return $self->binary_template($autoPlugin);
 }
 
 sub python_template()
@@ -2252,39 +2271,11 @@ sub python_template()
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$(${safename})),)\n",
             "$safename := self/${path}\n",
-            "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
-  my $localbf = $self->getLocalBuildFile();
-  my $locuse = $self->getCacheData("USE");
-  if($localbf ne "")
-  {
-    print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-    foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
-    {
-      my $v=$core->flags($flag);
-      if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
-    }
-    foreach my $data ("INCLUDE","LIB")
-    {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
-    }
-    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
-    if($dataval ne ""){$locuse = "$locuse ".join(" ",@$dataval);}
-    my $flag=$core->flags("SKIP_FILES");
-    if($flag ne ""){print $fh "${safename}_SKIP_FILES   := $flag\n";}
-    $flag=$self->isLibSymLoadChecking ();
-    if ($flag ne ""){print $fh "${safename}_libcheck     := $flag\n";}
-    my $mk=$core->data("MAKEFILE");
-    if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
-  }
-  my $parent=$self->get("parent");
-  print $fh "${safename}_LOC_USE := $locuse\n";
-  print $fh "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
-            "ALL_PRODS += ${safename}\n",
             "${safepath}_parent := $parent\n",
-            "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
-	    "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n",
-            "else\n",
+            "ALL_PYTHON_DIRS += \$(patsubst src/%,%,$path)\n",
+            "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";
+  $self->dumpBuildFileData();
+  print $fh "else\n",
             "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
             "endif\n",
             "ALL_COMMONRULES += $safepath\n",
@@ -2292,7 +2283,136 @@ sub python_template()
   return 1;
 }
 
-sub test_template()
-{&binary_template(shift);}
+sub test_template() {&binary_template(shift);}
 
+sub BigProduct_template()
+{
+  my $self=shift;
+  if($self->get("suffix") ne ""){return 1;}
+  my $fh=$self->{FH};
+  my $path=$self->get("path");
+  my $safename = basename($path);
+  $self->set("safename",$safename);
+  my $safepath=$self->get("safepath");
+  my $class=$self->get("class");
+  my $core=$self->core();
+  $core->branchdata()->name($safename);
+  print $fh "ifeq (\$(strip \$($safename)),)\n$safename:=$safename\n";
+  my $localbf = $self->getLocalBuildFile();
+  my %no_export=();
+  $self->dumpBuildFileLOC ($core,$fh,$localbf,$safename,$path,\%no_export,"true","true");
+  my $noexpstr="";
+  foreach my $d (keys %no_export)
+  {
+    if ($no_export{$d}==1){$noexpstr.=" $d";}
+    else
+    {
+      print STDERR "****WARNING: $d is not defined as direct dependency in $localbf.\n",
+                   "****WARNING: Please remove $d from the NO_EXPORT flag in $localbf\n";
+    }
+  }
+  my $exptools="\$(${safename}_LOC_USE)";
+  if ($noexpstr ne ""){$exptools="\$(filter-out $noexpstr,$exptools)";}
+  print $fh "${safename}_EX_USE     := \$(foreach d,$exptools,\$(if \$(\$(d)_LOC_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
+  print $fh "${safename}_pkgs       := \$(",$self->{OBJ2PROD}{$safename}{BASE},")/${path}/pkgs.txt\n";
+  my $mk=$core->data("MAKEFILE");
+  if($mk){foreach my $line (@$mk){print $fh "$line\n";}}
+  $self->processTemplate("Product");
+  print $fh "ALL_BIG_PRODS += $safename\n";
+  print $fh "${safename}_INIT_FUNC += \$\$(eval \$\$(call BigProduct,$safename,$path,$safepath))\n";
+  print $fh "endif\n",
+}
+
+sub object2ProductsMap()
+{
+  my $self=shift;
+  my $dbfile=".SCRAM/$ENV{SCRAM_ARCH}/ObjectCache.".$self->{dbext};
+  my $dirty=0;
+  if (-f $dbfile){$self->{OBJ2PROD}=&Cache::CacheUtilities::read($dbfile);}
+  my %prods=();
+  foreach my $base ("LOCALTOP","RELEASETOP")
+  {
+    if ((exists $ENV{$base}) && ($ENV{$base} ne ""))
+    {
+      my $basedir=$ENV{$base};
+      if (-e "${basedir}/$ENV{SCRAM_SOURCEDIR}/".$self->{cache}{BuildProducts})
+      {
+	foreach my $file (glob("${basedir}/$ENV{SCRAM_SOURCEDIR}/".$self->{cache}{BuildProducts}."/*/pkgs.txt"))
+	{
+	  my $prod = $file;
+	  $prod=~/\/([^\/]+)\/pkgs\.txt$/o; $prod=$1;
+	  if (exists $prods{$prod}){next;}
+	  $prods{$prod}=1;
+	  my $mtime=0;
+	  if ($self->{OBJ2PROD}{$prod}{BASE} eq $base)
+	  {
+	    $mtime=(stat($file))[9];
+	    if ($mtime == $self->{OBJ2PROD}{$prod}{MTIME}){next;}
+	  }
+	  else{$mtime=(stat($file))[9];}
+	  $self->{OBJ2PROD}{$prod}{MTIME}=$mtime;
+	  $self->{OBJ2PROD}{$prod}{BASE}=$base;
+	  $self->{OBJ2PROD}{$prod}{OBJS}{DROP}=[];
+	  $self->{OBJ2PROD}{$prod}{OBJS}{ADD}=[];
+          my $ref;
+          open($ref,$file) || die "ERROR: Can not open file to read: $file\n";
+          while(my $line=<$ref>)
+          {
+            chomp $line;
+            foreach my $item (split /\s+/,$line)
+            {
+              if($item=~/^!(.+)/o){push @{$self->{OBJ2PROD}{$prod}{OBJS}{DROP}},$1;}
+	      else{push @{$self->{OBJ2PROD}{$prod}{OBJS}{ADD}},$item;}
+            }
+          }
+          close($ref);
+	  $dirty=1;
+	}
+      }
+    }
+  }
+  if ($dirty){&Cache::CacheUtilities::write($self->{OBJ2PROD},$dbfile);}
+}
+
+sub isBigLibs()
+{
+  my $self=shift;
+  return exists $self->{OBJ2PROD};
+}
+
+sub getObjectProducts()
+{
+  my ($self,$obj)=@_;
+  if (!$self->isBigLibs()){return $obj;}
+  $obj=~s/^$ENV{SCRAM_SOURCEDIR}\///o;
+  my $prod="";
+  if (exists $self->{cache}{OBJ2PROD}{$obj}){$prod=$self->{cache}{OBJ2PROD}{$obj};}
+  else
+  {
+    $prod=$self->searchObjectProducts($obj);
+    $self->{cache}{OBJ2PROD}{$obj}=$prod;
+  }
+  return $prod;
+}
+
+sub searchObjectProducts()
+{
+  my ($self,$obj)=@_;
+  my $mprod="";
+  foreach my $prod (keys %{$self->{OBJ2PROD}})
+  {
+    foreach my $preg (@{$self->{OBJ2PROD}{$prod}{OBJS}{ADD}})
+    {
+      if ($obj eq $preg){return $prod;}
+      if ($mprod)       {next;}
+      if ($obj=~/^$preg$/)
+      {
+        my $ok=1;
+	foreach my $nreg (@{$self->{OBJ2PROD}{$prod}{OBJS}{DROP}}){if ($obj=~/^$nreg$/){$ok=0; last;}}
+	if ($ok){$mprod=$prod;}
+      }
+    }
+  }
+  return $mprod;
+}
 1;
