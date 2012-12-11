@@ -53,7 +53,6 @@ define BigSubProduct
 ifneq ($$(strip $$($(1)$(2)_hasobjs)),)
 $(1)$(2)_LOC_USE     += $$(sort $$(foreach o,$$($(1)$(2)_bigobjs),$$(filter-out $(ALL_PACKAGES),$$($$(o)_LOC_USE))))
 $(1)$(2)_LOC_LIB     += $$(sort $$(foreach o,$$($(1)$(2)_bigobjs),$$(foreach l,$$($$(o)_LOC_LIB),$$($$(l)_bigprod)) $$(filter-out $$(ALL_lib_PRODUCTS),$$($$(o)_LOC_LIB))))
-$$(foreach f,$(ALL_COMPILER_FLAGS),$$(eval $(1)$(2)_LOC_FLAGS_$$(f) += $$($(1)_LOC_FLAGS_$$(f))))
 ifneq ($(strip $3),)
 $(1)$(2)_xlib := $(patsubst %Capabilities,%,$(1)$(2))
 $$($(1)$(2)_xlib)_PRE_INIT_FUNC += $$(eval $$(call $(3)Plugin,$(1)$(2),$$($(1)$(2)_xlib),$(SCRAMSTORENAME_LIB),$4))
