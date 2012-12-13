@@ -28,7 +28,4 @@ $(TOOLS_MKDIR).mk: $(ToolTimeStamps)
 	@cat $(TOOLS_MKDIR)/*.mk >> $@.tmp
 	@mv $@.tmp $@
 
-$(SCRAM_TOOLS_DIR)/%: $(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/%.xml
-	@for tool in $*; do $(SCRAM) setup $* && touch $@; done
-
-$(SCRAM_CONFIGDIR)/% $(PUB_DIRCACHE_MKDIR)/% $(DIRCACHE_MKDIR)/%:
+.SCRAM/$(SCRAM_ARCH)/timestamps/% $(SCRAM_CONFIGDIR)/% $(PUB_DIRCACHE_MKDIR)/% $(DIRCACHE_MKDIR)/%:

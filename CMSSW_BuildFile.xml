@@ -8,7 +8,6 @@
 <productstore name="doc"/>
 <productstore name="python"/>
 
-<classpath path="+Project/BuildProducts+SubSystem/+BigProduct/+donothing"/>
 <classpath path="+Project/+SubSystem/+Package/scripts+scripts"/>
 <classpath path="+Project/Documentation+Documentation/+doc"/>
 <classpath path="+Project/+SubSystem/+Package/src+library"/>
@@ -19,6 +18,8 @@
 
 #<!-- Rules for LCG/CORAL Packages build in CMSSW -->
 <classpath path="+Project/LCG+SubSystem/+Package/tests+binary"/>
+
+<use name="self"/>
 
 <flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
 <flags ROOTDICT_CXXFLAGS="-Wno-unknown-pragmas"/>
