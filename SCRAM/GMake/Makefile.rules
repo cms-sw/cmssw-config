@@ -531,9 +531,9 @@ endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
-  $(VERB_ECHO)            $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @[ -f $(basename $@).d ] && $(CMD_sed) -e 's# .*/$(3).cc ##g;s#.*/$(3).o:#$<:#g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
+  $(VERB_ECHO)            $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  @[ -f $(basename $@).d ] && $(CMD_sed) -e 's# .*/$(3).cc ##g;s#.*/$(3).o:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
 endef
 # Root Dictionary compilation
 define compile_rootdict

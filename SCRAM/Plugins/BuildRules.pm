@@ -1121,9 +1121,9 @@ sub searchLCGRootDict ()
   @h=(); @x=();
   foreach my $f (keys %xmldef)
   {
-    push @x,"\$(LOCALTOP)/".$f;
+    push @x,$f;
     $f=$xmldef{$f};
-    if ($f){push @h,"\$(LOCALTOP)/${f}";}
+    if ($f){push @h,$f;}
   }
   $rootmap = $core->flags("ROOTMAP");
   if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
