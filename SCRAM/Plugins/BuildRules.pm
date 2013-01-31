@@ -740,7 +740,13 @@ sub addVariables ()
       if ($v eq $basevar){next;}
       if(exists $self->{cache}{toolcache}{SETUP}{$t}{$v})
       {
-	if(($force) || ($self->shouldAddToolVariables($v, $type))){push @$keys,"$v:=".$self->{cache}{toolcache}{SETUP}{$t}{$v};}
+        if(($force) || ($self->shouldAddToolVariables($v, $type)))
+        {
+          my $val=$self->{cache}{toolcache}{SETUP}{$t}{$v};
+          if ($v=~/^BUILDENV_(.*)$/){$val="export $1:=$val";}
+          else{$val="$v:=$val";}
+          push @$keys,$val;
+        }
       }
     }
     if ($type eq $t){push @$keys,"endif";} 
@@ -1121,9 +1127,9 @@ sub searchLCGRootDict ()
   @h=(); @x=();
   foreach my $f (keys %xmldef)
   {
-    push @x,"\$(LOCALTOP)/".$f;
+    push @x,$f;
     $f=$xmldef{$f};
-    if ($f){push @h,"\$(LOCALTOP)/${f}";}
+    if ($f){push @h,$f;}
   }
   $rootmap = $core->flags("ROOTMAP");
   if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
@@ -2214,7 +2220,7 @@ sub plugins_template()
   my $self=shift;
   my $core=$self->{core};
   my $autoPlugin=undef;
-  if (!$core->hasbuildproducts())
+  if (($self->getLocalBuildFile() ne "") && (!$core->hasbuildproducts()))
   {
     my $flags = $core->allflags();
     foreach my $ptype (keys %{$self->{cache}{SupportedPlugins}})
