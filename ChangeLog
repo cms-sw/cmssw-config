@@ -1,3 +1,19 @@
+2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-00-07: Sync new biglib development.
+
+2013-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-18: Do not add missing directories with -I
+
+2013-02-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-17: Fixed bigobj rule
+
+2013-01-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-16: Do not delete the testing.log file for individual tests
+
 2012-12-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-15: Fixes for ccache to work properly with scram.
