@@ -1,8 +1,10 @@
 2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-00-09: Fixed lcgdict dependency rule which was broekn in
+	V05-00-08.
 	* V05-00-08: Fix build rile for rootdict (LinkDef.h) to regenerate
 	tmp/LinkDef.cc file if any of the headers included in LinkDef.h
-	are changed
+	are changed.
 
 2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
