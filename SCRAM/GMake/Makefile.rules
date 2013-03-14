@@ -529,19 +529,19 @@ endef
 ##############################################################################
 # Dictionary compilation
 define processTmpMMDData
-  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$<##g;s#$@:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
+  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$1##g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
 endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
   $(VERB_ECHO)                   $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
   (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(call processTmpMMDData)
+  @$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@))
 endef
 # Root Dictionary compilation
 define compile_rootdict
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
-  @$(call processTmpMMDData)
+  @$(call processTmpMMDData,$<,$@)
 endef
 define compile_python
   $(CMD_echo) ">> Compiling python modules $1" &&\
