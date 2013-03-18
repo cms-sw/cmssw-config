@@ -1,3 +1,8 @@
+2013-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-19: Do to check for duplicate values in compiler flags
+	INCLUDE, LIB and LIBDIR are still checked for duplicates.
+
 2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-00-09: Fixed lcgdict dependency rule which was broekn in
