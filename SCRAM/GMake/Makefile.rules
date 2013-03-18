@@ -85,6 +85,15 @@ $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
 ###################################
 UNAME                       := $(CMD_uname)
+ifndef CXX_MF
+CXX_MF:=-MF
+endif
+ifndef C_MF
+C_MF:=-MF
+endif
+ifndef F77_MF
+F77_MF:=-MF
+endif
 ifndef CXX_MMD
 CXX_MMD:=-MMD
 endif
@@ -220,7 +229,7 @@ define ToolCFlags
 $(filter-out $(USER_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
 define ToolCPPFlags
-$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(INCLUDE)) $(addprefix -I,$($(1)_LOC_INCLUDE_ALL))
+$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))
 endef
 define ToolLDFlags
 $(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
@@ -246,7 +255,8 @@ $$(eval $$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):$(if $(stri
 else
 $(1)_ORDER:=$(3)
 endif
-$$(foreach scope,EX LOC,$$(foreach type,INCLUDE LIB LIBDIR $(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),1))))
+$$(foreach scope,EX LOC,$$(foreach type,INCLUDE LIB LIBDIR,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),1))))
+$$(foreach scope,EX LOC,$$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),))))
 $$(foreach scope,EX LOC,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_USE_ALL,FindToolDependency:$(1):$$(scope),)))
 $$(eval $$(call AddCachedVariable,$(1)_CXXFLAGS,ToolCXXFlags:$(1),))
 $$(eval $$(call AddCachedVariable,$(1)_CPPFLAGS,ToolCPPFlags:$(1),))
@@ -466,8 +476,8 @@ endef
 define run_compile_command
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
-  $(VERB_ECHO) $6 $($7_MMD) $< -o $@ &&\
-              ($6 $($7_MMD) $< -o $@ || ($6 $($7_MM) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1)) $5 $(endlog_$(2))
+  $(VERB_ECHO) $6 $($7_MMD) $($7_MF) $(basename $@).d $< -o $@ &&\
+              ($6 $($7_MMD) $($7_MF) $(basename $@).d $< -o $@ || ($6 $($7_MM) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1)) $5 $(endlog_$(2))
 endef
 define compile_cxx_common
   $(call run_compile_command,$1,$2,$3,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),CXX)
@@ -530,9 +540,9 @@ endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
-  $(VERB_ECHO)            $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) -c $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @[ -f $(basename $@).d ] && $(CMD_sed) -e 's# .*/$(3).cc ##g;s#.*/$(3).o:#$<:#g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
+  $(VERB_ECHO)                   $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  @[ -f $(basename $@).d ] && $(CMD_sed) -e 's# .*/$(3).cc ##g;s#.*/$(3).o:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
 endef
 # Root Dictionary compilation
 define compile_rootdict
@@ -579,7 +589,7 @@ define generate_classes_h
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Generating LCG reflex dict header file $(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$<)" &&\
   $(VERB_ECHO) $(CLASSES_H_GENERATOR) $< &&\
-  (             $(CLASSES_H_GENERATOR) $< > $@ || ($(CMD_rm) -f $@ && exit 1)) \
+  (            $(CLASSES_H_GENERATOR) $< > $@ || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
@@ -595,7 +605,7 @@ define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
   $(VERB_ECHO) $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $($(1)_CPPFLAGS) $< &&\
-  ($(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
+  (            $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
@@ -773,11 +783,11 @@ define run_test
     $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || $(CMD_echo) "---> test $(1) had ERRORS") &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log &&\
-    $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; $(CMD_rm) -f $($(1)_objdir)/testing.log; \
+    $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi
 endef
 
@@ -887,8 +897,12 @@ $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
 endef
 define edmPlugin
-$(eval $(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
+ifneq ($(strip $($(1)_files)$(filter $1,${2}Capabilities)),)
+$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
 $(1)_BUILDRULES := _edm
+else
+$$(info gmake: *** [$(patsubst self/%,%,$($(2)_PACKAGE)) contains only $(SCRAM_BUILDFILE).xml without any sources. Better to remove $(SCRAM_BUILDFILE).xml too or do not tag this directory] Error 1)
+endif
 endef
 define rivetPlugin
 $(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
@@ -978,11 +992,13 @@ define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
 ifneq ($$(strip $($(1)_objs)),)
 ALL_$(4)_PRODUCTS += $(1)
+ifeq ($(strip $(4)),lib)
+$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
+endif
 $(1):  $($(1)_objdir)/$($(1)_product)
 $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
-	$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
 endif
 	@$$(startlog_$(1)) $(if $(HOOK_PRODUCT),$(HOOK_PRODUCT) -e -p $1,$(CMD_true)) $$(endlog_$(1))
 ifeq ($(strip $(4)),bin)
