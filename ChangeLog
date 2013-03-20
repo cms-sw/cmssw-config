@@ -2,6 +2,8 @@
 
 	* V04-02-20: Fix seal capabilities file generation for multiple
 	classes.h files.
+	* V05-00-11: Fix seal capabilities file generation for multiple
+	classes.h files.
 
 2013-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
