@@ -1,3 +1,52 @@
+2013-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-19: Do to check for duplicate values in compiler flags
+	INCLUDE, LIB and LIBDIR are still checked for duplicates.
+	* V05-00-10: Duplicate flags checks added for biglibs rules too.
+
+2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-00-09: Fixed lcgdict dependency rule which was broekn in
+	V05-00-08.
+	* V05-00-08: Fix build rile for rootdict (LinkDef.h) to regenerate
+	tmp/LinkDef.cc file if any of the headers included in LinkDef.h
+	are changed.
+
+2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-00-07: Sync new biglib development.
+
+2013-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-18: Do not add missing directories with -I
+
+2013-02-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-17: Fixed bigobj rule
+
+2013-01-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-16: Do not delete the testing.log file for individual tests
+
+2012-12-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-15: Fixes for ccache to work properly with scram.
+	Allow to set build time only environment variables e.g. having
+	<client>
+	  <environment name="BUILDENV_<VARIABLE>" value="<VALUE>" handler="warn"/>
+	</client>
+	will set environment variable <VARIABLE>=<VALUE>
+
+2012-12-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-14: Explicitly added -MF <file>.d in compilation command to let distcc
+	properly deal with .d files.
+
+2012-11-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-12/13: Now scram prints "gamke *** [ ] Error 1" type error message when it
+	founds plugins/BuildFile.xml without any source files.
+
 2012-10-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-11: -Wl,--icf=all LDFLAGS is now oonly set for slc5.* archs.
