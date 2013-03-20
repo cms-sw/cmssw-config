@@ -1,3 +1,8 @@
+2013-03-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V04-02-20: Fix seal capabilities file generation for multiple
+	classes.h files.
+
 2013-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V04-02-19: Do to check for duplicate values in compiler flags
