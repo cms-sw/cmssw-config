@@ -8,6 +8,7 @@
   <flags SKIP_TOOLS_SYMLINK="gcc-cxxcompiler  gcc-ccompiler  gcc-f77compiler"/>
   <flags SKIP_TOOLS_SYMLINK="llvm-cxxcompiler llvm-ccompiler llvm-f77compiler"/>
   <flags SKIP_TOOLS_SYMLINK="llvm-analyzer-cxxcompiler llvm-analyzer-ccompiler"/>
+  <flags SKIP_TOOLS_SYMLINK="icc-cxxcompiler  icc-ccompiler  icc-f77compiler"/>
   <flags SKIP_TOOLS_SYMLINK="x11"/>
   <flags SKIP_TOOLS_SYMLINK="dpm"/>
   <flags EXTERNAL_SYMLINK="PATH"/>
@@ -18,6 +19,9 @@
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
   <flags LLVM_ANALYZER="llvm-analyzer"/>
+  <architecture name="_mic_">
+    <flags DEFAULT_COMPILER="icc"/>
+  </architecture>
  </client>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>

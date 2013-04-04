@@ -1569,7 +1569,11 @@ sub initTemplate_PROJECT ()
     if($odir1 ne ""){$odir=$odir1;}
   }
   my $stash=$self->{context}->stash();
-  $self->{cache}{Compiler}="gcc";
+  my $defcompiler="";
+  if ((exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}) && (exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER}))
+  {$defcompiler=$self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER}[0];}
+  if ($defcompiler eq ""){$defcompiler="gcc";}
+  $self->{cache}{Compiler}=$defcompiler;
   $self->{cache}{CompilerTypes}=[];
   $self->{cache}{DefaultCompilerFlags}=[];
   foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS"){push @{$self->{cache}{DefaultCompilerFlags}},$flag;}
