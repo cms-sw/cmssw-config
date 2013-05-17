@@ -2243,6 +2243,8 @@ sub plugins_template()
   my $self=shift;
   my $core=$self->{core};
   my $autoPlugin=undef;
+  my $skip=$core->flags("SKIP_FILES");
+  if (($skip eq "*") || ($skip eq "%")){return 1;}
   if (($self->getLocalBuildFile() ne "") && (!$core->hasbuildproducts()))
   {
     my $flags = $core->allflags();
