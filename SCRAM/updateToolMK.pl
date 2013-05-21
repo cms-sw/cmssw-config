@@ -27,23 +27,17 @@ my @toolvar=("INCLUDE","LIB");
 
 my $skline=0;
 my %mkprocess=();
-$mkprocess{skiplines}[$skline++] = qr/.+_XDEPS\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_INIT_FUNC\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_files\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_LOC_LIB\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_LOC_INCLUDE\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_LOC_FLAGS_.+\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_EX_FLAGS_.+\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_SKIP_FILES\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_libcheck\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_iglet_file\s+[:+]=/;
-$mkprocess{skiplines}[$skline++] = qr/ALL_COMMONRULES\s+\+=/;
-$mkprocess{skiplines}[$skline++] = qr/.+_PACKAGE\s+:=\s+self\//;
-$mkprocess{skiplines}[$skline++] = qr/\$\(call\s+(RootDict|LCGDict|LexYACC|CodeGen|Iglet|AddMOC|.+Plugin),/;
-$mkprocess{skiplines}[$skline++] = qr/NON_XML_BUILDFILE\s+\+=/;
-$mkprocess{skiplines}[$skline++] = qr/_parent\s+:=\s+/;
+$mkprocess{skiplines}[$skline++] = qr/^.+_(files|XDEPS|SKIP_FILES|libcheck|parent)\s+[:+]=/o;
+$mkprocess{skiplines}[$skline++] = qr/^.+_LOC_((?!USE).+)\s+[:+]=/o;
+$mkprocess{skiplines}[$skline++] = qr/^.+_EX_((?!LIB).+)\s+[:+]=/o;
+$mkprocess{skiplines}[$skline++] = qr/^(ALL_COMMONRULES|NON_XML_BUILDFILE)\s+\+=/;
+$mkprocess{skiplines}[$skline++] = qr/^.+_PACKAGE\s+:=\s+self\//;
+$mkprocess{skiplines}[$skline++] = qr/\$\(call\s+/;
 $mkprocess{skipcount}=$skline; $skline = 0;
 
+$mkprocess{editlines}[$skline]{reg}     = qr/^(.+)_LOC_USE\s*:=\s*(.+)$/;
+$mkprocess{editlines}[$skline]{cont}    = 1;
+$mkprocess{editlines}[$skline++]{value} = '$line="${1}_EX_USE := \$(foreach d, ${2},\$(if \$(\$(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,\$d))"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^\s*ALL_PRODS(\s+\+=.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="ALL_EXTERNAL_PRODS${1}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self(\s*.*)$/;
@@ -52,8 +46,6 @@ $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self\/(.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}/${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1}\$($basevar)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
-$mkprocess{editlines}[$skline]{reg}     = qr/^.+_EX_INCLUDE\s+:=\s+.*\$\(LOCALTOP\)/;
-$mkprocess{editlines}[$skline++]{value} = '$line=~s/\$\(LOCALTOP\)/\$(RELEASETOP)/g';
 $mkprocess{editcount}=$skline;
 
 my $tooldir=".SCRAM/${arch}/MakeData/Tools";
@@ -75,7 +67,6 @@ foreach my $t (keys %tools)
   if(($t eq "self") || ($t eq $proj_name)){push @tvars,"LIBDIR";}
   elsif(&isSymlinkSkipped($tcache,$t)){push @tvars,"LIBDIR";}
   open(TFILE,">${tooldir}/${t}.mk") || die "Can not open file for writing: ${tooldir}/${t}.mk\n";
-  print TFILE "$t             := $t\n";
   print TFILE "ALL_TOOLS      += $t\n";
   if ($sproj) {print TFILE "ALL_SCRAM_PROJECTS += $t\n";}
   foreach my $f (@tvars)
@@ -85,8 +76,8 @@ foreach my $t (keys %tools)
       my $x=join(" ",@{$c->{$f}});
       if($x!~/^\s*$/)
       {
-        print TFILE "${t}_LOC_$f := $x\n${t}_EX_$f  := \$(${t}_LOC_$f)\n";
-        if (($t eq "self") && ($f eq "LIBDIR")){print TFILE "${t}_LOC_$f += \$(${proj_name}_EX_$f)\n${t}_EX_$f  += \$(${proj_name}_EX_$f)\n";}
+        print TFILE "${t}_EX_$f := $x\n";
+        if (($t eq "self") && ($f eq "LIBDIR")){print TFILE "${t}_EX_$f += \$(${proj_name}_EX_$f)\n";}
       }
     }
   }
@@ -99,7 +90,7 @@ foreach my $t (keys %tools)
       $u=lc($u);
       if(!exists $au{$u}){$x.=" $u";}
     }
-    if($x!~/^\s*$/){print TFILE "${t}_LOC_USE :=$x\n${t}_EX_USE  := \$(${t}_LOC_USE)\n";}
+    if($x!~/^\s*$/){print TFILE "${t}_EX_USE :=$x\n";}
   }
   if(exists $c->{FLAGS})
   {
@@ -108,14 +99,13 @@ foreach my $t (keys %tools)
       my $join=" ";
       if($k eq "CPPDEFINES"){$join=" -D";}
       my $x=join($join,@{$c->{FLAGS}{$k}});
-      if($x!~/^\s*$/){print TFILE "${t}_LOC_FLAGS_${k}  :=$join$x\n${t}_EX_FLAGS_${k}   := \$(${t}_LOC_FLAGS_${k})\n"}
+      if($x!~/^\s*$/){print TFILE "${t}_EX_FLAGS_${k}  :=$join$x\n";}
     }
   }
   my $sproj=$c->{SCRAM_PROJECT} || 0;
   if ($sproj){$sproj=100000-(2000*&getScramProjectOrder($c,$t));}
-  if($t eq "self"){print TFILE "${t}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,$t,,20000,$t))\n";}
-  elsif($sproj)   {print TFILE "${t}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,$t,,$sproj,$t))\n";}
-  else{print TFILE "${t}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,$t,,,$t))\n";}
+  if($t eq "self"){print TFILE "${t}_ORDER := 20000\n";}
+  elsif($sproj)   {print TFILE "${t}_ORDER := $sproj\n";}
   print TFILE "\n";
   close(TFILE);
   if($sproj || (($t eq "self") && ($reltop ne "")))

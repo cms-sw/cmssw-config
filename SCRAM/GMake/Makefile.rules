@@ -1,5 +1,6 @@
 -include $(TOOLS_MKDIR).mk
-LLVM_ANALYZER := $(self_LOC_FLAGS_LLVM_ANALYZER)
+LLVM_ANALYZER     := $(self_EX_FLAGS_LLVM_ANALYZER)
+OVERRIDABLE_FLAGS := $(filter $(self_EX_FLAGS_OVERRIDABLE_FLAGS),$(ALL_COMPILER_FLAGS))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
@@ -211,62 +212,68 @@ endef
 define AdjustFlags
 $(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f))),$($1_$f)) $(foreach t,$2,$($t_$f)))
 endef
-define ToolCXXFlags
-$(filter-out $(USER_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
+define Tool_CXXFLAGS
+$(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
-define ToolFFlags
-$(filter-out $(USER_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
+define Tool_FFLAGS
+$(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
 endef
-define ToolCFlags
-$(filter-out $(USER_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
+define Tool_CFLAGS
+$(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
 endef
-define ToolCPPFlags
-$(filter-out $(USER_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))
+define Tool_CPPFLAGS
+$(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))
 endef
-define ToolLDFlags
-$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
-endef
-define ScramOrderedTools
-$(if $(strip $(SCRAM_PROJECTS)),$(warning Calculationg ScramOrderedTools)$(shell $(CMD_echo) $(foreach t,$(SCRAM_PROJECTS),$($(t)_ORDER):$(t)) | $(CMD_tr) ' ' '\n' | $(CMD_sort) -r | $(CMD_sed) -e 's|.*:||'),$(warning Calculationg ScramOrderedTools))
+define Tool_LDFLAGS
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
 endef
 define CalculateToolOrder
-$(if $(strip $($(1)_LOC_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_LOC_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
+$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
 endef
 define FindToolDependency
 $(sort $(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL)))
 endef
 define FindUOLibDependency
-$(sort $(foreach d,$($(1)_LOC_USE) $($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
+$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 endef
 define FindToolDepVariable
 $($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER):$(strip $(subst $(space),$(colon),$($(dep)_EX_$(2)))))),$(wordlist 2,99999,$(subst $(colon),$(space),$(var))))
 endef
-define ProductCommonVars
-ifeq ($$(strip $(3)),)
-$$(eval $$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):$(if $(strip $(2)),$(strip $(2)),99999),))
-else
-$(1)_ORDER:=$(3)
+
+define ProductOrder
+ifeq ($(strip $($(1)_ORDER)),)
+$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):$(if $(strip $(2)),$(strip $(2)),99999),)
 endif
-$$(foreach scope,EX LOC,$$(foreach type,INCLUDE LIB LIBDIR,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),1))))
-$$(foreach scope,EX LOC,$$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):$$(scope),))))
-$$(foreach scope,EX LOC,$$(eval $$(call AddCachedVariable,$(1)_$$(scope)_USE_ALL,FindToolDependency:$(1):$$(scope),)))
-$$(eval $$(call AddCachedVariable,$(1)_CXXFLAGS,ToolCXXFlags:$(1),))
-$$(eval $$(call AddCachedVariable,$(1)_CPPFLAGS,ToolCPPFlags:$(1),))
-$$(eval $$(call AddCachedVariable,$(1)_FFLAGS,ToolFFlags:$(1),))
-$$(eval $$(call AddCachedVariable,$(1)_CFLAGS,ToolCFlags:$(1),))
-$$(eval $$(call AddCachedVariable,$(1)_LDFLAGS,ToolLDFlags:$(1),))
-$(foreach err,$(foreach use,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$(if $($(use)),,$(use))),$(eval $(4)_USE_ERR+=$(err)))
+$(foreach err,$(foreach use,$(filter-out $(ALL_TOOLS),$(sort $($(1)_LOC_USE) $($(1)_EX_USE))),$(if $($($(use))_EX_USE),,$(use))),$(4)_USE_ERR+=$(err))
 endef
+
+define ProductCommonVarsTools
+$(eval $(call ProductOrder,$1,$2,$3,$4))
+$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
+$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
+$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
+$(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
+endef
+
+define ProductCommonVars
+$(eval $(call ProductOrder,$1,$2,$3,$4))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),))))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope),)))
+$(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
+endef
+
 define ProductCommonVarsExternal
-ifneq ($$(strip $$($(1)_BuildFile)),)
-$$(eval $$(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):99999,))
-$$(foreach type,INCLUDE LIB,$$(eval $$(call AddCachedVariable,$(1)_EX_$$(type)_ALL,FindToolDepVariable:$(1):$$(type):EX,1)))
-$$(eval $$(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,))
-$$(eval $$(call AddCachedVariable,$(1)_EX_UOLIB,FindUOLibDependency:$(1):,))
+ifneq ($(strip $($(1)_BuildFile)),)
+$(eval $(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):99999,))
+$(eval $(call AddCachedVariable,$(1)_EX_LIB_ALL,FindToolDepVariable:$(1):LIB:EX,1))
+$(eval $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,))
+$(eval $(call AddCachedVariable,$(1)_EX_UOLIB,FindUOLibDependency:$(1),))
 else
 $(1)_ORDER:=99999
 endif
 endef
+
 define outputlog
   @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
     $(DO_BUILD_LOG) for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | $(CMD_grep) -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) $(CMD_cat) $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) $(CMD_rm) -f $$f;  $(DO_BUILD_LOG) done ;\
@@ -1095,7 +1102,7 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
 define Binary
-ifneq ($(strip $(BIGLIBS)),)
+ifneq ($(strip $(BIGLIBS)$(BIGOBJS)),)
 $(1)_LOC_LIB := $$(sort $$(foreach l,$$($(1)_LOC_LIB),$$(if $$(strip $$($$(l)_bigprod)),$$($$(l)_bigprod),$$l)))
 endif
 $$(eval $$(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
@@ -1692,7 +1699,8 @@ endif
 PLUGIN_REFRESH_CMDS :=
 ###############################################################################
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
-$(foreach x,$(ALL_TOOLS),$(eval $($(x)_INIT_FUNC)))
+$(foreach x,$(ALL_TOOLS),$(eval $x := $x))
+$(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
@@ -1706,10 +1714,9 @@ endif
 ##############################################################################
 ifneq ($(strip $(RELEASETOP)),)
 POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
-self_LOC_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_LOC_INCLUDE))
-self_EX_INCLUDE :=  $(self_LOC_INCLUDE)
+self_EX_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_EX_INCLUDE))
 endif
-$(foreach f,$(ALL_COMPILER_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
+$(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
 LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)

@@ -33,6 +33,7 @@ sub new()
   my $self = {};
   bless($self, $class);
   $self->loadInit_();
+  $self->{swap_prod_mkfile}=0;
   return $self;
 }
 
@@ -46,8 +47,26 @@ sub process()
   $self->{context}->stash($data);
   $self->pushstash();
   $self->{core}=BuildSystem::Template::Plugins::PluginCore->new($self->{context});
+  $self->{swap_prod_mkfile}=0;
   my $ret=$self->runTemplate("${name}_template");
   $self->popstash();
+  if ($self->{swap_prod_mkfile})
+  {
+    my $oldfile=$data->{MAKEFILE};
+    my $newfile=$oldfile;
+    my $arch=$ENV{SCRAM_ARCH};
+    $newfile=~s/\/\.SCRAM\/$arch\/MakeData\/DirCache\//\/tmp\/$arch\/MakeData\/DirCache\//;
+    if ($newfile ne $oldfile)
+    {
+      close($data->{MAKEFILEFH});
+      use File::Copy;
+      use FileHandle;
+      move($oldfile,$newfile);
+      $data->{MAKEFILEFH} = FileHandle->new();
+      $data->{MAKEFILEFH}->open(">>$newfile");
+      $self->{FH}=$data->{MAKEFILEFH};
+    }
+  }
   return $ret;
 }
 
@@ -67,6 +86,12 @@ sub error()
 {
   my $self=shift;
   return "$@\n";
+}
+
+sub swapMakefile ()
+{
+  my $self=shift;
+  if ($self->get('class') eq 'LIBRARY'){$self->{swap_prod_mkfile}=1;}
 }
 
 ##################### Stash Interface ###############
@@ -638,7 +663,7 @@ sub dumpCompilersFlags()
     {
       foreach my $flag (keys %{$self->getTool($compiler)->{FLAGS}})
       {
-        if ($flag=~/^(SCRAM_.+|SHAREDSUFFIX|CCCOMPILER)$/){next;}
+        if ($flag=~/^(SCRAM_.+|REM_.+|SHAREDSUFFIX|CCCOMPILER)$/){next;}
         $allFlagsHash{$flag}=1;
       }
     }
@@ -931,12 +956,9 @@ sub addVirtualCompilers()
   foreach my $f ($self->getCompilerTypes())
   {
     my $c=$self->getCompiler($f);
-    push @$keys,"\n$c := $c";
     push @$keys,"ALL_TOOLS  += $c";
-    push @$keys,"${c}_LOC_USE   := \$(if \$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),\$(SCRAM_COMPILER)-$c,\$(SCRAM_DEFAULT_COMPILER)-$c)";
-    push @$keys,"${c}_EX_USE    := \$(${c}_LOC_USE)";
-    push @$keys,"${c}_INIT_FUNC := \$\$(eval \$\$(call ProductCommonVars,${c},,,${c}))\n";
-  } 
+    push @$keys,"${c}_EX_USE    := \$(if \$(strip \$(wildcard \$(LOCALTOP)/\$(SCRAM_TOOLS_DIR)/\$(SCRAM_COMPILER)-$c)),\$(SCRAM_COMPILER)-$c,\$(SCRAM_DEFAULT_COMPILER)-$c)";
+  }
 }
 
 sub isReleaseArea ()
@@ -1355,8 +1377,9 @@ sub depsOnlyBuildFile
 	foreach my $d (@$dataval){$udata{$d}=1;}
       }
       $dataval=join(" ",keys %udata);
-      if ($dataval!~/^\s*$/){print $fref "${sname}_EX_${data} := $dataval\n";}
+      if ($dataval!~/^\s*$/){print $fref "${sname}_LOC_${data} := $dataval\n";}
     }
+    print $fref "${sname}_EX_USE   := \$(foreach d,\$(${sname}_LOC_USE),\$(if \$(\$(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
     print $fref "ALL_EXTERNAL_PRODS += ${sname}\n";
     print $fref "${sname}_INIT_FUNC += \$\$(eval \$\$(call EmptyPackage,$sname,$path))\nendif\n\n";
     close($fref);
@@ -1702,6 +1725,8 @@ sub Project_template()
   else{print $fh "BIGLIBS := \n";}
 
   # LIB/INCLUDE/USE from toplevel BuildFile
+  my $proj_interface=lc($self->{cache}{ProjectName})."_include";
+  if (!$self->isToolAvailable($proj_interface)){$proj_interface="";}
   foreach my $var ("LIB","INCLUDE","USE")
   {
     print $fh "$var :=\n";
@@ -1714,6 +1739,7 @@ sub Project_template()
     if ($val ne "")
     {
       my $vals=join(" ",@$val);
+      if ($var eq "USE"){$vals="$vals $proj_interface";}
       print $fh "$var += $vals\n";
       $self->addCacheData($var,$vals);
     }
@@ -1721,7 +1747,9 @@ sub Project_template()
   foreach my $tn ($self->getCompilerTypes())
   {
     my $c = $self->getCompiler($tn);
-    print $fh "\$(foreach f,\$(ALL_COMPILER_FLAGS),\$(eval \$f += \$(${c}_LOC_FLAGS_\$f_ALL)))\n";
+    print $fh "\$(foreach f,\$(OVERRIDABLE_FLAGS),\$(eval \$f += \$(${c}_EX_FLAGS_\$f_ALL)))\n";
+    print $fh "\$(foreach f,\$(OVERRIDABLE_FLAGS),\$(eval REM_\$f += \$(${c}_EX_FLAGS_REM_\$f_ALL)))\n";
+    print $fh "\$(foreach f,\$(filter-out \$(OVERRIDABLE_FLAGS),\$(ALL_COMPILER_FLAGS)),\$(eval \$f += \$(\$(${c}_EX_USE)_EX_FLAGS_\$f)))\n";
   }
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
@@ -1730,7 +1758,7 @@ sub Project_template()
     my $tool = $self->getTool($rflx);
     foreach my $flag (keys %{$tool->{FLAGS}})
     {
-      if ($flag=~/^GENREFLEX_/){print $fh "$flag := \$(${rflx}_LOC_FLAGS_${flag})\n";}
+      if ($flag=~/^GENREFLEX_/){print $fh "$flag := \$(${rflx}_EX_FLAGS_${flag})\n";}
     }
   }
   
@@ -1827,8 +1855,9 @@ sub plugin_template ()
       print $fh "${pname}_prodtype := ${class}${ptype}${cap}\n";
     }
     else{
-    print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call ${ptype}Plugin,$pname,$safename,\$(",$self->get("plugin_dir"),"),",$self->get("path"),"))\n";
+      print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call ${ptype}Plugin,$pname,$safename,\$(",$self->get("plugin_dir"),"),",$self->get("path"),"))\n";
     }
+    if ($safename eq $pname){$self->swapMakefile();}
   }
   return;
 }
@@ -1947,10 +1976,14 @@ sub dumpBuildFileLOC ()
   if ($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-    foreach my $flag (@{$self->{cache}{DefaultCompilerFlags}})
+    foreach my $xpre ("","REM_")
     {
-      my $v=$core->flags($flag);
-      if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+      foreach my $xflag (@{$self->{cache}{DefaultCompilerFlags}})
+      {
+        my $flag="${xpre}${xflag}";
+        my $v=$core->flags($flag);
+        if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+      }
     }
     foreach my $data ("INCLUDE")
     {
@@ -2038,7 +2071,7 @@ sub dumpBuildFileData ()
         }
 	my $exptools="\$(${safename}_LOC_USE)";
         if ($noexpstr ne ""){$exptools="\$(filter-out $noexpstr,$exptools)";}
-	print $fh "${safename}_EX_USE   := \$(foreach d,$exptools,\$(if \$(\$(d)_LOC_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
+	print $fh "${safename}_EX_USE   := \$(foreach d,$exptools,\$(if \$(\$(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
       }
       else{print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",}
     }

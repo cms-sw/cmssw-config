@@ -19,6 +19,7 @@
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
   <flags LLVM_ANALYZER="llvm-analyzer"/>
+  <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS"/>
   <architecture name="_mic_">
     <flags DEFAULT_COMPILER="icc"/>
   </architecture>
