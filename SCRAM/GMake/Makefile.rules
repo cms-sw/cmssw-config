@@ -250,8 +250,8 @@ endef
 define ProductCommonVarsTools
 $(eval $(call ProductOrder,$1,$2,$3,$4))
 $(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
-$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
-$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
+$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
+$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
 $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
 endef
 
