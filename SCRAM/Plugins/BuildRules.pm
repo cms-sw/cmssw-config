@@ -1725,8 +1725,8 @@ sub Project_template()
   else{print $fh "BIGLIBS := \n";}
 
   # LIB/INCLUDE/USE from toplevel BuildFile
-  my $proj_interface=lc($self->{cache}{ProjectName})."_include";
-  if (!$self->isToolAvailable($proj_interface)){$proj_interface="";}
+  my $proj=lc($self->{cache}{ProjectName});
+  if (!$self->isToolAvailable($proj)){$proj="";}
   foreach my $var ("LIB","INCLUDE","USE")
   {
     print $fh "$var :=\n";
@@ -1739,7 +1739,7 @@ sub Project_template()
     if ($val ne "")
     {
       my $vals=join(" ",@$val);
-      if ($var eq "USE"){$vals="$vals $proj_interface";}
+      if ($var eq "USE"){$vals="$vals $proj";}
       print $fh "$var += $vals\n";
       $self->addCacheData($var,$vals);
     }
@@ -1747,9 +1747,8 @@ sub Project_template()
   foreach my $tn ($self->getCompilerTypes())
   {
     my $c = $self->getCompiler($tn);
-    print $fh "\$(foreach f,\$(OVERRIDABLE_FLAGS),\$(eval \$f += \$(${c}_EX_FLAGS_\$f_ALL)))\n";
-    print $fh "\$(foreach f,\$(OVERRIDABLE_FLAGS),\$(eval REM_\$f += \$(${c}_EX_FLAGS_REM_\$f_ALL)))\n";
-    print $fh "\$(foreach f,\$(filter-out \$(OVERRIDABLE_FLAGS),\$(ALL_COMPILER_FLAGS)),\$(eval \$f += \$(\$(${c}_EX_USE)_EX_FLAGS_\$f)))\n";
+    print $fh "\$(foreach f,\$(ALL_COMPILER_FLAGS),\$(eval \$f += \$(${c}_EX_FLAGS_\$f_ALL)))\n";
+    print $fh "\$(foreach f,\$(ALL_COMPILER_FLAGS),\$(eval REM_\$f += \$(${c}_EX_FLAGS_REM_\$f_ALL)))\n";
   }
   my $rflx=$self->getRootReflex();
   if ($rflx ne "")
