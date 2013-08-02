@@ -1721,9 +1721,9 @@ LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
-$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell $(CMD_find) $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^0[0-9]:" | $(CMD_sed) -e "s|^0[0-9]:||" |$(CMD_sort) | $(CMD_uniq) >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell $(CMD_rm) -rf $(WORKINGDIR)/classes/$(d) $(WORKINGDIR)/$(d))),))
+$(foreach d,$(sort $(REMOVED_DIRS)),$(if $(wildcard $(WORKINGDIR)/$(d)),$(eval xx:=$(shell $(CMD_find) $(WORKINGDIR)/$(d) -name "AUTOCLEAN.*.clean" -type f | $(CMD_xargs) $(CMD_cat) | $(CMD_grep) "^[0-9][0-9]:" | $(CMD_sed) -e "s|^[0-9][0-9]:||" |$(CMD_sort) | $(CMD_uniq) >> $(WORKINGDIR)/.AUTOCLEAN)$(info Cleaning up removed directory:$(d))$(shell $(CMD_rm) -rf $(WORKINGDIR)/classes/$(d) $(WORKINGDIR)/$(d))),))
 $(foreach d,$(REMOVED_DIRS),$(if $(wildcard $(WORKINGDIR)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),$(shell $(CMD_touch) $(SCRAM_INTwork)/cache/bf/$(d)/$(SCRAM_BUILDFILE)),))
-$(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_mkdir) -p $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_touch) $(DIRCACHE_MKDIR)/RmvDirCache.mk)
+xx:=$(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_mkdir) -p $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_touch) $(DIRCACHE_MKDIR)/RmvDirCache.mk)
 endif
 ####### Update Tools and Prods rules ##############
 ifeq ($(strip $(UFAST)),)
