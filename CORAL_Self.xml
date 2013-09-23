@@ -11,6 +11,9 @@
   <flags NO_EXTERNAL_RUNTIME="LD_LIBRARY_PATH"/>
   <flags NO_EXTERNAL_RUNTIME="PATH"/>
   <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS"/>
+  <architecture name="_mic_">
+    <flags DEFAULT_COMPILER="icc"/>
+  </architecture>
  </client>
  <runtime name="LD_LIBRARY_PATH"   value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path"/>
  <runtime name="LD_LIBRARY_PATH"   value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
