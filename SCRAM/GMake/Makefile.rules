@@ -1716,7 +1716,7 @@ ifneq ($(strip $(BIGLIBS)),)
 LD_BIG_OPT := -Wl,-z,muldefs
 endif
 ifeq ($(IS_MIC),yes)
-ROOTCINT:=LD_LIBRARY_PATH=$(ROOTCINT_MIC_BASE)/lib:$$LD_LIBRARY_PATH $(ROOTCINT_MIC_BASE)/bin/rootcint
+ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
 endif
 ##############################################################################
 ifneq ($(strip $(RELEASETOP)),)
