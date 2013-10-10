@@ -32,7 +32,7 @@
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
 
-<architecture name="slc">
+<architecture name="slc|fc">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
