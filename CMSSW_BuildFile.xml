@@ -42,3 +42,6 @@
 <architecture name="osx">
    <flags MISSING_SYMBOL_FLAGS="-Wl,-undefined,error"/>
 </architecture>
+<architecture name="_mic_">
+  <flags CPPDEFINES="thread_local=__thread"/>
+</architecture>
