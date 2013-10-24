@@ -818,17 +818,20 @@ endef
 #############################################################################
 define SubSystem
 .PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2)
-$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(subdirs_$(2))
+ifneq ($(strip $(SCRAM_IGNORE_PACKAGES)),)
+subdirs_$(2) := $$(filter-out $$(addprefix $(SCRAM_SOURCEDIR)_,$$(subst /,_,$(SCRAM_IGNORE_PACKAGES))),$$(subdirs_$(2)))
+endif
+$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $$(subdirs_$(2))
 	@$(CMD_echo) ">> Subsystem $(1) built"
-runtests_$(2): $(addprefix runtests_,$(subdirs_$(2)))
+runtests_$(2): $$(addprefix runtests_,$$(subdirs_$(2)))
 	@:
-unittests_$(2): $(addprefix unittests_,$(subdirs_$(2)))
+unittests_$(2): $$(addprefix unittests_,$$(subdirs_$(2)))
 	@:
-runpython_$(2): $(addprefix runpython_,$(subdirs_$(2)))
+runpython_$(2): $$(addprefix runpython_,$$(subdirs_$(2)))
 	@:
-compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
+compile_$(2): $$(addprefix compile_,$$(subdirs_$(2)))
 	@:
-precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
+precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
 endef
 define EmptyPackage
@@ -851,28 +854,31 @@ else
 logfile_$(2) := 
 redirectlog_$(2) := 
 endif
+ifneq ($(strip $(SCRAM_IGNORE_SUBDIRS)),)
+subdirs_$(2) := $$(filter-out $$(addprefix $(2)_,$(SCRAM_IGNORE_SUBDIRS)),$$(subdirs_$(2)))
+endif
 $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARGET
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1,) &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
-$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $(addprefix all_,$(subdirs_$(2)))
+$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1,)
-ifeq ($$(filter $(2)_test,$(subdirs_$(2))),$(2)_test)
+ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
 unittests_$(2): unittests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
 endif
-precompile_$(2): $(addprefix precompile_,$(subdirs_$(2)))
+precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
-compile_$(2): $(addprefix compile_,$(subdirs_$(2)))
+compile_$(2): $$(addprefix compile_,$$(subdirs_$(2)))
 	@:
-ifeq ($$(filter $(2)_python,$(subdirs_$(2))),$(2)_python)
+ifeq ($$(filter $(2)_python,$$(subdirs_$(2))),$(2)_python)
 runpython_$(2): runpython_$(2)_python
 	@$(CMD_echo) ">> Python for package $(1) ran."
 endif
