@@ -27,8 +27,8 @@
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
  <runtime name="LOCALRT"               value="$LOCALTOP"/>
- <runtime name="ROOT_INCLUDE_PATH"     value="$LOCALTOP/src"                         type="path"/>
- <runtime name="ROOT_INCLUDE_PATH"     value="$RELEASETOP/src"                       type="path"/>
+ <runtime name="ROOT_INCLUDE_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
+ <runtime name="ROOT_INCLUDE_PATH"     value="$RELEASETOP/src"                       type="path" handler="warn"/>
  <runtime name="CMSSW_VERSION"         value="$SCRAM_PROJECTVERSION"/>
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
