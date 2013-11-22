@@ -51,6 +51,7 @@ $cache{KEYS}{PROJECT_CONFIG_BASE}=$config;
 $cache{KEYS}{SCRAM_VERSION}=$scram;
 
 foreach my $k (keys %keys){$cache{KEYS}{$k}=$keys{$k};}
+if (!exists $cache{KEYS}{PROJECT_GIT_HASH}){$cache{KEYS}{PROJECT_GIT_HASH}=$version;}
 
 my $regexp="";
 foreach my $k (keys %{$cache{KEYS}})
