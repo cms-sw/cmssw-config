@@ -45,7 +45,7 @@ sub Project()
     print $fh "EDM_CHECK_CLASS_VERSION:=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n";  
   }
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
-  print $fh "CPPDEFINES+=-DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
+  print $fh "CPPDEFINES+=-DCMSSW_GIT_HASH='\"\$(CMSSW_GIT_HASH)\"' -DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
 ######################################################################
 # Dependencies: run ignominy analysis for release documentation
   print $fh ".PHONY: dependencies\n",

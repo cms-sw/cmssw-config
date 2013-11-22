@@ -24,6 +24,7 @@
     <flags DEFAULT_COMPILER="icc"/>
   </architecture>
  </client>
+ <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
  <runtime name="CMSSW_RELEASE_BASE"    value="$RELEASETOP"/>
  <runtime name="LOCALRT"               value="$LOCALTOP"/>
