@@ -2114,8 +2114,10 @@ sub binary_template ()
 {
   my ($self,$autoPlugin)=@_;
   if($self->get("suffix") ne ""){return 1;}
-  $self->initTemplate_common2all();
   my $core=$self->core();
+  my $skip=$core->flags("SKIP_FILES");
+  if (($skip eq "*") || ($skip eq "%")){return 1;}
+  $self->initTemplate_common2all();
   my $safepath=$self->get("safepath"); my $path=$self->get("path");
   my $fh=$self->{FH};
   my $class=$self->get("class");
