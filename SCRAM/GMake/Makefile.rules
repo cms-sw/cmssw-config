@@ -162,7 +162,7 @@ endif
 
 ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
-FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$? ; exit 0)
+FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$?; $(CMD_touch) $(WORKINGDIR)/build_error; exit 0)
 else
 ifeq ($(strip $(BUILD_LOG)),yes)
 FORCE_BUILD_START = (
@@ -667,7 +667,7 @@ define link_lib_common
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
-  @if [ "X$(BIGLIBS)" = "X" ] ; then $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)); fi
+  @if [ "X$(BIGLIBS)" = "X" ] ; then [ -e $@ ] && $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)); fi
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
@@ -703,7 +703,7 @@ define build_bin
   $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
   (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
+  @[ -e $@ ] && $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 # Test executable building
 define build_test
@@ -1962,11 +1962,15 @@ buildlog:
 	done
 runtime:
 	@$(CMD_echo) ">> Runtime environment:"; env
+$(WORKINGDIR)/errors: FORCE_TARGET
+	@for err in $(foreach p,$(BUILDFILE_ERRORS),$($(p)_ERROR)); do \
+	  echo "$$err" ;\
+	done; $(CMD_touch) -t $(OLD_TIMESTAMP) $@
 skiptest_%:
 	@:
 updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULES))
 	@:
-PostBuild: CompilePython ProjectPluginRefresh
+PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%

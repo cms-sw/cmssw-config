@@ -2135,6 +2135,9 @@ sub binary_template ()
 	  $self->set("safename",$safename);
           if ($self->getObjectProducts("${path}/${safename}") eq ""){next;}
 	  $core->thisproductdata($safename,$ptype);
+	  my $haserr=0;
+	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
+	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
 	  print $fh "ifeq (\$(strip \$($safename)),)\n";
 	  if (defined $autoPlugin)
 	  {
@@ -2161,6 +2164,9 @@ sub binary_template ()
 	  $self->set("safename",$safename);
           if ($self->getObjectProducts("${path}/${safename}") eq ""){next;}
 	  $core->thisproductdata($safename,$ptype);
+	  my $haserr=0;
+	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
+	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
 	  my $prodfiles = $core->productfiles();
 	  if ($prodfiles ne "")
 	  {
