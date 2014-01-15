@@ -162,11 +162,11 @@ endif
 
 ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
 FORCE_BUILD_START = (
-FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$?; $(CMD_touch) $(WORKINGDIR)/build_error; exit 0)
+FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$?; $(CMD_touch) $(WORKINGDIR)/build_error || exit 0)
 else
 ifeq ($(strip $(BUILD_LOG)),yes)
 FORCE_BUILD_START = (
-FORCE_BUILD_END = ) || (exitcode=$$?; $(CMD_echo) gmake: \*\*\* [$@] Error $$exitcode ; exit $$exitcode)
+FORCE_BUILD_END = ) || (exitcode=$$?; $(CMD_echo) gmake: \*\*\* [$@] Error $$exitcode; $(CMD_touch) $(WORKINGDIR)/build_error; exit $$exitcode)
 else
 FORCE_BUILD_START =
 FORCE_BUILD_END =
@@ -541,19 +541,19 @@ endef
 ##############################################################################
 # Dictionary compilation
 define processTmpMMDData
-  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$1##g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; mv $<.dx $(basename $@).d
+  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$1##g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
 endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
   $(VERB_ECHO)                   $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
   (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
-  @$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@))
+  @$(startlog_$(2))$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@))$(endlog_$(2))
 endef
 # Root Dictionary compilation
 define compile_rootdict
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
-  @$(call processTmpMMDData,$<,$@)
+  @$(startlog_$(2))$(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))$(endlog_$(2))
+  @$(startlog_$(2))$(call processTmpMMDData,$<,$@)$(endlog_$(2))
 endef
 define compile_python
   $(CMD_echo) ">> Compiling python modules $1" &&\
@@ -667,7 +667,7 @@ define link_lib_common
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
-  @if [ "X$(BIGLIBS)" = "X" ] ; then [ -e $@ ] && $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)); fi
+  @if [ "X$(BIGLIBS)" = "X" ] ; then $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)); fi
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
@@ -703,7 +703,7 @@ define build_bin
   $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
   (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
-  @[ -e $@ ] && $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 # Test executable building
 define build_test

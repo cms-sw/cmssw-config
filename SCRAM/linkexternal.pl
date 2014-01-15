@@ -12,7 +12,7 @@ $cache{validlinks}{PATH}="bin";
 $cache{validlinks}{PYTHONPATH}="python";
 $cache{validlinks}{CMSSW_SEARCH_PATH}="data";
 $cache{validlinks}{SHAREDIR}="share";
-
+$cache{validlinks}{ROOT_INCLUDE_PATH}="rootinclude";
 
 $cache{defaultlinks}{LIBDIR}=1;
 
@@ -24,6 +24,7 @@ $cache{ignorefiles}{LIBDIR}{'__.SYMDEF\s+SORTED'}="f";
 $cache{ignorefiles}{PYTHONPATH}{"CVS"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{"etc"}="d";
 $cache{ignorefiles}{CMSSW_SEARCH_PATH}{".package-checksum"}="f";
+$cache{ignorefiles}{ROOT_INCLUDE_PATH}{"CVS"}="d";
 
 $cache{runtime_map}{LIBDIR}=["LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"];
 
