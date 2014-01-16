@@ -552,7 +552,7 @@ define compile_lcgdict
 endef
 # Root Dictionary compilation
 define compile_rootdict
-  @$(startlog_$(2))$(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))$(endlog_$(2))
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
   @$(startlog_$(2))$(call processTmpMMDData,$<,$@)$(endlog_$(2))
 endef
 define compile_python
