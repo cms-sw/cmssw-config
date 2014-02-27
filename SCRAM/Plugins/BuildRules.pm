@@ -22,6 +22,8 @@ sub loadInit_ ()
   {$self->{cache}{SourceExtensions}{cxx}{$ext}=1;}
   foreach my $ext ("c")
   {$self->{cache}{SourceExtensions}{c}{$ext}=1;}
+  foreach my $ext ("cu")
+  {$self->{cache}{SourceExtensions}{cude}{$ext}=1;}
   $ENV{LOCALTOP}=&fixPath($ENV{LOCALTOP});
   if ($ENV{SCRAM_VERSION}=~/^V[2-9]/){$self->{dbext}="db.gz";}
   else{$self->{dbext}="db";}
@@ -685,10 +687,20 @@ sub addAllVariables ()
   my $self=shift;
   my @keys=();
   my %skipTools=();
+  my $cuda = $self->isToolAvailable("cuda");
+  if ($cuda)
+  {
+    push @keys, "CUDA_TYPE_COMPILER        := cuda";
+    push @keys, "CUDASRC_FILES_SUFFIXES := ".join(" ",$self->getSourceExtensions("cude"));
+  }
+  else
+  {
+    push @keys, "CUDASRC_FILES_SUFFIXES := ";
+  }
   push @keys, "CXXSRC_FILES_SUFFIXES     := ".join(" ",$self->getSourceExtensions("cxx"));
   push @keys, "CSRC_FILES_SUFFIXES       := ".join(" ",$self->getSourceExtensions("c"));
   push @keys, "FORTRANSRC_FILES_SUFFIXES := ".join(" ",$self->getSourceExtensions("fortran"));
-  push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES)";
+  push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES) \$(CUDASRC_FILES_SUFFIXES)";
   push @keys, "SCRAM_ADMIN_DIR           := .SCRAM/\$(SCRAM_ARCH)";
   push @keys, "SCRAM_TOOLS_DIR           := \$(SCRAM_ADMIN_DIR)/timestamps";
   $self->dumpCompilersFlags(\@keys);
