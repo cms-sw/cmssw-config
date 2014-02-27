@@ -216,6 +216,12 @@ endef
 define AdjustFlags
 $(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f))),$($1_$f)) $(foreach t,$2,$($t_$f)))
 endef
+define CUDA_FLAGS
+$(filter-out $(USER_REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS)
+endef
+define CUDA_CFLAGS
+$(filter-out $(USER_REM_CUDA_CFLAGS) $($(1)_LOC_FLAGS_REM_CUDA_CFLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_CFLAGS)) $(USER_CUDA_CFLAGS)
+endef
 define Tool_CXXFLAGS
 $(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
 endef
@@ -477,19 +483,23 @@ endef
 ##############################################################################
 #Compilation Rules
 define run_compile_command
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
-  $(VERB_ECHO) $6 $($7_MMD) $($7_MF) $(basename $@).d $< -o $@ &&\
-              ($6 $($7_MMD) $($7_MF) $(basename $@).d $< -o $@ || ($6 $($7_MM) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1)) $5 $(endlog_$(2))
+  $(VERB_ECHO) $6 $7 $< -o $@ &&\
+              ($6 $7 $< -o $@ || ($(if $(strip $8),$6 $8 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $5 $(endlog_$(2))
 endef
 define compile_cxx_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),CXX)
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(CXX_MMD) $(CXX_MF) $(basename $@).d,$(CXX_MM))
 endef
 define compile_c_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),C)
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(C_MMD) $(C_MF) $(basename $@).d,$(C_MM))
 endef
 define compile_fortran_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),F77)
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(F77_MMD) $(F77_MF) $(basename $@).d,$(F77_MM))
+endef
+define compile_cude_common
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(NVCC) -c $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
+  @$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2))
 endef
 
 #LLVM Analyzer Rules
@@ -524,6 +534,9 @@ define compile_c_edm
 endef  
 define compile_fortran
   $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS))
+endef  
+define compile_cude
+  $(call compile_cude_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS))
 endef  
 define compile_boost
   $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
@@ -646,7 +659,7 @@ endef
 define processMMDData
   $(startlog_$(2))$(CMD_rm) -f $3 && $(CMD_touch) $3 &&\
   for dep in $4 ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' $$dep | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
+    if [ -f $$dep ] ; then $(CMD_sed) -e 's|: *|: \\\n|' $$dep |  $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' | $(CMD_grep) -v '^ *\\$$' | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
   done &&\
   $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) $(endlog_$(2))
 endef
@@ -943,6 +956,11 @@ $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
 	$$(call compile_fortran$(4),$(1),$(3))
 endef
 
+define CudeCompileRule
+$($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
+	$$(call compile_cude,$(1),$(3))
+endef
+
 define EmptyProduct
 .PHONY: $(1) all_$(1) $(2) all_$(2)
 $(1) $(2): all_$(1)
@@ -973,7 +991,7 @@ $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE_BIG  := $(if $(strip $(BIGLIBS)),$$(sort $$(foreach o,$$($(1)_LOC_USE),$$($$($$(o))_bigprod))),)
-$(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $$($(1)_LOC_USE_BIG)
+$(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),)) $$($(1)_LOC_USE_BIG)
 $(1)_libdeps      := $$(call libdeps,$1)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files)))) $(if $(strip $(BIGLIBS)),$(call BigObjectsPaths,$($(1)_bigobjs)))
 ifneq ($(strip $(5)),)
@@ -1108,6 +1126,7 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
+$(if $(strip $(CUDASRC_FILES_SUFFIXES)),$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call CudeCompileRule,$(1),$(ext),$(1)))))
 endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
