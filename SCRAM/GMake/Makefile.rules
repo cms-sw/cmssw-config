@@ -483,7 +483,7 @@ endef
 ##############################################################################
 #Compilation Rules
 define run_compile_command
-  $(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(4) $< " &&\
   $(VERB_ECHO) $6 $7 $< -o $@ &&\
               ($6 $7 $< -o $@ || ($(if $(strip $8),$6 $8 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $5 $(endlog_$(2))
