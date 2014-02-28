@@ -1611,8 +1611,10 @@ sub initTemplate_PROJECT ()
   $self->{cache}{Compiler}=$defcompiler;
   $self->{cache}{CompilerTypes}=[];
   $self->{cache}{DefaultCompilerFlags}=[];
+  $self->{cache}{DefaultBuildFileFlagsToDump}=[];
+  foreach my $flag ("CUDA_FLAGS","CUDA_CFLAGS"){push @{$self->{cache}{DefaultBuildFileFlagsToDump}},$flag;}
   foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS"){push @{$self->{cache}{DefaultCompilerFlags}},$flag;}
-  foreach  my $type ("CXX","C","F77")
+  foreach my $type ("CXX","C","F77")
   {
     push @{$self->{cache}{CompilerTypes}},$type;
     $self->{cache}{"${type}Compiler"}=lc($type)."compiler";
@@ -1989,7 +1991,7 @@ sub dumpBuildFileLOC ()
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
     foreach my $xpre ("","REM_")
     {
-      foreach my $xflag (@{$self->{cache}{DefaultCompilerFlags}})
+      foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
       {
         my $flag="${xpre}${xflag}";
         my $v=$core->flags($flag);
