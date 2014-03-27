@@ -763,7 +763,8 @@ sub addVariables ()
   {
     if(exists $self->{cache}{toolcache}{SETUP}{$t}{$basevar})
     {
-      push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};
+      if ($t eq lc($ENV{SCRAM_PROJECTNAME})){push @$keys,"${basevar}_FULL_RELEASE:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};}
+      else{push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};}
       $self->{cache}{ToolVariables}{$type}{$basevar}=1;
     }
     if (($self->isMultipleCompilerSupport()) && (!$skipCompilerCheck) && ($self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER}))

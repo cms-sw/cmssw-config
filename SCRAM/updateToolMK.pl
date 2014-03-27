@@ -185,6 +185,7 @@ sub mkprocessfile ()
   my $base=$data->{base};
   my $basevar=uc($tool)."_BASE";
   if ($tool eq "self"){$basevar="RELEASETOP";}
+  elsif ($tool eq $proj_name){$basevar="${basevar}_FULL_RELEASE";}
   my $iref; my $oref;
   open($iref,$infile) || die "Can not open file for reading: $infile";
   open($oref,">$outfile") || die "Can not open file for writing: $outfile";
