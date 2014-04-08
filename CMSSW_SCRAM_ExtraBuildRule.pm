@@ -105,15 +105,14 @@ sub Project()
   print $fh ".PHONY: gindices\n",
             "gindices:\n",
             "\t\@cd \$(LOCALTOP)/src; \\\n",
-            "\trm -rf  \$(LOCALTOP)/src/.glimpse_*; mkdir  \$(LOCALTOP)/src/.glimpse_full; \\\n",
-            "\tls -d \$(LOCALTOP)/src/*/*/*  | glimpseindex -F -H \$(LOCALTOP)/src/.glimpse_full; \\\n",
+            "\trm -rf  .glimpse_*; mkdir .glimpse_full; \\\n",
+            "\tfind . -follow -mindepth 3 -type f | grep -v '.pyc\$\$' | sed 's|^./||' | glimpseindex -F -H .glimpse_full; \\\n",
 	    "\tchmod 0644 .glimpse_full/.glimpse_*; \\\n",
 	    "\tmv .glimpse_full/.glimpse_filenames .; \\\n",
             "\tfor  x in `ls -A1 .glimpse_full` ; do \\\n",
             "\t  ln -s .glimpse_full/\$\$x \$\$x; \\\n",
             "\tdone; \\\n",	    
-            "\tsed -i -e 's|\$(LOCALTOP)/src/||g' .glimpse_filenames; \\\n",
-	    "\tcd .glimpse_full; ln -s ../.glimpse_filenames .\n";
+	    "\tln -s ../.glimpse_filenames .glimpse_full/.glimpse_filenames\n";
 ######################################################################
   print $fh ".PHONY: productmap\n",
             "productmap:\n",
