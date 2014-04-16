@@ -34,6 +34,7 @@ sub Project()
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");
   $common->addSymLinks("src/LCG include/LCG 1 . ''");
+  print $fh "COND_SERIALIZATION:=\$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python/condformats_serialization_generate.py\n";  
   if ($ENV{SCRAM_ARCH}=~/_mic_/)
   {
     print $fh "EDM_WRITE_CONFIG:=true\n";
