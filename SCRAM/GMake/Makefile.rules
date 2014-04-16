@@ -620,7 +620,7 @@ define generate_lcgdict
                $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
   $(endlog_$(2))
 endef
-# ROOt dictionary generation
+# ROOT dictionary generation
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
@@ -629,6 +629,14 @@ define generate_rootdict
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
+endef
+
+# CondFormat Serialization generation
+define generate_CondSerialization
+  @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Generating CondFormat Serialization code from header file $< " &&\
+  $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) &&\
+  (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
 endef
 # CodeGen record Generation
 define generate_codegen_record
@@ -1358,6 +1366,19 @@ $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
 	$$(call compile_rootdict,$(1),$(1))
 endef
 
+define CondSerialization
+ifneq ($$(strip $$(COND_SERIALIZATION_SCRIPT)),)
+$(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
+$(1)_files                  += $($(1)_objdir)/a/Serialization.cc
+$(1)_objs                   += $($(1)_objdir)/a/Serialization.$(OBJEXT)
+.PRECIOUS: $($(1)_objdir)/a/Serialization.cc
+$(1)_extra_files += $($(1)_objdir)/a/Serialization.cc
+$($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config)
+	$$(call generate_CondSerialization,$(1),$(1),$(2))
+$($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
+	$$(call compile_cxx,$(1),$(1))
+endif
+endef
 
 #safename,prodpath
 define RootMap
@@ -1742,6 +1763,14 @@ LD_BIG_OPT := -Wl,-z,muldefs
 endif
 ifeq ($(IS_MIC),yes)
 ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
+endif
+ifneq ($(strip $(COND_SERIALIZATION)),)
+COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(LOCALTOP)/$(COND_SERIALIZATION))),$(LOCALTOP)/$(COND_SERIALIZATION),)
+ifeq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
+ifneq ($(strip $(RELEASETOP)),)
+COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(COND_SERIALIZATION))),$(RELEASETOP)/$(COND_SERIALIZATION),)
+endif
+endif
 endif
 ##############################################################################
 ifneq ($(strip $(RELEASETOP)),)

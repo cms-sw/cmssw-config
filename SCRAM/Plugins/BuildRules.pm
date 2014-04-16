@@ -1212,6 +1212,7 @@ sub searchLCGRootDict ()
   $stash->set('rootmap', $rootmap);
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
+  if (($self->get("class") eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
   return;
 }
 
@@ -1906,6 +1907,12 @@ sub dict_template()
     $self->rootdict_template();
     $self->popstash();
   }
+  if ($self->get("cond_serialization") ne "")
+  {
+    $self->pushstash();
+    $self->cond_serialization_template();
+    $self->popstash();
+  }
   return 1;
 }
 
@@ -1917,6 +1924,16 @@ sub rootdict_template()
   my $rootdictfile=$self->get("rootdictfile");
   my $fh=$self->{FH};
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},${path},${rootdictfile}))\n";
+}
+
+sub cond_serialization_template()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  my $path=$self->get("path");
+  my $file=$self->get("cond_serialization");
+  my $fh=$self->{FH};
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call CondSerialization,${safename},${path},${file}))\n";
 }
 
 sub lcgdict_template()
