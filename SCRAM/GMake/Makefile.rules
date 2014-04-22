@@ -556,6 +556,9 @@ endef
 define processTmpMMDData
   [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$1##g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
 endef
+define processMMDData_obj2src
+  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$<##g;s#$@:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
+endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
@@ -1377,6 +1380,7 @@ $($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config)
 	$$(call generate_CondSerialization,$(1),$(1),$(2))
 $($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
 	$$(call compile_cxx,$(1),$(1))
+	@$(startlog_$(2)) $$(call processMMDData_obj2src) $(endlog_$(2))
 endif
 endef
 
