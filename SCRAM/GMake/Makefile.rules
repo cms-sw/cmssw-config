@@ -510,10 +510,10 @@ define run_analyze_command
                $5 $< -o /dev/null $(endlog_$(2))
 endef
 define analyze_cxx_common
-  $(call run_analyze_command,$1,$2,$3,$4,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS))
+  $(call run_analyze_command,$1,$2,$3,$4,$(CXX) -c -### $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS))
 endef
 define analyze_c_common
-  $(call run_analyze_command,$1,$2,$3,$4,$(CC) -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS))
+  $(call run_analyze_command,$1,$2,$3,$4,$(CC) -c -### $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS))
 endef
 
 ##############################################################################
