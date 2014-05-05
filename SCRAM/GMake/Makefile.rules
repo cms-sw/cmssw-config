@@ -670,7 +670,7 @@ endef
 define processMMDData
   $(startlog_$(2))$(CMD_rm) -f $3 && $(CMD_touch) $3 &&\
   for dep in $4 ; do \
-    if [ -f $$dep ] ; then $(CMD_sed) -e 's|: *|: \\\n|' $$dep |  $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' | $(CMD_grep) -v '^ *\\$$' | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
+    if [ -f $$dep ] ; then $(CMD_sed) -e 's|: *|: \\\'$$'\n|' $$dep |  $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' | $(CMD_grep) -v '^ *\\$$' | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
   done &&\
   $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) $(endlog_$(2))
 endef
