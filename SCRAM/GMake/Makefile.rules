@@ -1380,7 +1380,7 @@ $($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config)
 	$$(call generate_CondSerialization,$(1),$(1),$(2))
 $($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
 	$$(call compile_cxx,$(1),$(1))
-	@$(startlog_$(2)) $$(call processMMDData_obj2src) $(endlog_$(2))
+	@$(startlog_$(1)) $$(call processMMDData_obj2src) $(endlog_$(1))
 endif
 endef
 
