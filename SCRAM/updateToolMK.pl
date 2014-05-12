@@ -132,7 +132,7 @@ foreach my $t (keys %tools)
 
 my $ref;
 open($ref,">${stooldir}/all.mk") || die "Can not open for writing: ${stooldir}/all.mk";
-foreach my $line (`sort -r ${stooldir}/order | sed 's|.*:||'`)
+foreach my $line (`sort ${stooldir}/order | sed 's|.*:||'`)
 {
   chomp $line;
   print $ref "include ${stooldir}/${line}.mk\n";
