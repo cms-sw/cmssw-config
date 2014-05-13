@@ -1777,10 +1777,6 @@ endif
 endif
 endif
 ##############################################################################
-ifneq ($(strip $(RELEASETOP)),)
-POISON_INCLUDE_DIR := $(wildcard $(LOCALTOP)/poison)
-self_EX_INCLUDE := $(subst $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(POISON_INCLUDE_DIR) $(RELEASETOP)/$(SCRAM_SOURCEDIR),$(self_EX_INCLUDE))
-endif
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
 LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
