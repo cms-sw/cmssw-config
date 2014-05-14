@@ -1775,6 +1775,11 @@ ifneq ($(strip $(RELEASETOP)),)
 COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(COND_SERIALIZATION))),$(RELEASETOP)/$(COND_SERIALIZATION),)
 endif
 endif
+ifeq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
+ifneq ($(strip $(CMSSW_BASE_FULL_RELEASE)),)
+COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(CMSSW_BASE_FULL_RELEASE)/$(COND_SERIALIZATION))),$(CMSSW_BASE_FULL_RELEASE)/$(COND_SERIALIZATION),)
+endif
+endif
 endif
 ##############################################################################
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
