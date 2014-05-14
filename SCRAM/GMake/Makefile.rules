@@ -1782,6 +1782,7 @@ endif
 endif
 endif
 ##############################################################################
+self_EX_INCLUDE := $(wildcard $(LOCALTOP)/poison) $(self_EX_INCLUDE)
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
 LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
