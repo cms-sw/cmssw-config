@@ -1,3 +1,9 @@
+2013-05-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-02-00: lcg and root dictionaries generation updated to use new
+	genreflex (root6). This tag should work for both root5 and root6 based
+	releases.
+
 2013-05-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-01-26: Various fixes and new features e.g.

@@ -52,6 +52,10 @@ HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
+GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
+ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
+LCGDICT_FILE_PREFIX = $(1)_
+endif
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
 ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld
@@ -236,6 +240,9 @@ $(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS),$(CPPFLAGS)) $(
 endef
 define Tool_LDFLAGS
 $(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+endef
+define Tool_DependenctPCMS
+$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 endef
 define CalculateToolOrder
 $(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
@@ -619,16 +626,16 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-               $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --gccxmlopt="$(GENREFLEX_GCCXMLOPT)"   --gccxmlpath=$(GCCXML_BASE)/bin --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
+  $(VERB_ECHO) $(GENREFLEX) $(LOCALTOP)/$(4) -s $(LOCALTOP)/$(3) -o $(LOCALTOP)/$@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+   cd $(@D) && $(GENREFLEX) $(LOCALTOP)/$(4) -s $(LOCALTOP)/$(3) -o $(LOCALTOP)/$@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
   $(endlog_$(2))
 endef
 # ROOT dictionary generation
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
-  $(VERB_ECHO) $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< &&\
-  (            $(ROOTCINT) -f $@ -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
+  $(VERB_ECHO) $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< &&\
+  (            $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
@@ -1355,18 +1362,29 @@ $($(1)_objdir)/moc/%_cxx_moc.cc: $(4)/%.cxx $($(1)_config)
 	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 endef
 
-#safename,path,*LinkDef.h files
+#safename,path,LinkDef.h,prodstore
 define RootDict
-$(1)_LinkDef_files          := $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.cc,$(3)))
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
-$(1)_files                  += $$($(1)_LinkDef_files)
-$(1)_objs                   += $(addprefix $($(1)_objdir)/,$(patsubst %.h,%.$(OBJEXT),$(3)))
-.PRECIOUS: $$($(1)_LinkDef_files)
-$(1)_extra_files += $$($(1)_LinkDef_files)
-$($(1)_objdir)/%.cc: $($(1)_srcdir)/%.h $($(1)_config)
+$(1)_files                  += $($(1)_objdir)/$(1)_LinkDef.cc
+$(1)_objs                   += $($(1)_objdir)/$(1)_LinkDef.$(OBJEXT)
+.PRECIOUS: $($(1)_objdir)/$(1)_LinkDef.cc
+$(1)_extra_files += $($(1)_objdir)/$(1)_LinkDef.cc
+$($(1)_objdir)/$(1)_LinkDef.cc: $($(1)_srcdir)/$(3) $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
-$($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cc
+$($(1)_objdir)/$(1)_LinkDef.$(OBJEXT): $($(1)_objdir)/$(1)_LinkDef.cc
 	$$(call compile_rootdict,$(1),$(1))
+ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
+all_$(1)  += $(4)/$(1)_LinkDef_rdict.pcm
+$($(1)_objdir)/$(1)_LinkDef_rdict.pcm: $($(1)_objdir)/$(1)_LinkDef.cc
+	@[ -f $$< ] || $(CMD_rm) -f $$@
+$(4)/$(1)_LinkDef_rdict.pcm: $($(1)_objdir)/$(1)_LinkDef_rdict.pcm
+	@if [ -f $$< ] ; then \
+	  $(CMD_cp) $$< $$@ &&\
+	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod) ;\
+	else \
+	  $(CMD_rm) -f $$@;\
+	fi
+endif
 endef
 
 define CondSerialization
@@ -1409,7 +1427,7 @@ endef
 #safename,rootmap,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
 define LCGDict
 $(1)$(7)_GENREFLEX_ARGS := $(6)
-$(eval $(call AddLCGDictRule,$(1),$(3),$(4),$(1)$(7),a/))
+$(eval $(call AddLCGDictRule,$(1),$(3),$(4),$(1)$(7),a,$5,$($(1)_LCGDICTS)))
 $(eval $(call AddSealCapabilitiesRule,$(1),$(1)$(7),a/))
 ifeq ($(strip $(2)),1)
 $$(eval $$(call LcgDictRootMap,$1,$(1)$(7),$5))
@@ -1438,7 +1456,7 @@ $(5)/$(MODULE_PREFIX)$(1)$(3).$(SHAREDSUFFIX): $6 $(WORKINGDIR)/cache/prod/lib$(
 endef
 
 define AddLCGDictRule
-$(if $(2),$(eval rflx_name:=$(rflx_name)x)$(eval $(call LCGDictRule,$(1),$(5)$(rflx_name),$(firstword $(2)),$(firstword $(3)),$(4)))$(eval $$(call AddLCGDictRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)),$(4),$(5)))$(eval rflx_name:=),)
+$(if $(2),$(eval $(call LCGDictRule,$(1),$(LCGDICT_FILE_PREFIX)$(firstword $(7)),$(firstword $(2)),$(firstword $(3)),$(4),$(5),$(6)))$(eval $$(call AddLCGDictRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)),$(4),$(5),$(6),$(wordlist 2,100,$(7)))),)
 endef
 
 define AddSealCapabilitiesRule
@@ -1460,25 +1478,37 @@ endif
 endef
 
 define LCGDictRule
-$(1)_files  := $($(1)_objdir)/$(2)r.cc        $($(1)_files)
-$(1)_objs   := $($(1)_objdir)/$(2)r.$(OBJEXT) $($(1)_objs)
-$(1)_extra_files += $($(1)_objdir)/$(2)r.cc
+$(1)_files  := $($(1)_objdir)/$(6)/$(2)r.cc        $($(1)_files)
+$(1)_objs   := $($(1)_objdir)/$(6)/$(2)r.$(OBJEXT) $($(1)_objs)
+$(1)_extra_files += $($(1)_objdir)/$(6)/$(2)r.cc
 ifneq ($(strip $(filter $(LOCALTOP)/$(WORKINGDIR)/classes/%,$3)),)
 $3: $4
 	$$(call generate_classes_h)
 endif
-$($(1)_objdir)/$(2)r.cc: $(4) $(3) $($(1)_config)
-	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(2)i.cc,$(5))
-$($(1)_objdir)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
+$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $(3) $($(1)_config)
+	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(6)/$(2)i.cc,$(5))
+$($(1)_objdir)/$(6)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1))
+ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
+all_$(1)  += $(7)/$(2)r_rdict.pcm
+$($(1)_objdir)/$(6)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
+	@[ -f $$< ] || $(CMD_rm) -f $$@
+$(7)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r_rdict.pcm
+	@if [ -f $$< ] ; then \
+	  $(CMD_cp) $$< $$@ &&\
+	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod) ;\
+	else \
+	  $(CMD_rm) -f $$@;\
+	fi
+endif
 ifneq ($1,$5)
-$(5)_seal_cap    += $($(1)_objdir)/$(2)i.cc
-$($(1)_objdir)/$(2)i.cc: $($(1)_objdir)/$(2)r.cc
+$(5)_seal_cap    += $($(1)_objdir)/$(6)/$(2)i.cc
+$($(1)_objdir)/$(6)/$(2)i.cc: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 ifneq ($(strip $(BIGLIBS)),)
-$(5)_dict += $(SCRAMSTORENAME_OBJS)/dict/$(5).$(notdir $(2))
+$(5)_dict += $(SCRAMSTORENAME_OBJS)/dict/$(5).$(2)
 $(1)_extra_files += $$($(5)_dict)
-$(SCRAMSTORENAME_OBJS)/dict/$(5).$(notdir $(2)): $($(1)_objdir)/$(2)i.cc
+$(SCRAMSTORENAME_OBJS)/dict/$(5).$(2): $($(1)_objdir)/$(6)/$(2)i.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	@if [ -f $$< ] ; then \
 	  $(CMD_grep) '"LCGReflex/' $$< > $$@ ;\

@@ -104,6 +104,7 @@ foreach my $t (keys %tools)
       my $join=" ";
       if($k eq "CPPDEFINES"){$join=" -D";}
       my $x=join($join,@{$c->{FLAGS}{$k}});
+      if (($k eq "PCMS") && ($x eq "1")){$x="\$(${t}_EX_LIB)";}
       if($x!~/^\s*$/){print TFILE "${t}_EX_FLAGS_${k}  :=$join$x\n";}
     }
   }
