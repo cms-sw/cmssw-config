@@ -1203,7 +1203,8 @@ sub searchLCGRootDict ()
     if($file=~/.*?LinkDef\.h$/)
     {
       if($stubdir ne ""){$file="${stubdir}/${file}";}
-      $rootdict.=" $file";
+      $rootdict=$file;
+      last;
     }
   }
   closedir($dref);
@@ -1232,7 +1233,7 @@ sub getGenReflexPath ()
   foreach my $t ("ROOTRFLX","ROOTCORE")
   {
     if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
-    {$genrflx="\$(${t}_BASE)/root/bin/genreflex";last;}
+    {$genrflx="\$(${t}_BASE)/bin/genreflex";last;}
   }
   return $genrflx;
 }
@@ -1920,10 +1921,9 @@ sub rootdict_template()
 {
   my $self=shift;
   my $safename=$self->get("safename");
-  my $path=$self->get("path");
-  my $rootdictfile=$self->get("rootdictfile");
   my $fh=$self->{FH};
-  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},${path},${rootdictfile}))\n";
+  print $fh "${safename}_ROOTDICT  := LinkDef\n";
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},",$self->get("path"),",",$self->get("rootdictfile"),",\$(",$self->getProductStore("lib"),")))\n";
 }
 
 sub cond_serialization_template()
@@ -1960,8 +1960,12 @@ sub lcgdict_template()
       print $fh "${bprod}_bigobjs += ${safename}${capabilities}\n";
     }
   }
+  my $xh = $self->get("classes_h");
+  my $xr = "x ";
+  for(my $i=1;$i<scalar(@$xh);$i++){$xr.="x${i} ";}
+  print $fh "${safename}_LCGDICTS  := $xr\n";
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
-	    join(" ",@{$self->get("classes_h")}),",",join(" ",@{$self->get("classes_def_xml")}),",",
+	    join(" ",@$xh),",",join(" ",@{$self->get("classes_def_xml")}),",",
 	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
 }
 
