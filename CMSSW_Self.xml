@@ -1,5 +1,6 @@
 <tool name="SELF" version="SELF">
  <client>
+  <flags DEFAULT_COMPILER="@SCRAM_COMPILER@"/>
   <environment name="LIBDIR"        value="$LOCALTOP/lib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
@@ -20,9 +21,6 @@
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
   <flags LLVM_ANALYZER="llvm-analyzer"/>
   <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS"/>
-  <architecture name="_mic_">
-    <flags DEFAULT_COMPILER="icc"/>
-  </architecture>
  </client>
  <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
