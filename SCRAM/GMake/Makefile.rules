@@ -501,13 +501,15 @@ endef
 define compile_c_common
   $(call run_compile_command,$1,$2,$3,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(C_MMD) $(C_MF) $(basename $@).d,$(C_MM))
 endef
-define compile_fortran_common
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),icc)
+define compile_fortran_common
   $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
-else
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(F77_MMD) $(F77_MF) $(basename $@).d,$(F77_MM))
-endif
 endef
+else
+define compile_fortran_common
+  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(F77_MMD) $(F77_MF) $(basename $@).d,$(F77_MM))
+endef
+endif
 define compile_cude_common
   $(call run_compile_command,$1,$2,$3,$4,$5,$(NVCC) -c $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
   @$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2))
