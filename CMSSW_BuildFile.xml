@@ -32,6 +32,8 @@
 
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
+<flags BIGOBJ_CXXFLAGS="-flto"/>
+<flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 
 <architecture name="slc|fc">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>

@@ -17,6 +17,7 @@ sub isPublic ()
    my $self=shift;
    my $class = shift;
    if ($class eq "LIBRARY") {return 1;}
+   if ($class eq "BIGPRODUCT") {return 1;}
    return 0;
    }
 
