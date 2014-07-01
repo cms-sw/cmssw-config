@@ -1,3 +1,10 @@
+2014-07-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-00: New build rules to generate big edmplugin using other
+	small shared libraries and edm plugins. Supported flags are
+	[USER_][REM_]BIGOBJ_CPPFLAGS, [USER_][REM_]BIGOBJ_CFLAGS, [USER_][REM_]BIGOBJ_FFLAGS
+	[USER_][REM_]BIGOBJ_CXXFLAGS, [USER_][REM_]BIGOBJ_LDFLAGS
+
 2013-05-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-02-00: lcg and root dictionaries generation updated to use new
