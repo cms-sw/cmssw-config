@@ -17,6 +17,7 @@ sub isPublic ()
    my $self=shift;
    my $class = shift;
    if ($class eq "LIBRARY") {return 1;}
+   if ($class eq "BIGPRODUCT") {return 1;}
    return 0;
    }
 
@@ -29,7 +30,7 @@ sub Project()
   $common->autoGenerateClassesH(1);
   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   $common->addPluginSupport("edm","EDM_PLUGIN","edmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
-  $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefres",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
+  $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src python 2 python '' -/LCG/");

@@ -41,7 +41,6 @@ PSSUFFIX                    := ps
 PDFSUFFIX                   := pdf
 PS2PDF                      := ps2pdf
 DVIPS                       := dvips
-LD_BIG_OPT                  := 
 BIGLIB_OBJEXT               := obj
 OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
@@ -55,6 +54,13 @@ IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 LCGDICT_FILE_PREFIX = $(1)_
+endif
+ALL_BIGPRODS                :=
+ifndef LD_UNIT
+LD_UNIT                     := -r -m elf_x86_64
+endif
+ifndef LD_UNIT_FLAGS
+LD_UNIT_FLAGS               := -z muldefs
 endif
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
@@ -218,7 +224,7 @@ define AdjustFlag
 $(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 endef
 define AdjustFlags
-$(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f))),$($1_$f)) $(foreach t,$2,$($t_$f)))
+$(strip $(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f))),$($1_$f)) $(foreach t,$2,$($t_$f))))
 endef
 define CUDA_FLAGS
 $(filter-out $(USER_REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS)
@@ -248,7 +254,7 @@ define CalculateToolOrder
 $(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
 endef
 define FindToolDependency
-$(sort $(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL)))
+$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL))))
 endef
 define FindUOLibDependency
 $(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
@@ -276,7 +282,7 @@ define ProductCommonVars
 $(eval $(call ProductOrder,$1,$2,$3,$4))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),))))
-$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope),)))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
 endef
 
@@ -348,10 +354,6 @@ endef
 
 define copy_lib_to_main_productstore
   $(call install_name_tool,$(@F),$@) && $(call copy_build_product,$(1))
-endef
-
-define copy_bigobj_to_main_productstore
-  $(call copy_build_product,$(1))
 endef
 
 define copy_bin_to_main_productstore
@@ -486,33 +488,46 @@ define edm_register_plugin
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi $(endlog_$(2))
 endef
+define run_plugin_refresh_cmd
+  @if [ -f $< ] ; then \
+    if [ -f $@ ] ; then \
+      if [ -s $@ ] ; then \
+        touch -t 198001010100 $@ ;\
+      else \
+        rm -f $@ ; \
+      fi;\
+    fi;\
+    $(call do_$(1),$(@D)) &&\
+    touch $@ ;\
+  fi
+endef
 ##############################################################################
 ##############################################################################
 #Compilation Rules
 define run_compile_command
-  @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $(4) $< " &&\
-  $(VERB_ECHO) $6 $7 $< -o $@ &&\
-              ($6 $7 $< -o $@ || ($(if $(strip $8),$6 $8 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $5 $(endlog_$(2))
+  @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Compiling $(2) $< " &&\
+  $(VERB_ECHO) $4 $5 $< -o $@ &&\
+              ($4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
 endef
 define compile_cxx_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(CXX_MMD) $(CXX_MF) $(basename $@).d,$(CXX_MM))
+  $(call run_compile_command,$2,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
 endef
 define compile_c_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(C_MMD) $(C_MF) $(basename $@).d,$(C_MM))
+  $(call run_compile_command,$2,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
 endef
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),icc)
 define compile_fortran_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
+  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
 endef
 else
 define compile_fortran_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(F77_MMD) $(F77_MF) $(basename $@).d,$(F77_MM))
+  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
 endef
 endif
 define compile_cude_common
-  $(call run_compile_command,$1,$2,$3,$4,$5,$(NVCC) -c $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
-  @$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2))
+  $(call run_compile_command,$2,$4,$5,$(NVCC) -c $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
+  $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
 
 #LLVM Analyzer Rules
@@ -698,13 +713,13 @@ endef
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(5) $@" &&\
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO)                $(CXX) $(6) $(LD_BIG_OPT) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(6) $(LD_BIG_OPT) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
-  @if [ "X$(BIGLIBS)" = "X" ] ; then $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)); fi
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
@@ -715,16 +730,16 @@ endef
 define link_pylib
   @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
   $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
-  $(VERB_ECHO)                $(CXX) $(LD_BIG_OPT) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(LD_BIG_OPT) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
-  @if [ "X$(BIGLIBS)" = "X" ] ; then $(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) ; fi
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef  
 #Shared Capabilities library
 define link_lib_capabilities
   @$(startlog_$(2))$(CMD_echo) ">> Building capability library $@" &&\
-  $(VERB_ECHO)                $(CXX) $(LD_BIG_OPT) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(LD_BIG_OPT) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -1014,10 +1029,9 @@ $(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
-$(1)_LOC_USE_BIG  := $(if $(strip $(BIGLIBS)),$$(sort $$(foreach o,$$($(1)_LOC_USE),$$($$($$(o))_bigprod))),)
-$(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),)) $$($(1)_LOC_USE_BIG)
+$(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),))
 $(1)_libdeps      := $$(call libdeps,$1)
-$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files)))) $(if $(strip $(BIGLIBS)),$(call BigObjectsPaths,$($(1)_bigobjs)))
+$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files))))
 ifneq ($(strip $(5)),)
 .PHONE: $(1)_install_scripts_rule
 $(1)_install_scripts_rule: $(logfile_$(1))
@@ -1043,27 +1057,15 @@ endef
 #safename,path,productstore,type,logprodstore,safepath
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
-ifneq ($$(strip $($(1)_objs)),)
+ifneq ($(strip $($(1)_objs)),)
+$$(eval $$(call AddBigObjRule,$1,$2))
 ALL_$(4)_PRODUCTS += $(1)
-ifeq ($(strip $(4)),lib)
-$$(eval $$(call BigObject,$1,$1,$($(1)_objs)))
-endif
 $(1):  $($(1)_objdir)/$($(1)_product)
-ifeq ($(strip $(if $(strip $($(1)_bigprod)),obj)$(filter lib,$(4))),objlib)
-$(SCRAMSTORENAME_OBJS)/$($(1)_product): $($(1)_objdir)/$($(1)_product)
-	@:
-$($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile
-	$$(call big_obj,$1,$1,$($(1)_objs),$(SCRAMSTORENAME_OBJS),yes)
-else
-$($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps) $(if $(strip $(BIGLIBS)),$($(1)_pkgs))
+$($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1)) $(if $(HOOK_PRODUCT),$(HOOK_PRODUCT) -e -p $1,$(CMD_true)) $$(endlog_$(1))
-ifeq ($(strip $(BIGLIBS)),yes)
-	@$$(startlog_$(1))$(CMD_echo) "Leaving big library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
-else
 	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
-endif
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3),BIN)
@@ -1074,7 +1076,7 @@ endif
 ifeq ($(strip $(4)),test)
 	$$(call build_test,$(1),$(1),$(3),TEST)
 .PHONE: runtests_$(1) unittests_$(1)
-ifeq ($$(strip $$(filter $(1),$(SKIP_UNITTESTS))),$(1))
+ifeq ($(strip $(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
 endif
 runtests_$(6) += runtests_$(1)
@@ -1084,10 +1086,9 @@ runtests_$(1): all_$(1) unittests_$(1)
 unittests_$(1): $(patsubst %,runtests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
-endif
 $(WORKINGDIR)/cache/prod/$(1): $($(1)_objdir)/$($(1)_product)
 	@if [ ! -f $$@ ] ; then $(CMD_touch) $$@; fi
-ifneq ($$(strip $($(1)_product)),)
+ifneq ($(strip $($(1)_product)),)
 ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
 endif
@@ -1100,19 +1101,15 @@ compile_$(6):: $($(1)_objdir)/compile
 	@:
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 	@$(CMD_touch) $$@
-ifeq ($$(strip $(4)),lib)
+ifeq ($(strip $(4)),lib)
 	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
-$($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
+$($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $(if $(strip $($(1)_bigobj)),$(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$($(1)_objs))) $($(1)_compile)
 	@$(CMD_touch) $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
 	@$(CMD_touch) $$@
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
-else
-ifneq ($(strip $($(1)_bigprod)),)
-$$(eval $$($(1)_bigprod)_bigobjs := $$(filter-out $1,$$($$($(1)_bigprod)_bigobjs)))
-endif
 endif
 endef
 
@@ -1155,9 +1152,6 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
 define Binary
-ifneq ($(strip $(BIGLIBS)$(BIGOBJS)),)
-$(1)_LOC_LIB := $$(sort $$(foreach l,$$($(1)_LOC_LIB),$$(if $$(strip $$($$(l)_bigprod)),$$($$(l)_bigprod),$$l)))
-endif
 $$(eval $$(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
 ALL_BINARIES += $(1)
 $(1)_product := $(1)
@@ -1174,23 +1168,18 @@ endef
 #safename,path,safepath,scriptstore,scripts
 define LibraryHead
 $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
-ifeq ($(strip $($(1)_bigprod)),)
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
-else
-$(1)_product      := $(1).$(BIGLIB_OBJEXT)
-endif
 endef
 
 #safename,path,libstore,logprodstore,safepath
 define LibraryTail
 $(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(4),$(5)))
 ifneq ($$(strip $$($(1)_objs)),)
-ifeq ($(strip $($(1)_bigprod)),)
 ALL_LIBRARIES += $(1)
 $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
 	@:
-endif
 $$(eval $$(call CompileRules,$(1)))
+$$(eval $$(call AddBigObjCompileRule,$1))
 else
 $(1) all_$(1): $$(all_$(1))
 	@:
@@ -1440,7 +1429,6 @@ $$(eval $$(call LcgDictRootMap,$1,$(1)$(7),$5))
 endif
 ifneq ($(strip $7),)
 ALL_lib_PRODUCTS += $(1)$(7)
-ifeq ($(strip $($(1)_bigprod)),)
 ALL_CLASS_VERSION_RULES += $($(1)_objdir)/updateclassversion
 ifneq ($(strip $(UPDATE_CLASSVERSION)),)
 all_$(1)       += $($(1)_objdir)/updateclassversion
@@ -1448,8 +1436,6 @@ $($(1)_objdir)/updateclassversion: $($(1)_objdir)/$(MODULE_PREFIX)$(1)$(7).$(SHA
 	@$(CMD_touch) $$@
 endif
 $$(eval $$(call LCGDictLibRule,$1,$5,$7,$4,$($(1)_objdir),$$($(1)$(7)_objs)))
-endif
-$$(eval $$(call BigObject,$(1),$(1)$(7),$$($(1)$(7)_objs)))
 endif
 endef
 
@@ -1466,7 +1452,6 @@ $(if $(2),$(eval $(call LCGDictRule,$(1),$(LCGDICT_FILE_PREFIX)$(firstword $(7))
 endef
 
 define AddSealCapabilitiesRule
-ifeq ($(strip $(BIGLIBS)),)
 ifneq ($(strip $$($(2)_seal_cap)),)
 $(1)_compile     += $($(1)_objdir)/$(3)seal_cap.$(OBJEXT)
 $(2)_objs        += $($(1)_objdir)/$(3)seal_cap.$(OBJEXT)
@@ -1479,7 +1464,6 @@ $($(1)_objdir)/$(3)seal_cap.cc: $$($(2)_seal_cap)
 	  $(CMD_echo) '};' ;\
 	  $(CMD_echo) 'extern "C" void SEAL_CAPABILITIES (const char**& names, int& n )' ;\
 	  $(CMD_echo) '{names = clnames;n = sizeof(clnames)/sizeof(char*);}') > $$@
-endif
 endif
 endef
 
@@ -1495,6 +1479,7 @@ $($(1)_objdir)/$(6)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(6)/$(2)i.cc,$(5))
 $($(1)_objdir)/$(6)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1))
+$$(eval $$(call AddBigObjLCGDICTRule,$1))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 all_$(1)  += $(7)/$(2)r_rdict.pcm
 $($(1)_objdir)/$(6)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
@@ -1511,17 +1496,6 @@ ifneq ($1,$5)
 $(5)_seal_cap    += $($(1)_objdir)/$(6)/$(2)i.cc
 $($(1)_objdir)/$(6)/$(2)i.cc: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
-ifneq ($(strip $(BIGLIBS)),)
-$(5)_dict += $(SCRAMSTORENAME_OBJS)/dict/$(5).$(2)
-$(1)_extra_files += $$($(5)_dict)
-$(SCRAMSTORENAME_OBJS)/dict/$(5).$(2): $($(1)_objdir)/$(6)/$(2)i.cc
-	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	@if [ -f $$< ] ; then \
-	  $(CMD_grep) '"LCGReflex/' $$< > $$@ ;\
-	else \
-	  $(CMD_rm) -f $$@;\
-	fi
-endif
 endif
 endef
 
@@ -1584,9 +1558,6 @@ endef
 endif   #If not llvm-analyzer
 ##############################################################################
 define SetTargetType
-ifneq ($(strip $(filter bigobj,$(MAKECMDGOALS))),)
-  BIGOBJS:=yes
-endif
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
   UPDATE_CLASSVERSION:=yes
 endif
@@ -1601,7 +1572,7 @@ ifeq ($(strip $(MAKECMDGOALS)),clean)
   XFAST:=yes
   UFAST:=yes
 else
-ifeq ($(strip $(filter-out productmap gindices skiptest_% echo_% clean_% fast xfast ufast bigobj outputlog updateclassversion,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out productmap gindices skiptest_% echo_% clean_% fast xfast ufast outputlog updateclassversion,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   ifneq ($(strip $(filter ufast,$(MAKECMDGOALS))),)
     FAST :=yes
@@ -1791,16 +1762,13 @@ PLUGIN_REFRESH_CMDS :=
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 $(foreach x,$(ALL_TOOLS),$(eval $x := $x))
 $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
+-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigedm.rules
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
-ifneq ($(strip $(BIGLIBS)),)
--include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigobj.rules
-LD_BIG_OPT := -Wl,-z,muldefs
-endif
 ifeq ($(IS_MIC),yes)
 ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
 endif
@@ -1833,20 +1801,13 @@ ifeq ($(strip $(UFAST)),)
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
 $(foreach x,$(ALL_EXTERNAL_PRODS),$(eval $(call ProductCommonVarsExternal,$(x)))$(eval $($(x)_INIT_FUNC)))
+$(foreach x,$(ALL_BIGPRODS),$(eval $(call BigProductVars,$x)))
 $(foreach x,$(ALL_PRODS),$(eval $(call ProductCommonVars,$(x),,,$($(x)_BuildFile))))
-$(foreach x,$(ALL_BIG_PRODS),$(eval $(call ProductCommonVars,$(x),,,$($(x)_BuildFile))))
+$(foreach x,$(ALL_BIGPRODS),$(eval $(call ProductCommonVars,$(x),,,$($(x)_BuildFile))))
 ifeq ($(strip $(FAST)),)
 $(info >> Local Products Rules ..... started)
-ifeq ($(strip $(BIGLIBS)),)
 $(foreach x,$(ALL_PRODS),$(eval $($(x)_INIT_FUNC)))
-else
-TEST_test :=
-$(foreach x,$(ALL_BIG_PRODS),$(eval $(call BigProductInit,$x)))
-$(foreach x,$(ALL_PRODS),$(if $(strip $(filter %.lib,$($(x)_CLASS))),$(eval $($(x)_INIT_FUNC)),$(eval TEST_test += $x)))
-$(foreach x,$(TEST_test),$(eval $($(x)_INIT_FUNC)))
-$(foreach x,$(ALL_BIG_PRODS),$(eval $($(x)_INIT_FUNC)))
-TEST_test :=
-endif
+$(foreach x,$(ALL_BIGPRODS),$(eval $($(x)_INIT_FUNC)))
 $(info >> Local Products Rules ..... done)
 endif
 $(foreach bf,$(ALL_BUILDFILES),$(foreach err,$(sort $($(bf)_USE_ERR)),$(eval $(call UseError,$(err),$(bf)))))
@@ -2038,8 +1999,6 @@ $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	done
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
-bigobj: $(ALL_BIGOBJS)
-	@:
 outputlog:
 	$(eval DO_BUILD_LOG:=)
 	@$(call outputlog,,,)
