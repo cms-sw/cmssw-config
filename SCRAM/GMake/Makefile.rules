@@ -51,7 +51,10 @@ HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
+GENERATE_ROOT_PCMS:=
+ifneq ($(strip $(GENREFLEX)),)
 GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
+endif
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 LCGDICT_FILE_PREFIX = $(1)_
 endif
@@ -1762,13 +1765,15 @@ PLUGIN_REFRESH_CMDS :=
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 $(foreach x,$(ALL_TOOLS),$(eval $x := $x))
 $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
--include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigedm.rules
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(SCRAMSTORENAME_BIGLIB)),)
+-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigedm.rules
+endif
 ifeq ($(IS_MIC),yes)
 ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
 endif

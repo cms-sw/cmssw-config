@@ -1,6 +1,3 @@
-bigedmPluginRefresh_cache   := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
-PLUGIN_REFRESH_CMDS         += bigedmPluginRefresh
-#############################################################################
 define BigObjAdjustFlags
 $(strip $(filter-out $(strip $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_REM_BIGOBJ_$f) $($($(1)_bigobj)_LOC_FLAGS_REM_$f) $(REM_BIGOBJ_$f) $(USER_REM_BIGOBJ_$f))),$(strip $(call AdjustFlags,$1,$2,$3) $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_BIGOBJ_$f) $(BIGOBJ_$f) $(USER_BIGOBJ_$f)))))
 endef
@@ -144,5 +141,9 @@ $(3):
 endif
 endef
 #############################################################################
+ifneq ($(strip $(SCRAMSTORENAME_BIGLIB)),)
+bigedmPluginRefresh_cache   := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
+PLUGIN_REFRESH_CMDS         += bigedmPluginRefresh
 $(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
 	$(call run_plugin_refresh_cmd,edmPluginRefresh)
+endif
