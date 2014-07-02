@@ -5,6 +5,10 @@ define BigObjectsPaths
 $(foreach o,$($(1)_BIGOBJS),$(if $(strip $(o)_bigobj),$(SCRAMSTORENAME_OBJS)/$(o).$(BIGLIB_OBJEXT),externals/$(SCRAM_ARCH)/objs/$(o).$(BIGLIB_OBJEXT)))
 endef
 define BigProductVars
+ifeq ($(strip $(filter $($(1)_SUBSYSTEM),$(ALL_SUBSYSTEMS))),)
+ALL_SUBSYSTEMS+=$($(1)_SUBSYSTEM)
+subdirs_$(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM) = $(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM)_$(1)
+endif
 $(foreach f,CXXFLAGS REM_CXXFLAGS,$(eval $(1)_LOC_FLAGS_$(f) += $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_FLAGS_$(f))))))
 $(foreach t,LIB USE,$(eval $(1)_LOC_$(t) := $(sort $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_$(t))))) $(filter $($(1)_PACKAGES),$(ALL_TOOLS))))
 $(1)_BIGOBJS:=$(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$p))

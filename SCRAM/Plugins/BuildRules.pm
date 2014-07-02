@@ -1696,7 +1696,9 @@ sub SubSystem_template()
   my $self=shift;
   $self->initTemplate_common2all();
   my $fh=$self->{FH};
-  print $fh "ALL_SUBSYSTEMS+=\$(patsubst \$(SCRAM_SOURCEDIR)/%,%,",$self->get("path"),")\n";
+  my $src=$ENV{SCRAM_SOURCEDIR};
+  my $path = $self->get("path"); $path=~s/^$src\///;
+  print $fh "ALL_SUBSYSTEMS+=$path\n";
   print $fh "subdirs_",$self->get("safepath")," = ",$self->core()->safesubdirs(),"\n";
   return 1;
 }
@@ -1707,14 +1709,16 @@ sub Package_template()
   $self->initTemplate_common2all();
   my $fh=$self->{FH};
   my $path=$self->get("path");
+  my $src=$ENV{SCRAM_SOURCEDIR};
+  $path=~s/^$src\///;
   if($self->get("suffix") eq "")
   {
     $self->depsOnlyBuildFile();
     my $safepath=$self->get("safepath");
-    print $fh "ALL_PACKAGES += \$(patsubst src/%,%,$path)\n";
+    print $fh "ALL_PACKAGES += $path\n";
     print $fh "subdirs_${safepath} := ",$self->core()->safesubdirs(),"\n";
   }
-  else{print $fh "all_empty_packages += \$(patsubst src/%,%,$path)\n";}
+  else{print $fh "all_empty_packages += $path\n";}
   return 1;  
 }
 
@@ -2337,46 +2341,44 @@ sub BigProduct_template()
 {
   my $self=shift;
   if($self->get("suffix") ne ""){return 1;}
+  my $localbf = $self->getLocalBuildFile();
+  if ($localbf eq ""){return 1;}
   my $fh=$self->{FH};
+  my $subsys=$self->get("parent");
   my $path=$self->get("path");
   my $safename = basename($path);
   $self->set("safename",$safename);
   my $safepath=$self->get("safepath");
-  my $class=$self->get("class");
   my $core=$self->core();
   $core->branchdata()->name($safename);
-  my $localbf = $self->getLocalBuildFile();
   print $fh "ifeq (\$(strip \$($safename)),)\n$safename:=$safename\n";
-  if ($localbf ne "")
+  print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+  print $fh "ALL_BIGPRODS += ${safename}\n${safename}_SUBSYSTEM:=$subsys\n";
+  foreach my $xpre ("","REM_","BIGOBJ_","REM_BIGOBJ_")
   {
-    print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
-    foreach my $xpre ("","REM_","BIGOBJ_","REM_BIGOBJ_")
+    foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
     {
-      foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
-      {
-        my $flag="${xpre}${xflag}";
-        my $v=$core->flags($flag);
-        if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
-      }
+      my $flag="${xpre}${xflag}";
+      my $v=$core->flags($flag);
+      if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
     }
-    foreach my $data ("LIB")
-    {
-      my $dataval=$self->fixData($core->value($data),$data,$localbf);
-      if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
-    }
-    my $locuse="";
-    my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
-    if($dataval ne "")
-    {
-      $locuse=join(" ",@$dataval);
-      print $fh "${safename}_PACKAGES := $locuse\n";
-    }
-    $dataval=$core->flags("DROP_DEP");
-    if($dataval ne ""){print $fh "${safename}_DROP_DEP := $dataval\n";}
-    print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE")," $locuse\n";
-    print $fh "${safename}_INIT_FUNC += \$\$(eval \$\$(call BigProduct,$safename,$path,$safepath))\n";
-    print $fh "ALL_BIGPRODS += ${safename}\n";
   }
+  foreach my $data ("LIB")
+  {
+    my $dataval=$self->fixData($core->value($data),$data,$localbf);
+    if($dataval ne ""){print $fh "${safename}_LOC_${data}   := ",join(" ",@$dataval),"\n";}
+  }
+  my $locuse="";
+  my $dataval=$self->fixData($core->value("USE"),"USE",$localbf);
+  if($dataval ne "")
+  {
+    $locuse=join(" ",@$dataval);
+    print $fh "${safename}_PACKAGES := $locuse\n";
+  }
+  $dataval=$core->flags("DROP_DEP");
+  if($dataval ne ""){print $fh "${safename}_DROP_DEP := $dataval\n";}
+  print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE")," $locuse\n";
+  print $fh "${safename}_INIT_FUNC += \$\$(eval \$\$(call BigProduct,$safename,$path,$safepath))\n";
   print $fh "endif\n",
 }
 

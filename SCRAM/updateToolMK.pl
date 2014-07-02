@@ -198,9 +198,13 @@ sub mkprocessfile ()
   my $line;
   my $scount=$data->{skipcount};
   my $ecount=$data->{editcount};
+  my $bigprod="";
   while($line=<$iref>)
   {
     chomp $line;
+    if ($line=~/^ALL_BIGPRODS\s*\+=\s*([^\s]+)\s*$/){$bigprod=$1;}
+    elsif($line=~/^\s*endif\s*$/){$bigprod="";}
+    if ($bigprod ne ""){print $oref "$line\n"; next;}
     my $skip=0;
     for(my $i=0;$i<$scount;$i++)
     {
