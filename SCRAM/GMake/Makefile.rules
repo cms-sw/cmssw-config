@@ -1107,7 +1107,7 @@ $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 ifeq ($(strip $(4)),lib)
 	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
-$($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $(if $(strip $($(1)_bigobj)),$(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$($(1)_objs))) $($(1)_compile)
+$($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@$(CMD_touch) $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
 	@$(CMD_touch) $$@
