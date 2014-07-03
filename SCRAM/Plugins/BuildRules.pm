@@ -1628,7 +1628,6 @@ sub initTemplate_PROJECT ()
   $self->{cache}{LocalTop}=$ltop;
   $self->{cache}{ProjectConfig}="$ENV{SCRAM_CONFIGDIR}";
   $self->{cache}{AutoGenerateClassesHeader}=0;
-  $self->{cache}{BuildProducts}="BuildProducts";
   $self->initTemplate_common2all();
   $stash->set('ProjectLOCALTOP',$ltop);
   $stash->set('ProjectOldPath',$odir);
@@ -2378,7 +2377,7 @@ sub BigProduct_template()
   $dataval=$core->flags("DROP_DEP");
   if($dataval ne ""){print $fh "${safename}_DROP_DEP := $dataval\n";}
   print $fh "${safename}_LOC_USE := ",$self->getCacheData("USE")," $locuse\n";
-  print $fh "${safename}_INIT_FUNC += \$\$(eval \$\$(call BigProduct,$safename,$path,$safepath))\n";
+  print $fh "${safename}_INIT_FUNC += \$\$(eval \$\$(call BigProductRule,$safename,$path,$safepath))\n";
   print $fh "endif\n",
 }
 

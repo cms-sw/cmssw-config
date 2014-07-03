@@ -8,6 +8,7 @@ define BigProductVars
 ifeq ($(strip $(filter $($(1)_SUBSYSTEM),$(ALL_SUBSYSTEMS))),)
 ALL_SUBSYSTEMS+=$($(1)_SUBSYSTEM)
 subdirs_$(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM) = $(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM)_$(1)
+subdirs_$(SCRAM_SOURCEDIR) += $(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM)
 endif
 $(foreach f,CXXFLAGS REM_CXXFLAGS,$(eval $(1)_LOC_FLAGS_$(f) += $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_FLAGS_$(f))))))
 $(foreach t,LIB USE,$(eval $(1)_LOC_$(t) := $(sort $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_$(t))))) $(filter $($(1)_PACKAGES),$(ALL_TOOLS))))
@@ -119,7 +120,7 @@ endif
 endef
 #############################################################################
 #safename,path,safepath
-define BigProduct
+define BigProductRule
 ifneq ($(strip $(foreach o,$($(1)_BIGOBJS),$($(o)_bigobj))),)
 $(eval $(call LogFile,$(1),$(2)))
 .PHONY: all_$(3) $(3) $(1)
@@ -150,4 +151,6 @@ bigedmPluginRefresh_cache   := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
 PLUGIN_REFRESH_CMDS         += bigedmPluginRefresh
 $(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
 	$(call run_plugin_refresh_cmd,edmPluginRefresh)
+$(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh:
+	@:
 endif

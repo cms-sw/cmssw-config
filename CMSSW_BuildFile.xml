@@ -9,7 +9,7 @@
 <productstore name="doc"/>
 <productstore name="python"/>
 
-<classpath path="+Project/BuildProducts+SubSystem/+BigProduct/+donothing"/>
+<classpath path="+Project/BigProducts+SubSystem/+BigProduct/+donothing"/>
 <classpath path="+Project/+SubSystem/+Package/scripts+scripts"/>
 <classpath path="+Project/Documentation+Documentation/+doc"/>
 <classpath path="+Project/+SubSystem/+Package/src+library"/>
