@@ -2,7 +2,7 @@ define BigObjAdjustFlags
 $(strip $(filter-out $(strip $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_REM_BIGOBJ_$f) $($($(1)_bigobj)_LOC_FLAGS_REM_$f) $(REM_BIGOBJ_$f) $(USER_REM_BIGOBJ_$f))),$(strip $(call AdjustFlags,$1,$2,$3) $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_BIGOBJ_$f) $(BIGOBJ_$f) $(USER_BIGOBJ_$f)))))
 endef
 define BigObjectsPaths
-$(foreach o,$($(1)_BIGOBJS),$(if $(strip $(o)_bigobj),$(SCRAMSTORENAME_OBJS)/$(o).$(BIGLIB_OBJEXT),externals/$(SCRAM_ARCH)/objs/$(o).$(BIGLIB_OBJEXT)))
+$(foreach o,$($(1)_BIGOBJS),$(if $(strip $($(o)_bigobj)),$(SCRAMSTORENAME_OBJS)/$(o).$(BIGLIB_OBJEXT),$(if $(strip $(wild external/$(SCRAM_ARCH)/objs-base/$(o).$(BIGLIB_OBJEXT))),external/$(SCRAM_ARCH)/objs-base/$(o).$(BIGLIB_OBJEXT),external/$(SCRAM_ARCH)/objs-full/$(o).$(BIGLIB_OBJEXT))))
 endef
 define BigProductVars
 ifeq ($(strip $(filter $($(1)_SUBSYSTEM),$(ALL_SUBSYSTEMS))),)
@@ -10,9 +10,9 @@ ALL_SUBSYSTEMS+=$($(1)_SUBSYSTEM)
 subdirs_$(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM) = $(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM)_$(1)
 subdirs_$(SCRAM_SOURCEDIR) += $(SCRAM_SOURCEDIR)_$($(1)_SUBSYSTEM)
 endif
-$(foreach f,CXXFLAGS REM_CXXFLAGS,$(eval $(1)_LOC_FLAGS_$(f) += $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_FLAGS_$(f))))))
-$(foreach t,LIB USE,$(eval $(1)_LOC_$(t)+=$(sort $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$($(p)_LOC_$(t)))))))
-$(1)_BIGOBJS:=$(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$p))
+$(foreach f,CXXFLAGS REM_CXXFLAGS,$(eval $(1)_LOC_FLAGS_$(f) += $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj) $($(pk)_relbigobj),$($(p)_LOC_FLAGS_$(f))))))
+$(foreach t,LIB USE,$(eval $(1)_LOC_$(t)+=$(sort $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj) $($(pk)_relbigobj),$($(p)_LOC_$(t)))))))
+$(1)_BIGOBJS:=$(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj) $($(pk)_relbigobj),$p))
 $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$(eval $(p)_bigobj := $(1))))
 endef
 #############################################################################

@@ -57,7 +57,8 @@ sub process()
     my $oldfile=$data->{MAKEFILE};
     my $newfile=$oldfile;
     my $arch=$ENV{SCRAM_ARCH};
-    $newfile=~s/\/\.SCRAM\/$arch\/MakeData\/DirCache\//\/tmp\/$arch\/MakeData\/DirCache\//;
+    if ($self->{swap_prod_mkfile}==1){$newfile=~s/\/\.SCRAM\/$arch\/MakeData\/DirCache\//\/tmp\/$arch\/MakeData\/DirCache\//;}
+    else{$newfile=~s/\/tmp\/$arch\/MakeData\/DirCache\//\/\.SCRAM\/$arch\/MakeData\/DirCache\//;}
     if ($newfile ne $oldfile)
     {
       close($data->{MAKEFILEFH});
@@ -93,9 +94,8 @@ sub error()
 sub swapMakefile ()
 {
   my $self=shift;
-  if ($self->get('class') eq 'LIBRARY'){$self->{swap_prod_mkfile}=1;}
+  $self->{swap_prod_mkfile}=shift;
 }
-
 ##################### Stash Interface ###############
 sub get(){my $self=shift;return $self->{context}->get(@_);}
 
@@ -1641,7 +1641,20 @@ sub initTemplate_PROJECT ()
   {
     system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
-  }
+    if ((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne ""))
+    {
+      my $relobj="$ENV{RELEASETOP}/objs/$ENV{SCRAM_ARCH}";
+      my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-base";
+      if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
+    }
+    my $pj=lc($ENV{SCRAM_PROJECTNAME});
+    if ($self->isToolAvailable($pj))
+    {
+      my $relobj=$self->{cache}{toolcache}{SETUP}{$pj}{"$ENV{SCRAM_PROJECTNAME}_BASE"}."/objs/$ENV{SCRAM_ARCH}";
+      my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-full";
+      if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
+    }
+  }  
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
   $self->setRootReflex ("rootrflx");
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
@@ -1855,7 +1868,7 @@ sub plugin_template ()
     my $pname = $self->get("plugin_name");
     my $fh=$self->{FH};
     print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call ${ptype}Plugin,$pname,$safename,\$(",$self->get("plugin_dir"),"),",$self->get("path"),"))\n";
-    if ($safename eq $pname){$self->swapMakefile();}
+    $self->swapMakefile(2);
   }
   return;
 }
@@ -2139,6 +2152,7 @@ sub binary_template ()
 	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
 	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
 	  print $fh "ifeq (\$(strip \$($safename)),)\n";
+	  if ($class eq "PLUGINS"){print $fh "PLUGINS:=yes\n";}
 	  if (defined $autoPlugin)
 	  {
             print $fh "${safename}_files := \$(patsubst ${path}/%,%,\$(wildcard \$(foreach dir,${path} ",$self->getSubDirIfEnabled(),",\$(foreach ext,\$(SRC_FILES_SUFFIXES),\$(dir)/*.\$(ext)))))\n";

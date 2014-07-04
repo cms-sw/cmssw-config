@@ -28,7 +28,7 @@ my @toolvar=("INCLUDE","LIB");
 my $skline=0;
 my %mkprocess=();
 $mkprocess{skiplines}[$skline++] = qr/^.+_(files|XDEPS|SKIP_FILES|libcheck|parent)\s+[:+]=/o;
-$mkprocess{skiplines}[$skline++] = qr/^.+_LOC_((?!USE).+)\s+[:+]=/o;
+$mkprocess{skiplines}[$skline++] = qr/^.+_LOC_((?!(USE|FLAGS)).+)\s+[:+]=/o;
 $mkprocess{skiplines}[$skline++] = qr/^.+_EX_((?!LIB).+)\s+[:+]=/o;
 $mkprocess{skiplines}[$skline++] = qr/^(ALL_COMMONRULES|NON_XML_BUILDFILE)\s+\+=/;
 $mkprocess{skiplines}[$skline++] = qr/^.+_PACKAGE\s+:=\s+self\//;
@@ -46,6 +46,8 @@ $mkprocess{editlines}[$skline]{reg}     = qr/^(.+)\s+self\/(.+)$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1} ${tool}/${2}"';
 $mkprocess{editlines}[$skline]{reg}     = qr/^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$/;
 $mkprocess{editlines}[$skline++]{value} = '$line="${1}\$($basevar)/.SCRAM/\$(SCRAM_ARCH)/MakeData/DirCache.mk"';
+$mkprocess{editlines}[$skline]{reg}     = qr/^(.+)_forbigobj\s*\+=(.+)$/;
+$mkprocess{editlines}[$skline++]{value} = '$line="${1}_relbigobj+=${2}"';
 $mkprocess{editcount}=$skline;
 
 my $tooldir=".SCRAM/${arch}/MakeData/Tools";
@@ -198,13 +200,20 @@ sub mkprocessfile ()
   my $line;
   my $scount=$data->{skipcount};
   my $ecount=$data->{editcount};
-  my $bigprod="";
+  my $bigprod=""; my $plugin=0;
   while($line=<$iref>)
   {
     chomp $line;
     if ($line=~/^ALL_BIGPRODS\s*\+=\s*([^\s]+)\s*$/){$bigprod=$1;}
-    elsif($line=~/^\s*endif\s*$/){$bigprod="";}
+    elsif ($line eq "PLUGINS:=yes"){$plugin=1; next;}
+    elsif($line=~/^\s*endif\s*$/){$bigprod="";$plugin=0;}
     if ($bigprod ne ""){print $oref "$line\n"; next;}
+    if ($plugin)
+    {
+      $line=~s/_forbigobj\+=/_relbigobj+=/;
+      if($line=~/^\s*[^\s]+_(LOC_|relbigobj\+=)/){print $oref "$line\n";}
+      next;
+    }
     my $skip=0;
     for(my $i=0;$i<$scount;$i++)
     {
