@@ -2151,7 +2151,7 @@ sub binary_template ()
 	  my $haserr=0;
 	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
 	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
-	  print $fh "ifeq (\$(strip \$($safename)),)\n";
+	  print $fh "ifeq (\$(strip \$($safename)),)\n$safename := self/${path}\n";
 	  if ($class eq "PLUGINS"){print $fh "PLUGINS:=yes\n";}
 	  if (defined $autoPlugin)
 	  {
@@ -2162,8 +2162,7 @@ sub binary_template ()
             my $prodfiles = $core->productfiles();
 	    print $fh "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n";
           }
-	  print $fh "$safename := self/${path}\n";
-          $self->set("type",$types->{$ptype}{$prod}{TYPE});
+	  $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
 	  print $fh "else\n",
 	            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
