@@ -1771,7 +1771,12 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
-ifneq ($(strip $(SCRAMSTORENAME_BIGLIB)),)
+ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/no-bigproduct)),)
+ALL_BIGPRODS:=
+subdirs_$(SCRAM_SOURCEDIR):=$(filter-out $(SCRAM_SOURCEDIR)_BigProducts,$(subdirs_$(SCRAM_SOURCEDIR)))
+ALL_SUBSYSTEMS:=$(filter-out BigProducts,$(ALL_SUBSYSTEMS))
+endif
+ifneq ($(strip $(ALL_BIGPRODS)),)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigedm.rules
 endif
 ifeq ($(IS_MIC),yes)
@@ -2071,5 +2076,17 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 endif
 endif
 endif
+enable-biglib:
+	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/no-bigproduct &&\
+	$(CMD_echo) Building big products is activated
+disable-biglib:
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/no-bigproduct &&\
+	$(CMD_echo) Building big products is deactivated
+check-biglib:
+	@if [ -f $(SCRAM_ADMIN_DIR)/no-bigproduct ] ; then \
+	  $(CMD_echo) Big products build is disabled ;\
+	else \
+	  $(CMD_echo) Big products build is enabled ;\
+	fi
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
