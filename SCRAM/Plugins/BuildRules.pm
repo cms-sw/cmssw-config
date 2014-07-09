@@ -47,9 +47,9 @@ sub process()
   $self->{FH}=shift;
   $self->{context}=BuildSystem::TemplateStash->new();
   $self->{context}->stash($data);
+  $self->{swap_prod_mkfile}=0;
   $self->pushstash();
   $self->{core}=BuildSystem::Template::Plugins::PluginCore->new($self->{context});
-  $self->{swap_prod_mkfile}=0;
   my $ret=$self->runTemplate("${name}_template");
   $self->popstash();
   if ($self->{swap_prod_mkfile})
@@ -1868,7 +1868,6 @@ sub plugin_template ()
     my $pname = $self->get("plugin_name");
     my $fh=$self->{FH};
     print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call ${ptype}Plugin,$pname,$safename,\$(",$self->get("plugin_dir"),"),",$self->get("path"),"))\n";
-    $self->swapMakefile(2);
   }
   return;
 }
@@ -2295,6 +2294,7 @@ sub plugins_template()
   my $self=shift;
   my $core=$self->{core};
   my $autoPlugin=undef;
+  $self->swapMakefile(2);
   my $skip=$core->flags("SKIP_FILES");
   if (($skip eq "*") || ($skip eq "%")){return 1;}
   if (($self->getLocalBuildFile() ne "") && (!$core->hasbuildproducts()))
