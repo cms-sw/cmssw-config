@@ -114,7 +114,7 @@ endif
 endef
 define AddBigObjLCGDICTRule
 ifneq ($(strip $($(1)_bigobj)),)
-$($(1)_objdir)/bigobj/$(6)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
+$($(1)_objdir)/bigobj/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call bigobj_compile_lcgdict,$(1),$(1))
 endif
 endef

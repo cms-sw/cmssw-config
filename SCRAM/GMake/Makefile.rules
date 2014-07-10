@@ -1482,7 +1482,7 @@ $($(1)_objdir)/$(6)/$(2)r.cc: $(4) $(3) $($(1)_config)
 	$$(call generate_lcgdict,$(1),$(1),$(4),$(3),$(6)/$(2)i.cc,$(5))
 $($(1)_objdir)/$(6)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1))
-$$(eval $$(call AddBigObjLCGDICTRule,$1))
+$(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2)))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 all_$(1)  += $(7)/$(2)r_rdict.pcm
 $($(1)_objdir)/$(6)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
