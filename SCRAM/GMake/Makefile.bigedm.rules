@@ -1,3 +1,11 @@
+define CheckBigProductsDeps
+$(info >> Checking Big Products dependency)\
+$(foreach b,$(ALL_BIGPRODS),$(eval ALL_$(b)_LIBS:=$(foreach s,$($(b)_PACKAGES),$(if $(strip $(filter $($(s)),$($($(s))_EX_LIB))),$s))))\
+$(eval ALL_NON_TEST:=$(strip $(ALL_EXTERNAL_PRODS) $(foreach p,$(filter-out $(ALL_BINARIES),$(ALL_PRODS)),$(if $(strip $(filter-out TEST,$($p_CLASS))),$p))))\
+$(foreach b,$(ALL_BIGPRODS),$(foreach p,$(filter-out $($(b)_BIGOBJS),$(ALL_NON_TEST)),$(eval $p_$b_BIGERR:=$(strip $(filter $(filter $($(b)_PACKAGES),$($(p)_EX_USE) $($(p)_LOC_USE)),$(ALL_$(b)_LIBS))))))\
+$(foreach p,$(ALL_NON_TEST),$(foreach b,$(ALL_BIGPRODS),$(if $($p_$b_BIGERR),$(info >> $p depends on big product $b via $($p_$b_BIGERR)))))\
+$(info >> Done checking Big Products dependency)
+endef
 define BigObjAdjustFlags
 $(strip $(filter-out $(strip $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_REM_BIGOBJ_$f) $($($(1)_bigobj)_LOC_FLAGS_REM_$f) $(REM_BIGOBJ_$f) $(USER_REM_BIGOBJ_$f))),$(strip $(call AdjustFlags,$1,$2,$3) $(foreach f,$3,$($($(1)_bigobj)_LOC_FLAGS_BIGOBJ_$f) $(BIGOBJ_$f) $(USER_BIGOBJ_$f)))))
 endef

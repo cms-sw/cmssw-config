@@ -1,6 +1,7 @@
 <tool name="SELF" version="SELF">
  <client>
   <flags DEFAULT_COMPILER="@SCRAM_COMPILER@"/>
+  <environment name="LIBDIR"        value="$LOCALTOP/biglib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/lib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
@@ -29,6 +30,7 @@
  <runtime name="ROOT_INCLUDE_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
  <runtime name="ROOT_INCLUDE_PATH"     value="$RELEASETOP/src"                       type="path" handler="warn"/>
  <runtime name="CMSSW_VERSION"         value="$SCRAM_PROJECTVERSION"/>
+ <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/biglib/$SCRAM_ARCH"          type="path"/>
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
  <runtime name="PATH"                  value="$LOCALTOP/bin/$SCRAM_ARCH"             type="path"/>

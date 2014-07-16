@@ -2099,6 +2099,7 @@ sub dumpBuildFileData ()
   my $store2= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   my $class=$self->get("class");
+  print $fh "${safename}_CLASS := $class\n";
   if ($lib)
   {
     my $store3= $self->getProductStore("lib");
