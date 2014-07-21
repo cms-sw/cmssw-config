@@ -2,7 +2,6 @@
 BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use Cache::CacheUtilities;
 use File::Basename;
-use UNIVERSAL qw(isa);
 
 my $olddir=shift || die "Missing old installation path";
 my $newtop=shift || die "Missing current installation path";
@@ -80,28 +79,37 @@ sub processtext ()
 sub processbinary ()
 {
   my $cache=shift;
-  my $r=ref($cache);
+  my $r=&getRef($cache);
   my $changed=0;
-  if (isa($cache,"HASH"))
+  if ($r eq "HASH")
   {
     foreach my $k (keys %$cache)
     {
       my $v=$cache->{$k};
-      if(isa($v,"HASH")){$changed+=&processbinary(\%$v);}
-      elsif(isa($v,"ARRAY")){$changed+=&processbinary(\@$v);}
-      elsif($v=~s/$olddir/$newtop/g){$changed=1;$cache->{$k}=$v;}
+      $r=&getRef($v);
+      if($r eq "HASH"){$changed+=&processbinary(\%$v);}
+      elsif($r eq "ARRAY"){$changed+=&processbinary(\@$v);}
+      elsif($v=~s/$olddir/$newtop/g){$changed+=1;$cache->{$k}=$v;}
     }
   }
-  elsif(isa($cache,"ARRAY"))
+  elsif($r eq "ARRAY")
   {
     my $c=scalar(@$cache);
     for(my $i=0;$i<$c;$i++)
     {
       my $v=$cache->[$i];
-      if(isa($v,"HASH")){$changed+=&processbinary(\%$v);}
-      elsif(isa($v,"ARRAY")){$changed+=&processbinary(\@$v);}
-      elsif($v=~s/$olddir/$newtop/g){$changed=1;$cache->[$i]=$v;}
+      $r=&getRef($v);
+      if($r eq "HASH"){$changed+=&processbinary(\%$v);}
+      elsif($r eq "ARRAY"){$changed+=&processbinary(\@$v);}
+      elsif($v=~s/$olddir/$newtop/g){$changed+=1;$cache->[$i]=$v;}
     }
   }
   return $changed;
+}
+
+sub getRef()
+{
+  my $r=ref(shift);
+  if (($r eq "") || ($r eq "ARRAY")){return $r;}
+  return "HASH";
 }
