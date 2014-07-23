@@ -108,7 +108,7 @@ define AddBigObjRule
 ifneq ($(strip $($(1)_bigobj)),)
 all_$(1) += $(SCRAMSTORENAME_OBJS)/$(1).$(BIGLIB_OBJEXT)
 $(SCRAMSTORENAME_OBJS)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/bigobj/$(1).$(BIGLIB_OBJEXT)
-	@cp -fp $$^ $$@
+	@$$(startlog_$(1))$(CMD_cp) -fp $$^ $$@ $$(endlog_$(1))
 $($(1)_objdir)/bigobj/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$($(1)_objs))
 	$$(call big_obj,$(2),$(1),$$^,$(SCRAMSTORENAME_OBJS))
 endif
@@ -132,21 +132,21 @@ define BigProductRule
 ifneq ($(strip $(foreach o,$($(1)_BIGOBJS),$($(o)_bigobj))),)
 $(eval $(call LogFile,$(1),$(2)))
 .PHONY: all_$(3) $(3) $(1)
-$(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
+$(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) $(WORKINGDIR)/cache/log/$(2)/build.log FORCE_TARGET
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(2)" $$(redirectlog_$(1)) &&\
 	$(CMD_echo) ">> Entering Package $(2)" &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(SCRAMSTORENAME_BIGLIB)/plugin$(1).so
-	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(2)"  $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(2) built" $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(2)/$(1) &&\
+	$(DO_BUILD_LOG) $(CMD_mv) $(WORKINGDIR)/cache/log/$(2)/$(1) $(WORKINGDIR)/cache/log/$(2)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(2)" &&\
 	$(CMD_echo) ">> Package $(2) built"
 $(1)_objs := $(call BigObjectsPaths,$1)
 $(SCRAMSTORENAME_BIGLIB)/plugin$(1).so: $(WORKINGDIR)/$(2)/plugin$(1).so
 	$$(call bigedm_register_plugin,$1)
-$(WORKINGDIR)/$(2)/plugin$(1).so: $$($(1)_objs) $(logfile_$1)
+$(WORKINGDIR)/$(2)/plugin$(1).so: $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
 	$$(call bigobj_link_plugin,$1)
 else
 $(3):

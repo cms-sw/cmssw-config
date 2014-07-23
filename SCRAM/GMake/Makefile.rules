@@ -2009,9 +2009,8 @@ $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	done
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
-outputlog:
-	$(eval DO_BUILD_LOG:=)
-	@$(call outputlog,,,)
+outputlog: buildlog
+	@:
 buildlog:
 	@for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR) -name "build.log" -type f` ; do \
 	  pack=`dirname $$f` &&\
