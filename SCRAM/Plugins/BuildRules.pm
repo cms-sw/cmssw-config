@@ -65,6 +65,7 @@ sub process()
       use File::Copy;
       use FileHandle;
       move($oldfile,$newfile);
+      $data->{MAKEFILE} = $newfile;
       $data->{MAKEFILEFH} = FileHandle->new();
       $data->{MAKEFILEFH}->open(">>$newfile");
       $self->{FH}=$data->{MAKEFILEFH};
