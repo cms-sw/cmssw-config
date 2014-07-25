@@ -1,3 +1,10 @@
+2014-07-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-14: Various fixes for Biglib rules;
+	 - Added new build rule check_dependents_<biglib> to check dependent packages
+	of biglib
+	- Bug fix: Make sure scram picks up changes in  plugins/BuildFile.xml
+
 2014-07-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-00: New build rules to generate big edmplugin using other
