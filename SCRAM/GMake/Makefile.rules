@@ -59,9 +59,6 @@ ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 LCGDICT_FILE_PREFIX = $(1)_
 endif
 ALL_BIGPRODS                :=
-ifndef LD_UNIT
-LD_UNIT                     := -r -m elf_x86_64
-endif
 ifndef LD_UNIT_FLAGS
 LD_UNIT_FLAGS               := -z muldefs
 endif
@@ -1771,7 +1768,14 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+APPLY_BIGLIB_RULES:=yes
+ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),llvm)
+APPLY_BIGLIB_RULES:=no
+endif
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/no-bigproduct)),)
+APPLY_BIGLIB_RULES:=no
+endif
+ifeq ($(strip $(APPLY_BIGLIB_RULES)),no)
 ALL_BIGPRODS:=
 subdirs_$(SCRAM_SOURCEDIR):=$(filter-out $(SCRAM_SOURCEDIR)_BigProducts,$(subdirs_$(SCRAM_SOURCEDIR)))
 ALL_SUBSYSTEMS:=$(filter-out BigProducts,$(ALL_SUBSYSTEMS))
