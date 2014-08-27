@@ -1629,10 +1629,9 @@ $(WORKINGDIR)/cache/xlibs: $(WORKINGDIR)/cache/xlibs.backup
 	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
 $(WORKINGDIR)/cache/xlibs.backup: $(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB 
 	@$(CMD_touch) $@
-$(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB: $(ToolTimeStamps) $(LOCALTOP)/external/$(SCRAM_ARCH)
+$(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB: $(ToolTimeStamps)
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D)
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
-$(LOCALTOP)/external/$(SCRAM_ARCH): FORCE_TARGET
-	@[ -d $@ ] || $(CMD_mkdir) -p $@
 ######################################################################
 $(eval curtop:=$(shell $(CMD_echo) $$LOCALTOP))
 ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))
