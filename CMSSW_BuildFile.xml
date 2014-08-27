@@ -28,7 +28,9 @@
 <flags REM_LCGDICT_CPPFLAGS="-O%"/>
 <flags REM_LCGDICT_CXXFLAGS="-fipa%"/>
 <flags LCGDICT_CXXFLAGS="-Os -Wno-unused-variable"/>
-<flags CXXFLAGS="-DBOOST_DISABLE_ASSERTS"/>
+<release name="!CMSSW_5_">
+  <flags CXXFLAGS="-DBOOST_DISABLE_ASSERTS"/>
+</release>
 
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
