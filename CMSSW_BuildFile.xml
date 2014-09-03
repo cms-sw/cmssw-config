@@ -38,8 +38,10 @@
 <flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 
 <architecture name="slc|fc">
-#  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
+   <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
+   <flags EDM_CXXFLAGS="-fvisibility=hidden"/>
+   <flags CAPABILITIES_CXXFLAGS="-fvisibility=default"/>
 </architecture>
 <architecture name="slc5.*_gcc4[67]">
    <flags LDFLAGS="-Wl,--icf=all"/>
