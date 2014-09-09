@@ -58,6 +58,7 @@ endif
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 LCGDICT_FILE_PREFIX = $(1)_
 endif
+ROOTDICT_FILE_PREFIX = $(1)_
 ALL_BIGPRODS                :=
 ifndef LD_UNIT_FLAGS
 LD_UNIT_FLAGS               := -z muldefs
@@ -647,8 +648,8 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(LOCALTOP)/$(4) -s $(LOCALTOP)/$(3) -o $(LOCALTOP)/$@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-   cd $(@D) && $(GENREFLEX) $(LOCALTOP)/$(4) -s $(LOCALTOP)/$(3) -o $(LOCALTOP)/$@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+               $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
   $(endlog_$(2))
 endef
 # ROOT dictionary generation
@@ -1357,22 +1358,12 @@ $($(1)_objdir)/moc/%_cxx_moc.cc: $(4)/%.cxx $($(1)_config)
 	$$(call generate_moc,$(1),$(1),$($(5))/bin/moc)
 endef
 
-#safename,path,LinkDef.h,prodstore
-define RootDict
-$(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
-$(1)_files                  += $($(1)_objdir)/$(1)_LinkDef.cc
-$(1)_objs                   += $($(1)_objdir)/$(1)_LinkDef.$(OBJEXT)
-.PRECIOUS: $($(1)_objdir)/$(1)_LinkDef.cc
-$(1)_extra_files += $($(1)_objdir)/$(1)_LinkDef.cc
-$($(1)_objdir)/$(1)_LinkDef.cc: $($(1)_srcdir)/$(3) $($(1)_config)
-	$$(call generate_rootdict,$(1),$(1))
-$($(1)_objdir)/$(1)_LinkDef.$(OBJEXT): $($(1)_objdir)/$(1)_LinkDef.cc
-	$$(call compile_rootdict,$(1),$(1))
+define addPCMRule
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
-all_$(1)  += $(4)/$(1)_LinkDef_rdict.pcm
-$($(1)_objdir)/$(1)_LinkDef_rdict.pcm: $($(1)_objdir)/$(1)_LinkDef.cc
+all_$(1)  += $(4)/$(2)r_rdict.pcm
+$(3)/$(2)r_rdict.pcm: $(3)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
-$(4)/$(1)_LinkDef_rdict.pcm: $($(1)_objdir)/$(1)_LinkDef_rdict.pcm
+$(4)/$(2)r_rdict.pcm: $(3)/$(2)r_rdict.pcm
 	@if [ -f $$< ] ; then \
 	  $(CMD_cp) $$< $$@ &&\
 	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod) ;\
@@ -1380,6 +1371,30 @@ $(4)/$(1)_LinkDef_rdict.pcm: $($(1)_objdir)/$(1)_LinkDef_rdict.pcm
 	  $(CMD_rm) -f $$@;\
 	fi
 endif
+endef
+
+#safename,linkdefs,subdir,prodstore,rootdicts
+define AddRootDictRule
+$(if $(2),$(eval $(call RootDictRule,$(1),$(ROOTDICT_FILE_PREFIX)$(firstword $(2)),$(firstword $(3)),$(4),$(5)))$(eval $$(call AddRootDictRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)),$(4),$(5))),)
+endef
+
+#safename,rootdict,linkdef,subdir,prodstore
+define RootDictRule
+$(1)_files  := $($(1)_objdir)/$(4)/$(2)r.cc $($(1)_files)
+$(1)_objs   := $($(1)_objdir)/$(4)/$(2)r.$(OBJEXT) $($(1)_objs)
+$(1)_extra_files += $($(1)_objdir)/$(4)/$(2)r.cc
+.PRECIOUS: $($(1)_objdir)/$(4)/$(2)r.cc
+$($(1)_objdir)/$(4)/$(2)r.cc: $(3) $($(1)_config)
+	$$(call generate_rootdict,$(1),$(1))
+$($(1)_objdir)/$(4)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(4)/$(2)r.cc
+	$$(call compile_rootdict,$(1),$(1))
+$(eval $(call addPCMRule,$1,$2,$($(1)_objdir)/$(4),$(5)))
+endef
+
+#safename,path,linkdefs,prodstore
+define RootDict
+$(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
+$(eval $(call AddRootDictRule,$(1),$($(1)_ROOTDICTS),$(addprefix $2/,$(3)),b,$(4)))
 endef
 
 define CondSerialization
