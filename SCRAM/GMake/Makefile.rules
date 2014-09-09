@@ -1896,8 +1896,8 @@ define update_edm_class_version
   for x in $2; do \
     fname=`basename $$x` &&\
     $(CMD_echo) ">> Generating EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x &&\
-    (($(CMD_cd) $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $$x) || ($(CMD_true))) &&\
+    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $(LOCALTOP)/$$x &&\
+    (($(CMD_cd) $(@D) && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
     if [ -f $(@D)/classes_def.xml.generated ] ; then \
       if [ "X`diff $(@D)/classes_def.xml.generated $$x | wc -l`" != "X0" ] ; then \
         $(CMD_cp) $(@D)/classes_def.xml.generated $$x.generated &&\
