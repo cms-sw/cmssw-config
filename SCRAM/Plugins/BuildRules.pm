@@ -1119,7 +1119,7 @@ sub searchLCGRootDict ()
   my $lcgxml=[];
   my $rootmap=0;
   my $genreflex_args="\$(GENREFLEX_ARGS)";
-  my $rootdict="";
+  my $rootdict=[];
   my $path=$stash->get('path');
   my $dir=$path;
   my $top=$ENV{LOCALTOP};
@@ -1204,8 +1204,7 @@ sub searchLCGRootDict ()
     if($file=~/.*?LinkDef\.h$/)
     {
       if($stubdir ne ""){$file="${stubdir}/${file}";}
-      $rootdict=$file;
-      last;
+      push @$rootdict,$file;
     }
   }
   closedir($dref);
@@ -1897,7 +1896,8 @@ sub dict_template()
     $self->popstash();
   }
   else{$self->rootmap($self->get("rootmap"));}
-  if ($self->get("rootdictfile") ne "")
+  $x = $self->get("rootdictfile");
+  if (scalar(@$x)>0)
   {
     $self->pushstash();
     $self->rootdict_template();
@@ -1917,8 +1917,12 @@ sub rootdict_template()
   my $self=shift;
   my $safename=$self->get("safename");
   my $fh=$self->{FH};
-  print $fh "${safename}_ROOTDICT  := LinkDef\n";
-  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},",$self->get("path"),",",$self->get("rootdictfile"),",\$(",$self->getProductStore("lib"),")))\n";
+  my $x = $self->get("rootdictfile");
+  my $xr = "y ";
+  my $xf = join(" ",@$x);
+  for(my $i=1;$i<scalar(@$x);$i++){$xr.="y${i} ";}
+  print $fh "${safename}_ROOTDICTS  := $xr\n";
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},",$self->get("path"),",$xf,\$(",$self->getProductStore("lib"),")))\n";
 }
 
 sub cond_serialization_template()
