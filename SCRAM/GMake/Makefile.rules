@@ -739,8 +739,8 @@ endef
 #Shared Capabilities library
 define link_lib_capabilities
   @$(startlog_$(2))$(CMD_echo) ">> Building capability library $@" &&\
-  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ $(call AdjustFlags,$(4)_CDICT,EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1)     $(CXXSHAREDFLAGS) $5 -o $@ -l$(1) $(call AdjustFlags,$(1),EDM LCGDICT,LDFLAGS) &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,EDM CAPABILITIES,CXXFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(CXXSHAREDFLAGS) $5 -o $@ -l$(1) $(call AdjustFlags,$(1),EDM LCGDICT,LDFLAGS)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
@@ -1458,10 +1458,9 @@ endef
 
 #safename,prodstore,Capabilities,defxmlfiles,objdir,objs,
 define LCGDictLibRule
-$(1)$(3)_CDICT_LDFLAGS   = -l$(1) $$($(1)_LDFLAGS)
 all_$(1)  += $(5)/$(MODULE_PREFIX)$(1)$(3).$(SHAREDSUFFIX)
 $(5)/$(MODULE_PREFIX)$(1)$(3).$(SHAREDSUFFIX): $6 $(WORKINGDIR)/cache/prod/lib$(1)
-	$$(call link_lib_capabilities,$(1),$(1),$(2),$(1)$(3),$6,$(4))
+	$$(call link_lib_capabilities,$(1),$(1),$(2),$(1)$(3),$(6),$(4))
 endef
 
 define AddLCGDictRule

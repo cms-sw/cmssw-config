@@ -1641,20 +1641,20 @@ sub initTemplate_PROJECT ()
   {
     system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
-    if ((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne ""))
-    {
-      my $relobj="$ENV{RELEASETOP}/objs/$ENV{SCRAM_ARCH}";
-      my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-base";
-      if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
-    }
-    my $pj=lc($ENV{SCRAM_PROJECTNAME});
-    if ($self->isToolAvailable($pj))
-    {
-      my $relobj=$self->{cache}{toolcache}{SETUP}{$pj}{"$ENV{SCRAM_PROJECTNAME}_BASE"}."/objs/$ENV{SCRAM_ARCH}";
-      my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-full";
-      if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
-    }
   }  
+  if ((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne ""))
+  {
+    my $relobj="$ENV{RELEASETOP}/objs/$ENV{SCRAM_ARCH}";
+    my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-base";
+    if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
+  }
+  my $pj=lc($ENV{SCRAM_PROJECTNAME});
+  if ($self->isToolAvailable($pj))
+  {
+    my $relobj=$self->{cache}{toolcache}{SETUP}{$pj}{"$ENV{SCRAM_PROJECTNAME}_BASE"}."/objs/$ENV{SCRAM_ARCH}";
+    my $locobj="${ltop}/external/$ENV{SCRAM_ARCH}/objs-full";
+    if ((-d "$relobj") && (!-l "$locobj")){system("ln -s $relobj $locobj");}
+  }
   $self->{cache}{LCGProjectLibPrefix}="lcg_";
   $self->setRootReflex ("rootrflx");
   if ((exists $ENV{SCRAM_BUILDFILE}) && ($ENV{SCRAM_BUILDFILE} ne ""))
@@ -2108,7 +2108,7 @@ sub dumpBuildFileData ()
   my $store2= $self->getProductStore("logs");
   my $ins_script=$core->flags("INSTALL_SCRIPTS");
   my $class=$self->get("class");
-  print $fh "${safename}_CLASS := $class\n";
+  if ($class eq "LIBRARY"){print $fh "${safename}_CLASS := $class\n";}
   if ($lib)
   {
     my $store3= $self->getProductStore("lib");
@@ -2173,6 +2173,8 @@ sub binary_template ()
           }
 	  $self->set("type",$types->{$ptype}{$prod}{TYPE});
 	  $self->pushstash();$self->library_template_generic();$self->popstash();
+	  if ($class eq "TEST"){print $fh "${safename}_CLASS := TEST_${ptype}\n";}
+	  else{print $fh "${safename}_CLASS := $ptype\n";}
 	  print $fh "else\n",
 	            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
                     "endif\n";
@@ -2214,6 +2216,8 @@ sub binary_template ()
 	    }
 	    else{$self->set("type",$types->{$ptype}{$prod}{TYPE});}
 	    $self->pushstash();$self->binary_template_generic();$self->popstash();
+	    if ($class eq "TEST"){print $fh "${safename}_CLASS := TEST\n";}
+	    else{print $fh "${safename}_CLASS := BINARY\n";}
 	    print $fh "else\n",
 	            "\$(eval \$(call MultipleWarningMsg,$safename,$path))\n",
                     "endif\n";
