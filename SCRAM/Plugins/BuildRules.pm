@@ -677,7 +677,7 @@ sub dumpCompilersFlags()
     $allFlags.="$flag ";
     foreach my $type ("","REM_")
     {
-      foreach my $var ("","BIN_","TEST_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
+      foreach my $var ("","LIBRARY_","TEST_","BINARY_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
     }
   }
   push @$keys,"ALL_COMPILER_FLAGS := $allFlags";
@@ -1786,7 +1786,11 @@ sub Project_template()
     my $tool = $self->getTool($rflx);
     foreach my $flag (keys %{$tool->{FLAGS}})
     {
-      if ($flag=~/^GENREFLEX_/){print $fh "$flag := \$(${rflx}_EX_FLAGS_${flag})\n";}
+      if ($flag=~/^GENREFLEX_/)
+      {
+        if ($flag eq "GENREFLEX_GCCXMLOPT"){print $fh "$flag := \$(if \$(strip \$(${rflx}_EX_FLAGS_${flag})),--gccxmlopt=\\\"\$(${rflx}_EX_FLAGS_${flag})\\\")\n";}
+        else{print $fh "$flag := \$(${rflx}_EX_FLAGS_${flag})\n";}
+      }
     }
   }
   

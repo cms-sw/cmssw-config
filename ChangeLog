@@ -1,3 +1,35 @@
+2014-09-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-20: Allow to set and use LIBRARY_<flag>, BINARY_<flag>,
+	and TEST_<flag> flags (CXXFLAGS, CPPFLAGS, CFLAGS, LDFLAGS etc.);
+	Regenerate Serialization.cc if cond serialization script is changed;
+	Fix GENREFLEX_GCCXMLOPT for flag for genreflex;
+
+2014-09-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-19: Fixed class version update rule;
+	Allow multiple LinkDef.h per package;
+	Fixed absolute path in lcgdict
+
+2014-08-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-18: Make use of new release tag in config/BuildFile.xml so that
+	 same config tag can be used for all releases.
+
+2014-08-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-17: Only update external/$(SCRAM_ARCH)/links.DB if external
+	tools definition changes
+
+2014-08-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-16: For unittests rule always call unittests of PRE_TEST instead
+	of runtests
+
+2014-08-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-15: Disable biglib rules for llvm
+
 2014-07-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-14: Various fixes for Biglib rules;
