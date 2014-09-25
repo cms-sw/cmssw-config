@@ -1,5 +1,9 @@
 2014-09-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-03-21: Set CLASS for each product e..g LIBRARY, BINARY, TEST,
+	TEST_LIBRARY.
+	Fix creation of symlinks unders externals/arch for big objs.
+
 	* V05-03-20: Allow to set and use LIBRARY_<flag>, BINARY_<flag>,
 	and TEST_<flag> flags (CXXFLAGS, CPPFLAGS, CFLAGS, LDFLAGS etc.);
 	Regenerate Serialization.cc if cond serialization script is changed;

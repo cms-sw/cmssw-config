@@ -1,7 +1,7 @@
 define CheckBigProductsDeps
 $(info >> Checking Big Products dependency)\
 $(eval ALL_$(1)_LIBS:=$(foreach s,$($(1)_PACKAGES),$(if $(strip $(filter $($(s)),$($($(s))_EX_LIB_ALL))),$s)))\
-$(eval ALL_NON_TEST:=$(strip $(ALL_EXTERNAL_PRODS) $(foreach p,$(filter-out $(ALL_BINARIES),$(ALL_PRODS)),$(if $(strip $(filter-out TEST,$($p_CLASS))),$p))))\
+$(eval ALL_NON_TEST:=$(strip $(ALL_EXTERNAL_PRODS) $(foreach p,$(filter-out $(ALL_BINARIES),$(ALL_PRODS)),$(if $(strip $(filter-out TEST%,$($p_CLASS))),$p))))\
 $(foreach p,$(filter-out $($(1)_BIGOBJS),$(ALL_NON_TEST)),$(eval $p_$1_BIGERR:=$(strip $(filter $(filter $($(1)_PACKAGES),$($(p)_EX_USE) $($(p)_LOC_USE)),$(ALL_$(1)_LIBS)))))\
 $(foreach p,$(ALL_NON_TEST),$(if $($p_$1_BIGERR),$(info >> $p depends on big product $1 via $($p_$1_BIGERR))))\
 $(info >> Done checking Big Products dependency)
