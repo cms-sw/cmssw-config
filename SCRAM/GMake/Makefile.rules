@@ -225,7 +225,7 @@ define AdjustFlag
 $(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 endef
 define AdjustFlags
-$(strip $(foreach f,$3,$(filter-out $(strip $(foreach t,$2,$(REM_$t_$f))),$($1_$f)) $(foreach t,$2,$($t_$f))))
+$(strip $(foreach f,$3,$(filter-out $(strip $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
 endef
 define CUDA_FLAGS
 $(filter-out $(USER_REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS)
@@ -648,8 +648,8 @@ endef
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-               $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),--gccxmlopt=\"$(GENREFLEX_GCCXMLOPT)\" --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+               $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) \
   $(endlog_$(2))
 endef
 # ROOT dictionary generation
@@ -753,14 +753,14 @@ endef
 # Binary building 
 define build_bin
   @$(startlog_$(2))$(CMD_echo) ">> Building binary $(1)" &&\
-  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@ &&\
-  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,$4,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $($(1)_LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
+  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 # Test executable building
 define build_test
-  $(call build_bin,$(1),$(2),$(3),$(4))
+  $(call build_bin,$(1),$(2),$(3))
 endef  
 ##############################################################################
 # Data download and Copy
@@ -964,7 +964,9 @@ ifneq ($(strip $($(1)_objs)$(filter $1,${2}Capabilities)),)
 $$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
 $(1)_BUILDRULES := _edm
 else
+ifeq ($(strip $($(1)_SKIP_FILES)),)
 $$(info gmake: *** [$4 contains only $(SCRAM_BUILDFILE).xml without any sources. Better to remove $(SCRAM_BUILDFILE).xml too or do not tag this directory] Error 1)
+endif
 endif
 endef
 define rivetPlugin
@@ -1069,13 +1071,13 @@ ifeq ($(strip $(4)),lib)
 	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
 endif
 ifeq ($(strip $(4)),bin)
-	$$(call build_bin,$(1),$(1),$(3),BIN)
+	$$(call build_bin,$(1),$(1),$(3))
 endif
 ifeq ($(strip $(4)),python)
 	$$(call link_pylib,$(1),$(1),$(3))
 endif
 ifeq ($(strip $(4)),test)
-	$$(call build_test,$(1),$(1),$(3),TEST)
+	$$(call build_test,$(1),$(1),$(3))
 .PHONE: runtests_$(1) unittests_$(1)
 ifeq ($(strip $(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
@@ -1404,7 +1406,7 @@ $(1)_files                  += $($(1)_objdir)/a/Serialization.cc
 $(1)_objs                   += $($(1)_objdir)/a/Serialization.$(OBJEXT)
 .PRECIOUS: $($(1)_objdir)/a/Serialization.cc
 $(1)_extra_files += $($(1)_objdir)/a/Serialization.cc
-$($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config)
+$($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config) $$(COND_SERIALIZATION_SCRIPT)
 	$$(call generate_CondSerialization,$(1),$(1),$(2))
 $($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
 	$$(call compile_cxx,$(1),$(1))
