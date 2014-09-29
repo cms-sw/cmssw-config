@@ -1,3 +1,8 @@
+2014-09-29 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-22: Do not generate any lcg/root dict if all files have been
+	skipped e.g. <flags SKIP_FILES="%"/>
+
 2014-09-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-21: Set CLASS for each product e..g LIBRARY, BINARY, TEST,
