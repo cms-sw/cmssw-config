@@ -132,6 +132,8 @@ sub Extra_template()
 {
   my $self=shift;
   my $common=$self->{template};
+  my $skip=$common->{core}->flags("SKIP_FILES");
+  if (($skip eq "*") || ($skip eq "%")){return 1;}
   $common->pushstash();$common->moc_template();$common->popstash();
   $common->plugin_template();
   $common->pushstash();$common->lexyacc_template();$common->popstash();
