@@ -51,6 +51,12 @@ HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
+IS_DARWIN:=no
+IS_LINUX:=yes
+ifeq ($(strip $(filter-out osx%,$(SCRAM_ARCH))),)
+IS_DARWIN:=yes
+IS_LINUX:=no
+endif
 GENERATE_ROOT_PCMS:=
 ifneq ($(strip $(GENREFLEX)),)
 GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
@@ -60,9 +66,6 @@ LCGDICT_FILE_PREFIX = $(1)_
 endif
 ROOTDICT_FILE_PREFIX = $(1)_
 ALL_BIGPRODS                :=
-ifndef LD_UNIT_FLAGS
-LD_UNIT_FLAGS               := -z muldefs
-endif
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
 ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld
@@ -119,18 +122,13 @@ F77_MM:=$(patsubst %D,%,$(F77_MMD))
 endif
 ###################################
 SHAREDSUFFIX := so
-ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
+ifeq ($(IS_DARWIN),yes)
 SHAREDSUFFIX := dylib
 endif
 ifndef OS_RUNTIME_LIBRARY_PATH
 OS_RUNTIME_LIBRARY_PATH := LD_LIBRARY_PATH
-ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
+ifeq ($(IS_DARWIN),yes)
 OS_RUNTIME_LIBRARY_PATH := DYLD_FALLBACK_LIBRARY_PATH
-endif
-endif
-ifndef CXXSHAREDFLAGS
-ifeq ($(filter-out slc%,$(SCRAM_ARCH)),)
-CXXSHAREDFLAGS                 := -shared
 endif
 endif
 SHARED_LIB_LOAD_CHECK := 
@@ -539,10 +537,10 @@ define run_analyze_command
                $5 $< -o /dev/null $(endlog_$(2))
 endef
 define analyze_cxx_common
-  $(call run_analyze_command,$1,$2,$3,$4,$(CXX) -c -### $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS))
+  $(call run_analyze_command,$1,$2,$3,$4,$(if $(strip $(SCRAM_DXR_RUN)),$(DXR_CXX) -fsyntax-only -xc++,$(CXX) -c) $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS))
 endef
 define analyze_c_common
-  $(call run_analyze_command,$1,$2,$3,$4,$(CC) -c -### $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS))
+  $(call run_analyze_command,$1,$2,$3,$4,$(if $(strip $(SCRAM_DXR_RUN)),$(DXR_CC)  -fsyntax-only -xc,$(CC) -c)    $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS))
 endef
 
 ##############################################################################
@@ -1783,6 +1781,17 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifeq ($(strip $(LD_UNIT)),)
+LD_UNIT := -r -m elf_x86_64
+endif
+ifeq ($(IS_LINUX),yes)
+ifeq ($(strip $(LD_UNIT_FLAGS)),)
+LD_UNIT_FLAGS := -z muldefs
+endif
+ifeq ($(strip $(CXXSHAREDFLAGS)),)
+CXXSHAREDFLAGS := -shared
+endif
+endif
 APPLY_BIGLIB_RULES:=yes
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),llvm)
 APPLY_BIGLIB_RULES:=no
@@ -2065,7 +2074,7 @@ CompilePython:
 endif
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
-.PHONY: checker FORCE_LLVM_CHECK
+.PHONY: dxr checker FORCE_LLVM_CHECK
 FORCE_LLVM_CHECK:
 	@:
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)),)
@@ -2093,6 +2102,15 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	  $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
 endif
 endif
+endif
+ifneq ($(strip $(PY2_DXR_BASE)),)
+dxr:    $(SCRAM_SOURCEDIR)/dxr.config
+	@mkdir -p dxr && SCRAM_DXR_RUN=yes $(PY2_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
+$(SCRAM_SOURCEDIR)/dxr.config: $(SCRAM_CONFIGDIR)/dxr.config
+	@$(CMD_sed) -e "s|@LOCALTOP@|$$LOCALTOP|g" $< > $@ && $(CMD_echo) ">> Regenerated $@"
+else
+dxr:
+	@$(CMD_echo) "**** ERROR: py2-dxr tool not available."
 endif
 enable-biglib:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/no-bigproduct &&\

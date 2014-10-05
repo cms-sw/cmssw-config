@@ -34,10 +34,13 @@
 
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
-<flags BIGOBJ_CXXFLAGS="-flto"/>
+<flags LCGDICT_CPPFLAGS="-DCMSSW_REFLEX_DICT"/>
+<architecture name="!osx">
+  <flags BIGOBJ_CXXFLAGS="-flto"/>
+</architecture>
 <flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 
-<architecture name="slc|fc">
+<architecture name="!osx">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
