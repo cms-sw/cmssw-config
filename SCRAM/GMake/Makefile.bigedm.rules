@@ -41,8 +41,8 @@ endef
 #############################################################################
 define big_obj
   @$(startlog_$(2))$(CMD_echo) ">> Building big object file $@" &&\
-  $(VERB_ECHO) $(CMD_ld) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $(3) &&\
-  (            $(CMD_ld) $(LD_UNIT) $(LD_UNIT_FLAGS) -o $@ $(3) || ($(call delete_build_prod,$(4)) && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) $(CMD_ld) $(LD_UNIT) -o $@ $(3) &&\
+  (            $(CMD_ld) $(LD_UNIT) -o $@ $(3) || ($(call delete_build_prod,$(4)) && exit 1)) $(endlog_$(2))
 endef
 define bigobj_compile_cxx
   $(call compile_cxx_common,$1,$2,$(call BigObjAdjustFlags,$1,,CPPFLAGS CXXFLAGS),bigobj,,1)

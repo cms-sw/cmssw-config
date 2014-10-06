@@ -1,3 +1,12 @@
+2014-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-24: Drop LD_UNIT_FLAGS and just use LD_UNIT flag.
+
+2014-10-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-23: New dxr build rule added for generating dxr indexes;
+	Cleanup LD_UNIT flags for big objects for osx,fc and slc archs.
+
 2014-09-29 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-22: Do not generate any lcg/root dict if all files have been

@@ -1781,13 +1781,7 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
-ifeq ($(strip $(LD_UNIT)),)
-LD_UNIT := -r -m elf_x86_64
-endif
 ifeq ($(IS_LINUX),yes)
-ifeq ($(strip $(LD_UNIT_FLAGS)),)
-LD_UNIT_FLAGS := -z muldefs
-endif
 ifeq ($(strip $(CXXSHAREDFLAGS)),)
 CXXSHAREDFLAGS := -shared
 endif
