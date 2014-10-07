@@ -37,8 +37,8 @@
 <flags LCGDICT_CPPFLAGS="-DCMSSW_REFLEX_DICT"/>
 <architecture name="!osx">
   <flags BIGOBJ_CXXFLAGS="-flto"/>
+  <flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 </architecture>
-<flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 
 <architecture name="!osx">
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
