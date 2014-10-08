@@ -29,7 +29,7 @@ define bigedm_register_plugin
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
     $(CMD_echo) "module $(<F)" > $(<D)/$(1).edmplugin &&\
-    ($(call install_name_tool,$(<F),$(@D)/$(<F)) || ($(CMD_rm) -f $< $(<D)/$(<F) && exit 1)) &&\
+    ($(call install_name_tool,$(<F),$<) || ($(CMD_rm) -f $< $(<D)/$(<F) && exit 1)) &&\
     $(CMD_cp) -f $< $@ && $(CMD_cp) $(<D)/$(1).edmplugin $(@D)/$(1).edmplugin &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(1).edmplugin $(@D)/$(<F)" > $(call AutoCleanFile,$<,bigedm) &&\
     $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,bigedm) &&\
@@ -136,7 +136,7 @@ $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) $(WORKINGDIR)/cache/log/$
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(2)" $$(redirectlog_$(1)) &&\
 	$(CMD_echo) ">> Entering Package $(2)" &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
-$(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(SCRAMSTORENAME_BIGLIB)/plugin$(1).so
+$(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX)
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(2)"  $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(2) built" $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(2)/$(1) &&\
@@ -144,9 +144,9 @@ $(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/
 	$(CMD_echo) ">> Leaving Package $(2)" &&\
 	$(CMD_echo) ">> Package $(2) built"
 $(1)_objs := $(call BigObjectsPaths,$1)
-$(SCRAMSTORENAME_BIGLIB)/plugin$(1).so: $(WORKINGDIR)/$(2)/plugin$(1).so
+$(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX)
 	$$(call bigedm_register_plugin,$1)
-$(WORKINGDIR)/$(2)/plugin$(1).so: $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
+$(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX): $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
 	$$(call bigobj_link_plugin,$1)
 else
 $(3):
