@@ -1820,7 +1820,6 @@ endif
 ##############################################################################
 self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
-LIBDIR := $(wildcard $(LIBDIR))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
 $(shell $(CMD_echo) "" > $(WORKINGDIR)/.AUTOCLEAN)
@@ -1850,6 +1849,8 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),$(SCRAM_SOURCEDIR
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),$(SCRAM_SOURCEDIR)_$(subst /,_,$(dir)))))
 endif
 ###########################################################
+LIBDIR := $(wildcard $(LIBDIR))
+self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
@@ -2099,7 +2100,7 @@ endif
 endif
 ifneq ($(strip $(PY2_DXR_BASE)),)
 dxr:    $(SCRAM_SOURCEDIR)/dxr.config
-	@mkdir -p dxr && SCRAM_DXR_RUN=yes $(PY2_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
+	@$(CMD_mkdir) -p dxr && SCRAM_DXR_RUN=yes $(PY2_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
 $(SCRAM_SOURCEDIR)/dxr.config: $(SCRAM_CONFIGDIR)/dxr.config
 	@$(CMD_sed) -e "s|@LOCALTOP@|$$LOCALTOP|g" $< > $@ && $(CMD_echo) ">> Regenerated $@"
 else

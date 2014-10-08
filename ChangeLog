@@ -1,3 +1,13 @@
+2014-10-08 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-26: Various fixes for OSX:
+	- Fix big plugin extension for OSX arch (dylib instead of so)
+	- Do not pass -L<path> for non-existing local directories
+
+2014-10-08 David Abdurachmanov  <David.Abdurachmanov@cern.ch>
+
+	* V05-03-25: Pass --exclude-libs to only non-osx archs.
+
 2014-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-24: Drop LD_UNIT_FLAGS and just use LD_UNIT flag.
