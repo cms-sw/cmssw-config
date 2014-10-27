@@ -1,3 +1,8 @@
+2014-10-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-28: Help message updated; some cleanup;
+	Do not add biglib path if biglib is disabled in the dev area.
+
 2014-10-13 Patrick Gartung  <gartung@fnal.gov>
 
 	* V05-03-27: Fixed dxr.config file; passed -k gmake option and
