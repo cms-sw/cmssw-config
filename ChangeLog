@@ -1,3 +1,11 @@
+2014-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-29: Various features added
+	- SCRAM_TEST_RUNNER_PREFIX: Runtime environment variable which
+	scram can append before any unittest e.g. one use of it could be
+	to run unit test under valgrind or timeout etc.
+	- generate  ;lib/arch/.poisonededmplugincache for all the
+	packages locallt built or deleted.
 2014-10-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-28: Help message updated; some cleanup;

@@ -66,9 +66,10 @@ LCGDICT_FILE_PREFIX = $(1)_
 endif
 ROOTDICT_FILE_PREFIX = $(1)_
 ALL_BIGPRODS                :=
+POISON_EDMPLUGIN_CACHE      :=
 ###################################
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc
+ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -131,7 +132,6 @@ ifeq ($(IS_DARWIN),yes)
 OS_RUNTIME_LIBRARY_PATH := DYLD_FALLBACK_LIBRARY_PATH
 endif
 endif
-SHARED_LIB_LOAD_CHECK := 
 ##############################################################################
 ifndef RUN_LLVM_ANALYZER_ON_ALL
 RUN_LLVM_ANALYZER_ON_ALL:=no
@@ -418,20 +418,6 @@ define do_plugin_refresh
 endef
 #############################################################################
 ##############################################################################
-define check_module_load
-  if [ "X$(SHARED_LIB_LOAD_CHECK)" != X ] ; then \
-    if [ "X$(1)" = X ] ; then \
-      $(CMD_echo) "@@@@ Checking shared library load: $(@F)"	&&\
-      ($(SHARED_LIB_LOAD_CHECK) $@ || ($(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
-      $(CMD_echo) "@@@@ ----> OK, shared library loaded successfully: $(@F)" ; \
-    else \
-      $(CMD_echo) "@@@@ Shared library loading was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
-    fi ;\
-  else \
-    $(CMD_echo) "@@@@ Shared library loading was SKIPPED due to SCRAM_NOLOADCHECK: $(@F)" ;\
-  fi
-endef
-
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
   define install_name_tool
     install_name_tool -id $1 $2
@@ -835,7 +821,7 @@ define run_test
     $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(SCRAM_TEST_RUNNER_PREFIX) (($($(1)_TEST_RUNNER_CMD)) >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log &&\
@@ -912,7 +898,7 @@ $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARG
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1,) &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
-$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2)))
+$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
@@ -947,11 +933,11 @@ $(1)_pluginprod    := $(5)/$(8)
 $(1)_pluginlib     := $($(2)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 all_$(2)           += $(5)/$(8)
 $(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(6) 
+$(1)_package       := $(subst $(space),/,$(wordlist 2,3,$(subst /,$(space),$(10))))
+$$($(1)_package)_$(3)_plugins += $(1)
 ifndef SCRAM_NOEDMWRITECONFIG
 ifeq ($$(strip $(3)),edm)
 $(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG)
-$(1)_package       := $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(patsubst self/%,%,$($(1))))
-$(1)_package       := $$(if $$(strip $$(filter $$($(1)_package),$(ALL_PACKAGES))),$$($(1)_package),$$(dir  $$($(1)_package)))
 endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
@@ -959,7 +945,7 @@ $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 endef
 define edmPlugin
 ifneq ($(strip $($(1)_objs)$(filter $1,${2}Capabilities)),)
-$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1))
+$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1,$4))
 $(1)_BUILDRULES := _edm
 else
 ifeq ($(strip $($(1)_SKIP_FILES)),)
@@ -968,7 +954,7 @@ endif
 endif
 endef
 define rivetPlugin
-$(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1))
+$(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1,$4))
 endef
 
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
@@ -1710,7 +1696,7 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	  if [ -d cfipython/$(SCRAM_ARCH) ] ; then $(CMD_find) cfipython/$(SCRAM_ARCH)  -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
 	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi ;\
 	fi
-	$(CMD_rm) -rf $(SCRAM_INTwork)
+	$(CMD_rm) -rf $(SCRAM_INTwork) $(COMMON_WORKINGDIR)/cache/packs
 
 project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "------------ Help for Project-level Builds rules/targets ------------"
@@ -1780,17 +1766,13 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "    scram build echo_CXXFLAGS"
 	@$(CMD_echo) ""
 
-.PHONY: release release-build release-reset release-check release-test release-doc release-docs release-freeze
+.PHONY: release release-build release-reset release-doc release-docs release-freeze
 
 release: release-reset release-build postbuild
 
 release-build: project_all
 
 release-reset: distclean
-
-release-check: release-test
-
-release-test: integration-test
 
 release-docs release-doc: doc
 
@@ -1803,9 +1785,6 @@ release-freeze: release-check
 	$(CMD_find) . -type d -print | $(CMD_xargs) $(CMD_chmod) 555
 
 ###############################################################################
-ifdef SCRAM_NOLOADCHECK
-SHARED_LIB_LOAD_CHECK :=
-endif
 PLUGIN_REFRESH_CMDS :=
 ###############################################################################
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
@@ -1817,6 +1796,10 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(edmPluginRefresh_cache)),)
+POISON_EDMPLUGIN_CACHE      := $(strip $(if $(strip $(RELEASETOP)$(IS_PATCH)),yes))
+endif
+FULL_RELEASE_FOR_A_PATCH    := $(strip $($(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE))
 ifeq ($(IS_LINUX),yes)
 ifeq ($(strip $(CXXSHAREDFLAGS)),)
 CXXSHAREDFLAGS := -shared
@@ -1894,7 +1877,8 @@ $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 prebuild: $(prebuild)
 	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
 	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || $(CMD_mkdir) -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
-postbuild: $(postbuild) release-check
+postbuild: $(postbuild)
+	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 	@$(CMD_echo) "Release $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) build finished at `date`"
 runpython_$(SCRAM_SOURCEDIR): $(addprefix runpython_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> Python completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
@@ -2019,6 +2003,7 @@ clean_%:
 	else \
 	  $(CMD_echo) "***WARNING: Unknown product $*. Failed to cleanup.";\
 	fi
+	$(if $(strip $(edmPluginRefresh_cache)),$(MAKE) -f $(SCRAM_MAKEFILE) poisoned_edmplugins)
 ufast xfast fast:
 	@:
 %_USED_BY:
@@ -2087,7 +2072,7 @@ skiptest_%:
 	@:
 updateclassversion: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(ALL_CLASS_VERSION_RULES))
 	@:
-PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors
+PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors $(if $(strip $(edmPluginRefresh_cache)),poisoned_edmplugins)
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%
@@ -2167,5 +2152,90 @@ check-biglib:
 	else \
 	  $(CMD_echo) Big products build is enabled ;\
 	fi
+
+#Poisoned edm plugins Rules
+define getPluginCacheForPackage
+$(strip $(if $(strip $(RELEASETOP)),\
+     $(if $(strip $(IS_PATCH)),\
+          $(if $(strip $($(1)_inpatch)),\
+               $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache,\
+               $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
+          $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
+     $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache))
+endef
+define GetPackagePluginCache
+  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_touch) $@ &&\
+  cache=$(call getPluginCacheForPackage,$*) &&\
+  for p in $($*_edm_plugins); do \
+    $(CMD_grep) "^plugin$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^plugin|plugin-poisoned-|' >> $@ || true;\
+  done
+endef
+
+.PHONY: poisoned_edmplugins
+ifeq ($(strip $(edmPluginRefresh_cache)),)
+poisoned_edmplugins:
+	@:
+else
+ifneq ($(FULL_RELEASE_FOR_A_PATCH),)
+-include $(FULL_RELEASE_FOR_A_PATCH)/$(PUB_DIRCACHE_MKDIR)/edmplugins
+endif
+ifneq ($(strip $(RELEASETOP)),)
+-include $(RELEASETOP)/$(PUB_DIRCACHE_MKDIR)/edmplugins
+endif
+.PRECIOUS: $(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin
+$(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin:
+	@$(call GetPackagePluginCache)
+$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/%/AUTOCLEAN.poison_edmplugin.clean: $(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	$(CMD_echo) "01:$(CMD_rm) -rf $(<D)" > $@ &&\
+	$(CMD_echo) "01:$(CMD_touch) $(COMMON_WORKINGDIR)/cache/packs/changed" >> $@
+
+ifneq ($(strip $(filter PostBuild poisoned_edmplugins,$(MAKECMDGOALS))),)
+$(foreach d,edmplugins/poison,$(if $(strip $(wildcard $(WORKINGDIR)/$d)),,$(shell $(CMD_mkdir) -p $(WORKINGDIR)/$(d))))
+ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git)),)
+ifneq ($(strip $(CMSSW_GIT_HASH)),)
+ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
+ALL_KNOWN_DELETED_PACKAGES:=$(strip $(patsubst $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin,%,$(wildcard $(COMMON_WORKINGDIR)/cache/packs/*/*/poison_edmplugin)))
+DELETED_PACKAGES:=$(strip $(filter-out $(ALL_KNOWN_DELETED_PACKAGES),$(ALL_DELETED_PACKAGES)))
+UNDELETED_PACKAGES:=$(strip $(filter-out $(ALL_DELETED_PACKAGES),$(ALL_KNOWN_DELETED_PACKAGES)))
+endif
+endif
+
+$(COMMON_WORKINGDIR)/cache/packs/undeleted: FORCE_TARGET
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	for p in $(UNDELETED_PACKAGES); do \
+	  if [ ! -f $(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$p/AUTOCLEAN.poison_edmplugin.clean ] ; then \
+	    $(CMD_rm) -rf $(COMMON_WORKINGDIR)/cache/packs/$$p;\
+	  fi;\
+	done;\
+	$(CMD_touch) $@
+
+$(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/$(d)/poison_edmplugin) $(if $(UNDELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/undeleted)
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
+
+$(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
+	@$(call GetPackagePluginCache)
+
+poisoned_edmplugins: $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache) $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins)
+	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
+
+$(PUB_DIRCACHE_MKDIR)/edmplugins:
+	@$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_edm_plugins:=)" > $@
+	@$(if $(strip $(IS_PATCH)),$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_inpatch:=1)" >> $@,true)
+	@$(CMD_echo) -e "$(foreach p,$(ALL_edm_PLUGINS),\n$($(p)_package)_edm_plugins+=$p)" >> $@
+	@$(CMD_echo) ">> Generated $@"
+
+$(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	$(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
+	for d in $(WORKINGDIR)/edmplugins/poison $(COMMON_WORKINGDIR)/cache/packs ; do \
+	  [ -d $$d ] || continue ;\
+	  for c in `$(CMD_find) $$d -name poison_edmplugin -type f` ; do \
+	    $(CMD_cat) $$c >> $@;\
+	  done;\
+	done
+endif
+endif
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
