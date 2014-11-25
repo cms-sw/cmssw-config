@@ -112,7 +112,12 @@ foreach my $t (keys %tools)
   }
   my $sproj=$c->{SCRAM_PROJECT} || 0;
   if ($sproj){$sproj=100000-(2000*&getScramProjectOrder($c,$t));}
-  if($t eq "self"){print TFILE "${t}_ORDER := 20000\n";}
+  if($t eq "self")
+  {
+    print TFILE "${t}_ORDER := 20000\n";
+    if (exists $tcache->{SETUP}{lc($proj_name)}){print TFILE "IS_PATCH:=yes\n";}
+    else{print TFILE "IS_PATCH:=\n";}
+  }
   elsif($sproj)   {print TFILE "${t}_ORDER := $sproj\n";}
   print TFILE "\n";
   close(TFILE);
