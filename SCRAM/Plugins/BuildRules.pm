@@ -1117,7 +1117,6 @@ sub searchLCGRootDict ()
   my $stubdir="";
   my $lcgheader=[];
   my $lcgxml=[];
-  my $rootmap=0;
   my $genreflex_args="\$(GENREFLEX_ARGS)";
   my $rootdict=[];
   my $path=$stash->get('path');
@@ -1167,9 +1166,6 @@ sub searchLCGRootDict ()
     $f=$xmldef{$f};
     if ($f){push @h,$f;}
   }
-  $rootmap = $core->flags("ROOTMAP");
-  if($rootmap=~/^\s*(yes|1)\s*$/i){$rootmap=1;}
-  else{$rootmap=0;}
   $xc=scalar(@x);
   if ((scalar(@h) == $xc) && ($xc>0))
   {
@@ -1210,7 +1206,6 @@ sub searchLCGRootDict ()
   closedir($dref);
   $stash->set('classes_def_xml', $lcgxml);
   $stash->set('classes_h', $lcgheader);
-  $stash->set('rootmap', $rootmap);
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
   if (($self->get("class") eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
@@ -1876,18 +1871,6 @@ sub plugin_template ()
   return;
 }
 
-sub rootmap ()
-{
-  my $self=shift;
-  my $rootmap=shift || 0;
-  if ($rootmap=~/^\s*(1|yes)\s*$/i)
-  {
-    my $sname=$self->get("safename");
-    my $fh=$self->{FH};
-    print $fh "${sname}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootMap,$sname,\$(",$self->getProductStore("lib"),")))\n";
-  }
-}
-
 sub dict_template()
 {
   my $self=shift;
@@ -1899,7 +1882,6 @@ sub dict_template()
     $self->lcgdict_template();
     $self->popstash();
   }
-  else{$self->rootmap($self->get("rootmap"));}
   $x = $self->get("rootdictfile");
   if (scalar(@$x)>0)
   {
@@ -1961,7 +1943,7 @@ sub lcgdict_template()
   my $xr = "x ";
   for(my $i=1;$i<scalar(@$xh);$i++){$xr.="x${i} ";}
   print $fh "${safename}_LCGDICTS  := $xr\n";
-  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",$self->get("rootmap"),",",
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",
 	    join(" ",@$xh),",",join(" ",@{$self->get("classes_def_xml")}),",",
 	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
 }
