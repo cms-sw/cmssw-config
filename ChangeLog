@@ -1,3 +1,13 @@
+2014-12-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-31: Cleanup for ClassVersion check and print the
+	scram command for updating the class version.
+
+2014-11-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-03-30: Drop support for ROOTMAP BuildFile flag and always
+	generate .rootmap file if supported by root external tool.
+
 2014-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-03-29: Various features added
