@@ -569,9 +569,6 @@ endef
 define processTmpMMDData
   [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$1##g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
 endef
-define processMMDData_obj2src
-  [ -f $(basename $@).d ] && $(CMD_sed) -e 's#$<##g;s#$@:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
-endef
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
@@ -582,6 +579,7 @@ endef
 # Root Dictionary compilation
 define compile_rootdict
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
+  @[ -f $(basename $@).d ] && $(CMD_sed) -i -e 's|:|: $3 |' $(basename $@).d
   @$(startlog_$(2))$(call processTmpMMDData,$<,$@)$(endlog_$(2))
 endef
 define compile_python
@@ -1372,7 +1370,7 @@ $(1)_extra_files += $($(1)_objdir)/$(4)/$(2)r.cc
 $($(1)_objdir)/$(4)/$(2)r.cc: $(3) $($(1)_config)
 	$$(call generate_rootdict,$(1),$(1))
 $($(1)_objdir)/$(4)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(4)/$(2)r.cc
-	$$(call compile_rootdict,$(1),$(1))
+	$$(call compile_rootdict,$(1),$(1),$(3))
 $(eval $(call addPCMRule,$1,$2,$($(1)_objdir)/$(4),$(5)))
 endef
 
@@ -1393,7 +1391,7 @@ $($(1)_objdir)/a/Serialization.cc: $3 $($(1)_config) $$(COND_SERIALIZATION_SCRIP
 	$$(call generate_CondSerialization,$(1),$(1),$(2))
 $($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
 	$$(call compile_cxx,$(1),$(1))
-	@$(startlog_$(1)) $$(call processMMDData_obj2src) $(endlog_$(1))
+	@$(startlog_$(1)) $$(call processTmpMMDData,$<,$@) $(endlog_$(1))
 endif
 endef
 
