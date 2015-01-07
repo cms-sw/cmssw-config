@@ -33,6 +33,7 @@ OBJEXT:=o
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
+PRECOMPILE_EXTENSION        := gch
 YACC                        := bison
 LEX                         := flex
 LATEX                       := latex
@@ -651,6 +652,10 @@ define generate_CondSerialization
   $(CMD_echo) ">> Generating CondFormat Serialization code from header file $< " &&\
   $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) &&\
   (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
+endef
+# Pre-Compile Header generation
+define generate_PreCompileHeader
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS),precompile header)
 endef
 # CodeGen record Generation
 define generate_codegen_record
@@ -1380,6 +1385,7 @@ $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
 $(eval $(call AddRootDictRule,$(1),$($(1)_ROOTDICTS),$(addprefix $2/,$(3)),b,$(4)))
 endef
 
+#safename,$path,$file
 define CondSerialization
 ifneq ($$(strip $$(COND_SERIALIZATION_SCRIPT)),)
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
@@ -1393,6 +1399,22 @@ $($(1)_objdir)/a/Serialization.$(OBJEXT): $($(1)_objdir)/a/Serialization.cc
 	$$(call compile_cxx,$(1),$(1))
 	@$(startlog_$(1)) $$(call processTmpMMDData,$<,$@) $(endlog_$(1))
 endif
+endef
+
+#safename,path,file,pack
+define PreCompileHeader
+-include $($(1)_objdir)/$(3).d
+all_$(1) += $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_EXTENSION)
+$(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_EXTENSION): $($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION)
+	@if [ -f $$< ] ; then \
+	  [ -d $$(@D) ] ||  $(CMD_mkdir) -p $$(@D) &&\
+	  $(CMD_cp) $$< $$@ &&\
+	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod) ;\
+	else \
+	  $(CMD_rm) -f $$@;\
+	fi
+$($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION): $(2)/$(3)
+	$$(call generate_PreCompileHeader,$(1),$(1))
 endef
 
 #safename,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities

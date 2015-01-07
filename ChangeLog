@@ -1,3 +1,9 @@
+2015-01-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-01: Support for precompile headers. If a package has
+	src/precompile.h file then scram will generate
+	LOCALTOP/include/<arch>/<package>/src/precompile.h.gch.
+
 2014-12-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-00: Moved findDependencies.pl from the cmsdist. Update
