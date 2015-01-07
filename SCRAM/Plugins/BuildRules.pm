@@ -677,7 +677,7 @@ sub dumpCompilersFlags()
     $allFlags.="$flag ";
     foreach my $type ("","REM_")
     {
-      foreach my $var ("","LIBRARY_","TEST_","BINARY_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
+      foreach my $var ("","LIBRARY_","TEST_","BINARY_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","PRECOMPILE_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
     }
   }
   push @$keys,"ALL_COMPILER_FLAGS := $allFlags";
@@ -1109,7 +1109,7 @@ sub isAutoGenerateClassesH ()
   return $self->{cache}{AutoGenerateClassesHeader};
 }
 
-sub searchLCGRootDict ()
+sub searchForSpecialFiles ()
 {
   my $self=shift;
   my $stash=$self->{context}->stash();
@@ -1209,6 +1209,7 @@ sub searchLCGRootDict ()
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
   if (($self->get("class") eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
+  if (($self->get("class") eq "LIBRARY") && (-f "${path}/precompile.h")){$stash->set('precompile_header', "precompile.h");}
   return;
 }
 
@@ -1874,7 +1875,7 @@ sub plugin_template ()
 sub dict_template()
 {
   my $self=shift;
-  $self->searchLCGRootDict();
+  $self->searchForSpecialFiles();
   my $x=$self->get("classes_h");
   if(scalar(@$x)>0)
   {
@@ -1893,6 +1894,12 @@ sub dict_template()
   {
     $self->pushstash();
     $self->cond_serialization_template();
+    $self->popstash();
+  }
+  if ($self->get("precompile_header") ne "")
+  {
+    $self->pushstash();
+    $self->precompile_header_template();
     $self->popstash();
   }
   return 1;
@@ -1919,6 +1926,16 @@ sub cond_serialization_template()
   my $file=$self->get("cond_serialization");
   my $fh=$self->{FH};
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call CondSerialization,${safename},${path},${file}))\n";
+}
+
+sub precompile_header_template()
+{
+  my $self=shift;
+  my $safename=$self->get("safename");
+  my $path=$self->get("path");
+  my $file=$self->get("precompile_header");
+  my $fh=$self->{FH};
+  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call PreCompileHeader,${safename},${path},${file},\$(patsubst \$(SCRAM_SOURCEDIR)/%,%,${path})))\n";
 }
 
 sub lcgdict_template()
