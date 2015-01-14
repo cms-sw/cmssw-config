@@ -48,6 +48,10 @@ sub Project()
   }
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "CPPDEFINES+=-DCMSSW_GIT_HASH='\"\$(CMSSW_GIT_HASH)\"' -DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
+  print $fh "ifeq (\$(strip \$(RELEASETOP)\$(IS_PATCH)),yes)\n",
+            "CMSSW_SEARCH_PATH:=\${CMSSW_SEARCH_PATH}:\$(\$(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE)/\$(SCRAM_SOURCEDIR)\n",
+            "endif\n";
+
 ######################################################################
 # Dependencies: run ignominy analysis for release documentation
   print $fh ".PHONY: dependencies\n",

@@ -1,3 +1,13 @@
+2015-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-02: Various fixes
+	- For patch release buils, add base release src directory in to
+	CMSSW_SEARCH_PATH
+	- For missing src/package/python directory create
+	python/package/__init__.py file to append cfipython/package
+	in python path.
+	- generate .gch.cxxflags files for precompile headers.
+
 2015-01-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-01: Support for precompile headers. If a package has
