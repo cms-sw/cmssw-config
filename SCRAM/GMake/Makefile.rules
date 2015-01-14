@@ -33,6 +33,7 @@ OBJEXT:=o
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
+PRECOMPILE_FLAGS_EXTENSION  := cxxflags
 PRECOMPILE_EXTENSION        := gch
 YACC                        := bison
 LEX                         := flex
@@ -435,8 +436,17 @@ define edm_write_config
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
   ($(CMD_cd) $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
-    ([ -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] || $(CMD_mkdir) -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)) ;\
-    $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ;\
+    if [ ! -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] ; then \
+      $(CMD_mkdir) -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
+      if [ ! -e $(SCRAM_SOURCEDIR)/$($(1)_package)/python ] ; then \
+        $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$($(1)_package) &&\
+        $(CMD_echo) "#Automatically created by SCRAM" > $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
+        $(CMD_echo) "import os" >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
+        $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$($(1)_package)/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)')"  >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py ;\
+        $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_PYTHON)/$($(1)_package)" >> $(call AutoCleanFile,$<,edm) ;\
+      fi ;\
+    fi &&\
+    $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
   done
 endef
@@ -656,6 +666,7 @@ endef
 # Pre-Compile Header generation
 define generate_PreCompileHeader
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS),precompile header)
+  @$(CMD_echo) $(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) > $@.$(PRECOMPILE_FLAGS_EXTENSION)
 endef
 # CodeGen record Generation
 define generate_codegen_record
@@ -1403,13 +1414,21 @@ endef
 
 #safename,path,file,pack
 define PreCompileHeader
--include $($(1)_objdir)/$(3).d
-all_$(1) += $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_EXTENSION)
+$(if $(strip $(wildcard $($(1)_objdir)/$(3).d)),$(eval -include $($(1)_objdir)/$(3).d))
+all_$(1) += $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_EXTENSION) $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_FLAGS_EXTENSION)
 $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_EXTENSION): $($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION)
 	@if [ -f $$< ] ; then \
 	  [ -d $$(@D) ] ||  $(CMD_mkdir) -p $$(@D) &&\
 	  $(CMD_cp) $$< $$@ &&\
 	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<,prod) ;\
+	else \
+	  $(CMD_rm) -f $$@;\
+	fi
+$(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_FLAGS_EXTENSION): $($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION)
+	@if [ -f $$<.$(PRECOMPILE_FLAGS_EXTENSION) ] ; then \
+	  [ -d $$(@D) ] ||  $(CMD_mkdir) -p $$(@D) &&\
+	  $(CMD_cp) $$<.$(PRECOMPILE_FLAGS_EXTENSION) $$@ &&\
+	  $(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$$<.$(PRECOMPILE_FLAGS_EXTENSION),prod) ;\
 	else \
 	  $(CMD_rm) -f $$@;\
 	fi
@@ -1697,7 +1716,7 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
 	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
 	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | $(CMD_xargs) $(CMD_grep) '^#Automatically created by SCRAM' | $(CMD_sed) -e 's|/__init__.py:.*|/__init__.py|' | $(CMD_uniq) | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
-	  if [ -d cfipython/$(SCRAM_ARCH) ] ; then $(CMD_find) cfipython/$(SCRAM_ARCH)  -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
+	  if [ -d $(SCRAMSTORENAME_CFIPYTHON) ] ; then $(CMD_find) $(SCRAMSTORENAME_CFIPYTHON)  -name '*.pyc' -type f | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
 	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi ;\
 	fi
 	$(CMD_rm) -rf $(SCRAM_INTwork) $(COMMON_WORKINGDIR)/cache/packs
@@ -2025,26 +2044,26 @@ echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
 
 $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
-	@[ -d python ] || $(CMD_mkdir) python &&\
+	@[ -d $(SCRAMSTORENAME_PYTHON) ] || $(CMD_mkdir) $(SCRAMSTORENAME_PYTHON) &&\
 	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl &&\
-	$(CMD_touch) python/__init__.py
-	@for d in `$(CMD_find) python -name "*" -type l | $(CMD_sed) -e s'|^python/||'`; do \
+	$(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
+	@for d in `$(CMD_find) $(SCRAMSTORENAME_PYTHON) -name "*" -type l | $(CMD_sed) -e s'|^$(SCRAMSTORENAME_PYTHON)/||'`; do \
 	  [ -d $(SCRAM_SOURCEDIR)/$$d/python ] || continue ;\
 	  for dir in `$(CMD_find) $(SCRAM_SOURCEDIR)/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
 	    if [ ! -f $$dir/__init__.py ] ; then \
 	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-              if [ "$$dir" == "$(SCRAM_SOURCEDIR)/$$d/python" ] ; then \
-                if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-                  $(CMD_echo) "import os" >> $$dir/__init__.py;\
-                  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/cfipython/$(SCRAM_ARCH)/$$d')"  >> $$dir/__init__.py;\
-                fi;\
-              fi;\
+	      if [ "$$dir" == "$(SCRAM_SOURCEDIR)/$$d/python" ] ; then \
+	        if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
+	          $(CMD_echo) "import os" >> $$dir/__init__.py;\
+	          $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$$d')"  >> $$dir/__init__.py;\
+	        fi;\
+	      fi;\
 	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
 	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
 	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
 	    fi;\
 	  done;\
-	  if [ ! -f python/$$d/__init__.py ] ; then $(CMD_rm) -f python/$$d; fi;\
+	  if [ ! -f $(SCRAMSTORENAME_PYTHON)/$$d/__init__.py ] ; then $(CMD_rm) -f $(SCRAMSTORENAME_PYTHON)/$$d; fi;\
 	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
@@ -2076,7 +2095,7 @@ PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors $(if $(strip 
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%
-CompilePython: $(addprefix PyCompile_,$(wildcard cfipython/$(SCRAM_ARCH)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR)) python) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
+CompilePython: $(addprefix PyCompile_,$(wildcard $(SCRAMSTORENAME_CFIPYTHON)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR)) $(SCRAMSTORENAME_PYTHON)) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
 	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
 PyCompile_$(SCRAM_SOURCEDIR)/% PyCompile_cfipython/% PyCompile_%: do_python_symlink

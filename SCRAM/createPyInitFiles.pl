@@ -4,7 +4,7 @@ use File::Basename;
 my $err=0;
 if (-d "python")
 {
-  foreach my $d (`find python -name "*" -type d`)
+  foreach my $d (`find python -maxdepth 1 -name "*" -type d`)
   {
     chomp $d;
     if ($d=~/^python$/){next;}
