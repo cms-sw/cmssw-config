@@ -27,9 +27,10 @@ if (-d $src)
     my $rpath=$dir; $rpath=~s/$src\/*//;
     my $sdir=&getSubDir($dir,$subdir);
     my $ldir=&getSubDir($dir,$linkdir);
+    my $slink="${des}/${rpath}${ldir}";
     if (-d "${dir}${sdir}")
     {
-      my $slink="${des}/${rpath}${ldir}";
+      if (($des eq "python") && (-d $slink)){system("rm -rf $slink");}
       my $slinkdir=dirname($slink);
       $ldir=$slinkdir;
       $ldir=~s/[a-zA-Z0-9-_]+/../g;
@@ -39,6 +40,7 @@ if (-d $src)
         print "  ${dir}${sdir} -> $slink\n";
       }
     }
+    elsif (($des eq "python") && (!-d $slink)){system("rm -f $slink && mkdir -p $slink");}
   }
 }
 

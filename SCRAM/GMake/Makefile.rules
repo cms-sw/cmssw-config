@@ -435,16 +435,13 @@ define edm_write_config
   $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
   ($(CMD_cd) $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
-  if [ ! -e $(SCRAM_SOURCEDIR)/$($(1)_package)/python ] ; then $(CMD_rm) -rf $(SCRAMSTORENAME_PYTHON)/$($(1)_package) ; fi &&\
   for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
     if [ ! -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] ; then \
       $(CMD_mkdir) -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
-      if [ ! -e $(SCRAM_SOURCEDIR)/$($(1)_package)/python ] ; then \
-        $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$($(1)_package) &&\
+      if [ -d $(SCRAMSTORENAME_PYTHON)/$($(1)_package) ] ; then \
         $(CMD_echo) "#Automatically created by SCRAM" > $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
         $(CMD_echo) "import os" >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
         $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$($(1)_package)/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)')"  >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py ;\
-        $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_PYTHON)/$($(1)_package)" >> $(call AutoCleanFile,$<,edm) ;\
       fi ;\
     fi &&\
     $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
