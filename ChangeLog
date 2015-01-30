@@ -1,3 +1,8 @@
+2015-01-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-03: Bug fix, make sure that product's precompile rule
+	is called before the gch generation.
+
 2015-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-02: Various fixes

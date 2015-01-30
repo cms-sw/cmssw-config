@@ -1430,7 +1430,7 @@ $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(4)/$(3).$(PRECOMPILE_FLAGS_EXTENSION):
 	else \
 	  $(CMD_rm) -f $$@;\
 	fi
-$($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION): $(2)/$(3)
+$($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION): $(2)/$(3) $($(1)_objdir)/precompile
 	$$(call generate_PreCompileHeader,$(1),$(1))
 endef
 
