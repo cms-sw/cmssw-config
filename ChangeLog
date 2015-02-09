@@ -1,3 +1,8 @@
+2015-02-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-04: Generate glimpse indexes for cfipython too.
+	Added support for USER_HOOK_PACKAGE and USER_HOOK_PRODUCT
+
 2015-01-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-03: Bug fix, make sure that product's precompile rule
