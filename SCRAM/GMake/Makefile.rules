@@ -48,6 +48,7 @@ OLD_TIMESTAMP               := 198001010100
 NON_XML_BUILDFILE           := 
 UPDATE_CLASSVERSION         :=
 ALL_CLASS_VERSION_RULES     :=
+HOOK_PROJECT                :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
@@ -171,7 +172,9 @@ else
 DO_BUILD_LOG:=:
 endif
 
+KEEP_ON_BUILDING:=
 ifneq ($(findstring k,$(firstword  $(MAKEFLAGS))),)
+KEEP_ON_BUILDING:=yes
 FORCE_BUILD_START = (
 FORCE_BUILD_END = ) || ($(CMD_echo) gmake: \*\*\* [$@] Error $$?; $(CMD_touch) $(WORKINGDIR)/build_error || exit 0)
 else
@@ -907,15 +910,15 @@ subdirs_$(2) := $$(filter-out $$(addprefix $(2)_,$(SCRAM_IGNORE_SUBDIRS)),$$(sub
 endif
 $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARGET
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
-	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1,) &&\
-	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
+	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2)))
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
-	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1,)
+	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
@@ -1092,7 +1095,7 @@ ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 endif
 endif
 $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
-	@$$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1,) $$(endlog_$(1))
+	@$$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1) $$(endlog_$(1))
 precompile_$(6):: $($(1)_objdir)/precompile $($(1)_extra_files)
 	@:
 compile_$(6):: $($(1)_objdir)/compile
@@ -1792,6 +1795,7 @@ project_help help_$(SCRAM_SOURCEDIR):
 release: release-reset release-build postbuild
 
 release-build: project_all
+	@$(if $(HOOK_PROJECT),$(HOOK_PROJECT) -e $(if $(KEEP_ON_BUILDING), || $(CMD_true)),$(CMD_echo) ">> Project Build done")
 
 release-reset: distclean
 
@@ -1817,6 +1821,7 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
 HOOK_PRODUCT := $(if $(strip $(USER_HOOK_PRODUCT)),$(USER_HOOK_PRODUCT),$(HOOK_PRODUCT))
 ifneq ($(strip $(edmPluginRefresh_cache)),)
@@ -1898,8 +1903,8 @@ $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 prebuild: $(prebuild)
-	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----"; \
-	[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || $(CMD_mkdir) -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
+	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----" $(if $(HOOK_PROJECT), && $(HOOK_PROJECT) -s $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+	@[ -d $(LOCALTOP)/logs/$(SCRAM_ARCH) ] || $(CMD_mkdir) -p $(LOCALTOP)/logs/$(SCRAM_ARCH)
 postbuild: $(postbuild)
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 	@$(CMD_echo) "Release $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) build finished at `date`"

@@ -1,3 +1,8 @@
+2015-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-05: HOOK_PROJECT support added. SCRAM should call this hook
+	once before the start of build and once at the end of build.
+
 2015-02-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-04: Generate glimpse indexes for cfipython too.
