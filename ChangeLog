@@ -1,3 +1,9 @@
+2015-04-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-06: New build rule "deps-tree <package1> <package2>" added to
+	find the BuildFile level dependencies paths from <package1> to
+	<package2>.
+
 2015-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-05: HOOK_PROJECT support added. SCRAM should call this hook

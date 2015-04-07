@@ -1752,6 +1752,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "enable-biglib disable-biglib check-biglib"
 	@$(CMD_echo) "  Disable/enable/check big EDM plugins"
 	@$(CMD_echo) ""
+	@$(CMD_echo) "deps-tree <package1> <package2>"
+	@$(CMD_echo) "  To find the dependencies paths from <package1> to <package2>"
+	@$(CMD_echo) ""
 	@$(CMD_echo) "updateclassversion"
 	@$(CMD_echo) "  Run the edmCheckClassVersion and generate new src/<package>/classes_def.xml.generated file."
 	@$(CMD_echo) ""
@@ -1821,6 +1824,14 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifneq ($(strip $(filter deps-tree,$(MAKECMDGOALS))),)
+    UFAST:=yes
+    ALL_SUBSYSTEMS:=
+    DEPS_TREE_PACKAGE:=$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))
+    DEPS_TREE_DEPENDENCY:=$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))
+$(MAKECMDGOALS)::
+	@:
+endif
 HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
 HOOK_PRODUCT := $(if $(strip $(USER_HOOK_PRODUCT)),$(USER_HOOK_PRODUCT),$(HOOK_PRODUCT))
@@ -1997,7 +2008,7 @@ endif
 
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
-.PHONY: skiptest_%
+.PHONY: skiptest_% deps-tree
 help_%_python:
 	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
 help_%_src:
@@ -2176,7 +2187,9 @@ check-biglib:
 	else \
 	  $(CMD_echo) Big products build is enabled ;\
 	fi
-
+deps-tree::
+	@$(CMD_echo) "Finding all dependencies paths from package/tool '$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))' to package/tool '$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))'"
+	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-deps-tree.pl $(DEPS_TREE_PACKAGE) $(DEPS_TREE_DEPENDENCY) $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)
 #Poisoned edm plugins Rules
 define getPluginCacheForPackage
 $(strip $(if $(strip $(RELEASETOP)),\
