@@ -228,7 +228,7 @@ define AdjustFlag
 $(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 endef
 define AdjustFlags
-$(strip $(foreach f,$3,$(filter-out $(strip $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
+$(strip $(foreach f,$3,$(filter-out $(strip $(REM_$f) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
 endef
 define CUDA_FLAGS
 $(filter-out $(USER_REM_CUDA_FLAGS) $(REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS)
