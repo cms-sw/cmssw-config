@@ -3,6 +3,7 @@
 	* V05-04-06: New build rule "deps-tree <package1> <package2>" added to
 	find the BuildFile level dependencies paths from <package1> to
 	<package2>.
+	Make sure the REM_<flags> are properly dropped.
 
 2015-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
