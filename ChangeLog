@@ -1,3 +1,8 @@
+2015-06-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-07: Make sure that the compiler generated dependency file is
+	parsed properly.
+
 2015-04-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-06: New build rule "deps-tree <package1> <package2>" added to
