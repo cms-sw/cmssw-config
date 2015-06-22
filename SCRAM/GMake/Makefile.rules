@@ -53,6 +53,7 @@ HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
+NO_CAPABILITIES             := $(if $(strip $(filter yes YES Yes 1,$(root_EX_FLAGS_NO_CAPABILITIES))),yes)
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 IS_DARWIN:=no
 IS_LINUX:=yes
@@ -718,7 +719,7 @@ define link_lib_common
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
-  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(endlog_$(2))
+  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 define link_lib
@@ -1438,6 +1439,7 @@ $($(1)_objdir)/$(3).$(PRECOMPILE_EXTENSION): $(2)/$(3) $($(1)_objdir)/precompile
 endef
 
 #safename,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
+ifeq ($(strip $(NO_CAPABILITIES)),)
 define LCGDict
 $(1)$(6)_GENREFLEX_ARGS := $(5)
 $(eval $(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
@@ -1452,6 +1454,19 @@ endif
 $$(eval $$(call LCGDictLibRule,$1,$4,$6,$3,$($(1)_objdir),$$($(1)$(6)_objs)))
 endif
 endef
+else
+define LCGDict
+$(1)$(6)_GENREFLEX_ARGS := $(5)
+$(1)_CLASSES_DEF_XML:=$3
+$(eval $(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
+ALL_CLASS_VERSION_RULES += $($(1)_objdir)/updateclassversion
+ifneq ($(strip $(UPDATE_CLASSVERSION)),)
+all_$(1)       += $($(1)_objdir)/updateclassversion
+$($(1)_objdir)/updateclassversion: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
+	@$(CMD_touch) $$@
+endif
+endef
+endif
 
 #safename,prodstore,Capabilities,defxmlfiles,objdir,objs,
 define LCGDictLibRule
@@ -1516,10 +1531,12 @@ $(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.rootmap
 	  $(CMD_rm) -f $$@;\
 	fi
 endif
+ifeq ($(strip $(NO_CAPABILITIES)),)
 ifneq ($1,$5)
 $(5)_seal_cap    += $($(1)_objdir)/$(6)/$(2)i.cc
 $($(1)_objdir)/$(6)/$(2)i.cc: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
+endif
 endif
 endef
 
@@ -1992,6 +2009,7 @@ else
 define update_edm_class_version
 endef
 endif
+ifeq ($(strip $(NO_CAPABILITIES)),)
 define check_edm_class_version
   && $(call update_edm_class_version,$1,$2,$3,$4) for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
@@ -2000,6 +2018,16 @@ define check_edm_class_version
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
+else
+define check_edm_class_version
+  && $(call update_edm_class_version,$1,$2,$3) for x in $2; do \
+    $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
+    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
+    (($(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+  done &&\
+  $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
+endef
+endif
 else
 define check_edm_class_version
 endef
