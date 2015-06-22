@@ -1944,17 +1944,25 @@ sub lcgdict_template()
   my $safename=$self->get("safename");
   my $class=$self->get("class");
   my $fh=$self->{FH};
-  my $ptype=$self->getLCGCapabilitiesPluginType();
   my $capabilities="";
-  if ($ptype ne "")
+  my $root=$self->getTool("root");
+  my $enable_cap=1;
+  if ((exists $root->{FLAGS}) && (exists $root->{FLAGS}{NO_CAPABILITIES}) &&
+      (scalar(@{$root->{FLAGS}{NO_CAPABILITIES}})>0) && ($root->{FLAGS}{NO_CAPABILITIES}[-1]=~/^(1|yes)$/i))
+  {$enable_cap=0;}
+  if ($enable_cap)
   {
-    $self->set("plugin_name","${safename}Capabilities");
-    $self->pushstash();
-    $self->set("plugin_name_force",1);
-    $self->set("plugin_type",$self->getLCGCapabilitiesPluginType());
-    $self->plugin_template("cap");
-    $self->popstash();
-    $capabilities="Capabilities";
+    my $ptype=$self->getLCGCapabilitiesPluginType();
+    if ($ptype ne "")
+    {
+      $capabilities="Capabilities";
+      $self->set("plugin_name","${safename}${capabilities}");
+      $self->pushstash();
+      $self->set("plugin_name_force",1);
+      $self->set("plugin_type",$ptype);
+      $self->plugin_template("cap");
+      $self->popstash();
+    }
   }
   my $xh = $self->get("classes_h");
   my $xr = "x ";
