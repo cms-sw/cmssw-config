@@ -1,3 +1,8 @@
+2015-07-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-01: Fix linkexternal script to always create symlinks in
+	the order of paths mentioned in toolfile.
+
 2015-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-08: Disable capabilities libs if NO_CAPABILITIS flag is
