@@ -6,6 +6,7 @@ use Getopt::Long;
 use Cache::CacheUtilities;
 $|=1;
 my $SCRAM_CMD="$ENV{SCRAM_TOOL_HOME}/../bin/scram";
+my %ocache=();
 my %cache=();
 $cache{validlinks}{LIBDIR}="lib";
 $cache{validlinks}{PATH}="bin";
@@ -149,6 +150,7 @@ if(exists $cache{toolcache}{SETUP})
     my $tc=$cache{toolcache}{SETUP}{$t};
     foreach my $x (keys %{$cache{defaultlinks}})
     {
+      if (!exists $ocache{"${x}_BASES"}{$t}){$ocache{"${x}_BASES"}{$t}=[];}
       if (exists $tc->{$x})
       {
 	my $ref=ref($tc->{$x});
@@ -158,7 +160,11 @@ if(exists $cache{toolcache}{SETUP})
 	foreach my $dir (@$dirs)
         {
 	  $nbases{$dir}=1;
-	  $cache{"${x}_BASES"}{$t}{$dir}=1;
+          if (!exists $cache{"${x}_BASES"}{$t}{$dir})
+          {
+            $cache{"${x}_BASES"}{$t}{$dir}=1;
+            push @{$ocache{"${x}_BASES"}{$t}},$dir;
+          }
         }
       }
       if (exists $tc->{RUNTIME})
@@ -171,7 +177,11 @@ if(exists $cache{toolcache}{SETUP})
             foreach my $dir (@{$tc->{RUNTIME}{"PATH:${y}"}})
             {
               $nbases{$dir}=1;
-              $cache{"${x}_BASES"}{$t}{$dir}=1;
+              if (!exists $cache{"${x}_BASES"}{$t}{$dir})
+              {
+	        $cache{"${x}_BASES"}{$t}{$dir}=1;
+                push @{$ocache{"${x}_BASES"}{$t}},$dir;
+              }
             }
           }
         }
@@ -297,7 +307,7 @@ sub updateLinks ()
   foreach my $type (sort keys %{$cache{defaultlinks}})
   {    
     my $dep=$cache{sym_depth}{$type} || 1;
-    foreach my $dir (keys %{$cache{"${type}_BASES"}{$t}}){&processBase($t,$dir,$type,$dep,"");}
+    foreach my $dir (@{$ocache{"${type}_BASES"}{$t}}){&processBase($t,$dir,$type,$dep,"");}
   }
 }
 
