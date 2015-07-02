@@ -1,3 +1,18 @@
+2015-07-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-01: Fix linkexternal script to always create symlinks in
+	the order of paths mentioned in toolfile.
+
+2015-07-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-09: Back ported symlink changes for branch without
+	capabilities changes.
+
+2015-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-08: Disable capabilities libs if NO_CAPABILITIS flag is
+	set in root.xml toolfile.
+
 2015-06-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-04-07: Make sure that the compiler generated dependency file is
