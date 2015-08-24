@@ -1,7 +1,17 @@
+2015-08-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-02: Fix path for LinkDef.h file
+	Fix compiler flags orders
+
 2015-07-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-01: Fix linkexternal script to always create symlinks in
 	the order of paths mentioned in toolfile.
+
+2015-07-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-04-09: Back ported symlink changes for branch without
+	capabilities changes.
 
 2015-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
