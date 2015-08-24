@@ -208,6 +208,8 @@ define get_uniq_cached_var_
 $(if $(subst undefined,,$(origin cached_var_$(1))),$(cached_var_$(1)),$(eval $(call set_cached_var_,$(1)))$(eval cached_var_$(1):=$(call Uniq,$(cached_var_$(1))))$(cached_var_$(1)))
 endef
 ##############################################################################
+do_rsort=$(if $(wordlist 2,2,$(1)),$(call do_rsort,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)),$(1))
+rsort=$(call do_rsort,$(sort $1))
 define GetTimeStamp
 $(CMD_perl) -e '@d=stat "$(1)"; print "$$d[9]\n";'
 endef
@@ -265,7 +267,10 @@ define FindUOLibDependency
 $(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 endef
 define FindToolDepVariable
-$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER):$(strip $(subst $(space),$(colon),$($(dep)_EX_$(2)))))),$(wordlist 2,99999,$(subst $(colon),$(space),$(var))))
+$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),$($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2)))
+endef
+define FindToolDepVariableR
+$(foreach var,$(call rsort,$(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),$($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2))) $($(1)_$(3)_$(2))
 endef
 
 define ProductOrder
@@ -278,7 +283,7 @@ endef
 define ProductCommonVarsTools
 $(eval $(call ProductOrder,$1,$2,$3,$4))
 $(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
-$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
+$(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariableR:$(1):$(type):EX,)))
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
 $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
 endef
@@ -286,7 +291,7 @@ endef
 define ProductCommonVars
 $(eval $(call ProductOrder,$1,$2,$3,$4))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
-$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),))))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
 endef
@@ -651,8 +656,8 @@ endef
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
-  $(VERB_ECHO) $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< &&\
-  (            $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $< || ($(CMD_rm) -f $@ && exit 1)) &&\
+  $(VERB_ECHO) $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) &&\
+  (            $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependenctPCMS,$1)) -c -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
