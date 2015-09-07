@@ -331,6 +331,9 @@ define checklibs
     $(CMD_false);\
   fi
 endef
+define find_project_file
+$(strip $(eval scram_pfp:=)$(foreach d,$(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
+endef
 ##############################################################################
 define BuildClean
   if [ "X$(1)" != "X" ] ; then \
@@ -1885,17 +1888,7 @@ ifeq ($(IS_MIC),yes)
 ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
 endif
 ifneq ($(strip $(COND_SERIALIZATION)),)
-COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(LOCALTOP)/$(COND_SERIALIZATION))),$(LOCALTOP)/$(COND_SERIALIZATION),)
-ifeq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
-ifneq ($(strip $(RELEASETOP)),)
-COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(COND_SERIALIZATION))),$(RELEASETOP)/$(COND_SERIALIZATION),)
-endif
-endif
-ifeq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
-ifneq ($(strip $(CMSSW_BASE_FULL_RELEASE)),)
-COND_SERIALIZATION_SCRIPT:=$(if $(strip $(wildcard $(CMSSW_BASE_FULL_RELEASE)/$(COND_SERIALIZATION))),$(CMSSW_BASE_FULL_RELEASE)/$(COND_SERIALIZATION),)
-endif
-endif
+COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
 endif
 ##############################################################################
 self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
@@ -1979,12 +1972,7 @@ endef
 endif
 ###############################################################################
 ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=$(if $(strip $(wildcard $(LOCALTOP)/$(EDM_CHECK_CLASS_VERSION))),$(LOCALTOP)/$(EDM_CHECK_CLASS_VERSION),)
-ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
-ifneq ($(strip $(RELEASETOP)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=$(if $(strip $(wildcard $(RELEASETOP)/$(EDM_CHECK_CLASS_VERSION))),$(RELEASETOP)/$(EDM_CHECK_CLASS_VERSION),)
-endif
-endif
+EDM_CHECK_CLASS_VERSION_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_VERSION))
 ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
 EDM_CHECK_CLASS_VERSION_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Version test" && $(CMD_true)
 endif
@@ -2175,7 +2163,7 @@ checker:
 else
 checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	@+$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
-	plugin=$(if $(wildcard $(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)),$(LOCALTOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX),$(if $(RELEASETOP),$(wildcard $(RELEASETOP)/lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)),)) &&\
+	plugin=$(call find_project_file,lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)) &&\
 	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)" ; exit 1; fi ;\
 	LLVM_BASE=$($(shell $(CMD_echo) $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_')) &&\
 	$(CMD_cd) $(THISDIR) && $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis && $(CMD_mkdir) -p $(LOCALTOP)/llvm-analysis &&\
