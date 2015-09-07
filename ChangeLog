@@ -1,3 +1,8 @@
+2015-09-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-03: Search script needed for compilation in full release
+	base too.
+
 2015-08-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-02: Fix path for LinkDef.h file
