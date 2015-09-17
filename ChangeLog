@@ -1,3 +1,9 @@
+2015-09-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	V05-05-04: Fix the compiler generated dependency for lcg/root dict(
+	root6 was not putting the classes.h file as the first file included
+	from the generated .cc files).
+
 2015-09-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-03: Search script needed for compilation in full release
