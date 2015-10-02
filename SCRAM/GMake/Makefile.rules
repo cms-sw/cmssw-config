@@ -726,7 +726,8 @@ define link_lib_common
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
-  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) $(endlog_$(2))
+  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) \
+    $(if $(strip $($(1)_ROOTMAP_FILES)),$(call check_edm_class_transients,$1,$($(1)_ROOTMAP_FILES),$3,$4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 define link_lib
@@ -751,7 +752,8 @@ define link_lib_capabilities
   if [ "X$($(4)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
-  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(call check_edm_class_version,$1,$6,$3,$4) $(endlog_$(2))
+  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(call check_edm_class_version,$1,$6,$3,$4) \
+   $(if $(strip $($(1)_ROOTMAP_FILES)),$(call check_edm_class_transients,$1,$($(1)_ROOTMAP_FILES),$3,$4)) $(endlog_$(2))
 endef
 
 ##############################################################################
@@ -1528,6 +1530,7 @@ $(7)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r_rdict.pcm
 	  $(CMD_rm) -f $$@;\
 	fi
 all_$(1)  += $(7)/$(2)r.rootmap
+$(1)_ROOTMAP_FILES += $(7)/$(2)r.rootmap
 $($(1)_objdir)/$(6)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.rootmap
@@ -1976,12 +1979,18 @@ ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
 EDM_CHECK_CLASS_VERSION_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Version test" && $(CMD_true)
 endif
 endif
+ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
+EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_TRANSIENTS))
+ifeq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT)),)
+EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Transients test" && $(CMD_true)
+endif
+endif
 
 #product,list of def.xmls file,plugin,productstore
 ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
 ifneq ($(strip $(UPDATE_CLASSVERSION)),)
 define update_edm_class_version
-  for x in $2; do \
+  && for x in $2; do \
     fname=`basename $$x` &&\
     $(CMD_echo) ">> Checking $$x for EDM Class Version update" &&\
     [ -d $(@D)/$$fname ] || $(CMD_mkdir) -p $(@D)/$$fname &&\
@@ -1995,7 +2004,7 @@ define update_edm_class_version
     fi;\
     $(CMD_rm) -rf $(@D)/$$fname ;\
   done &&\
-  $(CMD_echo) "@@@@ ----> Generated EDM Class Version" &&
+  $(CMD_echo) "@@@@ ----> Generated EDM Class Version"
 endef
 else
 define update_edm_class_version
@@ -2003,7 +2012,7 @@ endef
 endif
 ifeq ($(strip $(NO_CAPABILITIES)),)
 define check_edm_class_version
-  && $(call update_edm_class_version,$1,$2,$3,$4) for x in $2; do \
+  $(call update_edm_class_version,$1,$2,$3,$4) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
     (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
@@ -2012,7 +2021,7 @@ define check_edm_class_version
 endef
 else
 define check_edm_class_version
-  && $(call update_edm_class_version,$1,$2,$3) for x in $2; do \
+  $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
     (($(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
@@ -2022,6 +2031,27 @@ endef
 endif
 else
 define check_edm_class_version
+endef
+endif
+
+ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
+ifeq ($(strip $(NO_CAPABILITIES)),)
+define check_edm_class_transients
+  && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
+  $(VERB_ECHO) $(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
+  (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
+endef
+else
+define check_edm_class_transients
+  && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
+  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
+  (($(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
+  $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
+endef
+endif
+else
+define check_edm_class_transients
 endef
 endif
 ###########################################################
