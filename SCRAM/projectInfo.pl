@@ -49,7 +49,7 @@ if (!defined $cache)
 }
 
 my $func="process_$cmd";
-&$func($cache,$pack);
+foreach my $pk (split(":",$pack)){&$func($cache,$pk);}
 
 sub updateExternals ()
 {
