@@ -1,3 +1,9 @@
+2016-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+        * V05-05-06: Allow to find out multiple tools dependency via scram build
+	echo_<tool1:tool2>_USED_BY command
+	Print test succeeded message for each unit test.
+
 2015-10-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
         * V05-04-10: Fix runtest prefix command
