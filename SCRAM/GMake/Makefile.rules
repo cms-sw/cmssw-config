@@ -1520,6 +1520,7 @@ $($(1)_objdir)/$(6)/$(2)r.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 $(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2)))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 all_$(1)  += $(7)/$(2)r_rdict.pcm
+$(1)_libdeps += $(7)/$(2)r_rdict.pcm
 $($(1)_objdir)/$(6)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $(7)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r_rdict.pcm
@@ -1531,6 +1532,7 @@ $(7)/$(2)r_rdict.pcm: $($(1)_objdir)/$(6)/$(2)r_rdict.pcm
 	fi
 all_$(1)  += $(7)/$(2)r.rootmap
 $(1)_ROOTMAP_FILES += $(7)/$(2)r.rootmap
+$(1)_libdeps += $(7)/$(2)r.rootmap
 $($(1)_objdir)/$(6)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.rootmap

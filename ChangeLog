@@ -1,3 +1,10 @@
+2016-02-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+        * V05-05-07: EDM Class Transients needs pcm and rootmap files to be
+	copied in to lib/arch directory before we can run it. Build rules
+	updated to copy generated pcm and rootmaps to lib/arch directory
+	before link step of library.
+
 2016-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
         * V05-05-06: Allow to find out multiple tools dependency via scram build
