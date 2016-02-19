@@ -1,3 +1,7 @@
+2016-02-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-08: Do not read scram caches for proejct Rename.
+
 2016-02-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
         * V05-05-07: EDM Class Transients needs pcm and rootmap files to be
