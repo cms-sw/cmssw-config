@@ -1,3 +1,10 @@
+2016-08-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-09: Do not run edm checks (e.g. class version/transients)
+	checks if SCRAM_NOEDM_CHECKS is set. New build rule edm_checks to explicitly
+	run edm checks once shared libs are build. This is useful for testing
+	externals to avoid loading shared libs from release area while running edm_checks.
+
 2016-02-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-08: Do not read scram caches for proejct Rename.
