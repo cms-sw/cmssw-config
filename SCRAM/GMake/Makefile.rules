@@ -127,7 +127,9 @@ F77_MM:=$(patsubst %D,%,$(F77_MMD))
 endif
 ###################################
 SHAREDSUFFIX := so
+CMD_ECHO := CMD_echo
 ifeq ($(IS_DARWIN),yes)
+CMD_ECHO := CMD_sh -c echo
 SHAREDSUFFIX := dylib
 endif
 ifndef OS_RUNTIME_LIBRARY_PATH
@@ -434,7 +436,7 @@ endef
 ##############################################################################
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
   define install_name_tool
-    install_name_tool -id $1 $2
+    install_name_tool -id "@loader_path/"$1 $2
   endef
 else
   define install_name_tool
@@ -2039,7 +2041,7 @@ define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3,$4) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
-    (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
+    (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_ECHO) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -2048,7 +2050,7 @@ define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
-    (($(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    (($(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_ECHO) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -2332,9 +2334,9 @@ poisoned_edmplugins: $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poiso
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:
-	@$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_edm_plugins:=)" > $@
+	@$(CMD_ECHO) "$(foreach p,$(ALL_PACKAGES),\n$(p)_edm_plugins:=)" > $@
 	@$(if $(strip $(IS_PATCH)),$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_inpatch:=1)" >> $@,true)
-	@$(CMD_echo) -e "$(foreach p,$(ALL_edm_PLUGINS),\n$($(p)_package)_edm_plugins+=$p)" >> $@
+	@$(CMD_ECHO) "$(foreach p,$(ALL_edm_PLUGINS),\n$($(p)_package)_edm_plugins+=$p)" >> $@
 	@$(CMD_echo) ">> Generated $@"
 
 $(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
