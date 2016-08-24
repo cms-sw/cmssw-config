@@ -73,7 +73,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git
+ALL_CMDS                    := sh awk cat cd chmod cp dirname echo false find g77 g++ gcc grep ln ls printf mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -366,7 +366,7 @@ define copy_build_product
 endef
 
 define copy_lib_to_main_productstore
-  $(call install_name_tool,$(@F),$@) && $(call copy_build_product,$(1))
+  $(call install_name_tool,$(LOCALTOP)/$(1)/$(@F),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_bin_to_main_productstore
@@ -478,7 +478,7 @@ endif
 define rivet_register_plugin
   @$(startlog_$(2)) if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(@F),$<) &&\
+    $(call install_name_tool,$(@D)/$(@F),$<) &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
     $(CMD_echo) "--- Registered Rivet Plugin: $(1)"; \
@@ -494,7 +494,7 @@ define edm_register_plugin
     ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    (($(CMD_cp) -f $< $(@D)/$$plugin && $(call install_name_tool,$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
+    (($(CMD_cp) -f $< $(@D)/$$plugin && $(call install_name_tool,$(@D)/$(patsubst lib%,plugin%,$(<F)),$(@D)/$(patsubst lib%,plugin%,$(<F)))) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
@@ -2018,8 +2018,8 @@ define update_edm_class_version
     fname=`basename $$x` &&\
     $(CMD_echo) ">> Checking $$x for EDM Class Version update" &&\
     [ -d $(@D)/$$fname ] || $(CMD_mkdir) -p $(@D)/$$fname &&\
-    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(@F) -x $(LOCALTOP)/$$x &&\
-    (($(CMD_cd) $(@D)/$$fname && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l ../$(@F) -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
+    $(VERB_ECHO) cd $(@D)/$$fname \&\&  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l ../$(@F) -x $(LOCALTOP)/$$x &&\
+    (($(CMD_cd) $(@D)/$$fname && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l ../$(@F) -x $(LOCALTOP)/$$x) || ($(CMD_true) && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
     if [ -f $(@D)/$$fname/classes_def.xml.generated ] ; then \
       if [ "X`diff $(@D)/$$fname/classes_def.xml.generated $$x | $(CMD_wc) -l`" != "X0" ] ; then \
         $(CMD_cp) $(@D)/$$fname/classes_def.xml.generated  $$x.generated &&\
@@ -2038,8 +2038,8 @@ ifeq ($(strip $(NO_CAPABILITIES)),)
 define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3,$4) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
-    (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
+    $(VERB_ECHO) cd $(LOCALTOP)/$(@D)/a \&\& $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l ../$(@F) -x $(LOCALTOP)/$$x &&\
+    (( $(CMD_cd) $(LOCALTOP)/$(@D)/a && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l ../$(@F) -x $(LOCALTOP)/$$x) || ($(CMD_fprint) "$(EDM_CHECKSUM_HELP_MSG)"&& $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -2047,8 +2047,8 @@ else
 define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x &&\
-    (($(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $$x) || ($(CMD_echo) -e "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    $(VERB_ECHO)  cd $(LOCALTOP)/$(@D)/a \&\& $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l ../$(@F) -x $(LOCALTOP)/$$x &&\
+    (( $(CMD_cd) $(LOCALTOP)/$(@D)/a && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l ../$(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)"&& $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -2062,15 +2062,15 @@ ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
 ifeq ($(strip $(NO_CAPABILITIES)),)
 define check_edm_class_transients
   && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
-  (($(OS_RUNTIME_LIBRARY_PATH)=$$LOCALTOP/$(@D):$$$(OS_RUNTIME_LIBRARY_PATH) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO) cd $(LOCALTOP)/$(@D)/a \&\& $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
+  (($(CMD_cd) $(LOCALTOP)/$(@D)/a && $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l ../$(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) ) &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
 endef
 else
 define check_edm_class_transients
   && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
-  (($(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)   cd $(LOCALTOP)/$(@D) \&\&  $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $r) &&\
+  (($(CMD_cd) $(LOCALTOP)/$(@D)/a && $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l ../$(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) ) &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
 endef
 endif
@@ -2332,9 +2332,9 @@ poisoned_edmplugins: $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poiso
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:
-	@$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_edm_plugins:=)" > $@
-	@$(if $(strip $(IS_PATCH)),$(CMD_echo) -e "$(foreach p,$(ALL_PACKAGES),\n$(p)_inpatch:=1)" >> $@,true)
-	@$(CMD_echo) -e "$(foreach p,$(ALL_edm_PLUGINS),\n$($(p)_package)_edm_plugins+=$p)" >> $@
+	@$(CMD_printf) "$(foreach p,$(ALL_PACKAGES),\n$(p)_edm_plugins:=)" > $@
+	@$(if $(strip $(IS_PATCH)),$(CMD_printf) "$(foreach p,$(ALL_PACKAGES),\n$(p)_inpatch:=1)" >> $@,true)
+	@$(CMD_printf) "$(foreach p,$(ALL_edm_PLUGINS),\n$($(p)_package)_edm_plugins+=$p)" >> $@
 	@$(CMD_echo) ">> Generated $@"
 
 $(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
