@@ -1,3 +1,8 @@
+2016-08-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-10: Fixes for OSX build e.g. call install_name_tool to set full library
+	name as its id.
+
 2016-08-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-09: Do not run edm checks (e.g. class version/transients)
