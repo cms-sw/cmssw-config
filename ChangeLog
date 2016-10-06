@@ -1,3 +1,18 @@
+2016-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-13: Fix enable/disable-biglib rules for patch releases.
+	Previous version was not disabling biglib from full base release
+	area.
+
+2016-10-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-12: typo: use CMD_rm instead of CMS_rm
+
+2016-08-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-11:  change directory to lib/arch before running edm class checks so that
+	pcm files can be found
+
 2016-08-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-10: Fixes for OSX build e.g. call install_name_tool to set full library

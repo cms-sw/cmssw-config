@@ -334,6 +334,32 @@ endef
 define find_project_file
 $(strip $(eval scram_pfp:=)$(foreach d,$(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 endef
+define biglib_setup
+  proj_tool=`$(CMD_echo) $(SCRAM_PROJECTNAME) | tr '[A-Z]' '[a-z]'` ; \
+  tool_file=$(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ;\
+  BIGLIB_RESET_ENV=NO ;\
+  for tool in $(SCRAM_CONFIGDIR)/Self.xml $(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ; do \
+    [ -f $$tool ] || continue ;\
+    if [ $@ = "disable-biglib" ] ; then \
+      [ `grep '#:DISABLED_BIGLIB:#' $$tool | $(CMD_wc) -l` -eq 0 ] || continue ;\
+      $(CMD_sed) -i -e 's|^\( *<runtime .*/biglib/\)|#:DISABLED_BIGLIB:#\1|' $$tool ;\
+    elif [ `grep '#:DISABLED_BIGLIB:#' $$tool | $(CMD_wc) -l` -gt 0 ] ; then \
+      $(CMD_sed) -i -e 's|#:DISABLED_BIGLIB:#||' $$tool ;\
+    else \
+      continue ;\
+    fi ;\
+    if [ "$$tool" = "$(SCRAM_CONFIGDIR)/Self.xml" ] ; then \
+      $(SCRAM) setup self ;\
+    else \
+      $(CMD_echo) Setting up $$proj_tool;\
+      $(SCRAM) setup $$proj_tool;\
+    fi;\
+    BIGLIB_RESET_ENV=YES ;\
+  done ;\
+  if [ "X$$BIGLIB_RESET_ENV" = "XYES" ] ; then \
+    $(CMD_echo) "*** Please re-run cmsenv command to get your runtime environment uopdated ****";\
+  fi
+endef
 ##############################################################################
 define BuildClean
   if [ "X$(1)" != "X" ] ; then \
@@ -2239,22 +2265,10 @@ dxr:
 endif
 enable-biglib:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/no-bigproduct && $(CMD_echo) "Building big products is activated."
-	@if [ "X`grep '#:DISABLED_BIGLIB:#' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_wc) -l`" != "X0" ] ; then \
-	  $(CMD_sed) -i -e 's|#:DISABLED_BIGLIB:#||' $(SCRAM_CONFIGDIR)/Self.xml ;\
-	  if [ "X`grep '#:DISABLED_BIGLIB:#' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_wc) -l`" == "X0" ] ; then \
-	    $(SCRAM) setup self &&\
-	    $(CMD_echo) "*** Please re-run cmsenv  command to get your runtime environment uopdated ****" ;\
-	  fi ;\
-	fi
+	@$(call biglib_setup)
 disable-biglib:
 	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/no-bigproduct && $(CMD_echo) "Building big products is deactivated."
-	@if [ "X`grep '#:DISABLED_BIGLIB:#' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_wc) -l`" == "X0" ] ; then \
-	  $(CMD_sed) -i -e 's|^\( *<runtime .*/biglib/\)|#:DISABLED_BIGLIB:#\1|' $(SCRAM_CONFIGDIR)/Self.xml ;\
-	  if [ "X`grep '#:DISABLED_BIGLIB:#' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_wc) -l`" != "X0" ] ; then \
-	    $(SCRAM) setup self ;\
-	    $(CMD_echo) "*** Please re-run cmsenv command to get your runtime environment uopdated ****" ;\
- 	  fi ;\
-        fi
+	@$(call biglib_setup)
 check-biglib:
 	@if [ -f $(SCRAM_ADMIN_DIR)/no-bigproduct ] ; then \
 	  $(CMD_echo) Big products build is disabled ;\
