@@ -2197,12 +2197,18 @@ sub binary_template ()
 	  my $haserr=0;
 	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
 	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
-	  my $prodfiles = $core->productfiles();
+	  my $cmd = $core->command();
+	  my $prodfiles = "1";
+	  if ($cmd eq ""){$prodfiles = $core->productfiles();}
 	  if ($prodfiles ne "")
 	  {
 	    print $fh "ifeq (\$(strip \$($safename)),)\n",
-	              "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n",
                       "$safename := self/${path}\n";
+	    if ($prodfiles eq "1"){print $fh "${safename}_files := 1\n";}
+	    else
+	    {
+	      print $fh "${safename}_files := \$(patsubst ${path}/%,%,\$(foreach file,${prodfiles},\$(eval xfile:=\$(wildcard ${path}/\$(file)))\$(if \$(xfile),\$(xfile),\$(warning No such file exists: ${path}/\$(file). Please fix ${localbf}.))))\n";
+	    }
             if ($class eq "TEST")
 	    {
 	      my $fval = $core->flags("NO_TESTRUN");
@@ -2213,7 +2219,8 @@ sub binary_template ()
 	      }
 	      else
 	      {
-		$fval = $core->flags("TEST_RUNNER_CMD");
+	        if ($cmd){$fval=$cmd;}
+	        else{$fval = $core->flags("TEST_RUNNER_CMD");}
 	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
 	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
 	      }

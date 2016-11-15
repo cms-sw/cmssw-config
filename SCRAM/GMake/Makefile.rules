@@ -1135,6 +1135,7 @@ runtests_$(1): all_$(1) $(patsubst %,runtests_%,$($(1)_PRE_TEST)) unittests_$(1)
 unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
+ifneq ($(strip $(4)$($(1)_files)),test1)
 ifneq ($(strip $($(1)_CLASSES_DEF_XML) $($(1)_CLASSES_DEF_XML)),)
 edm_checks_$(6) += $(WORKINGDIR)/edm_checks/$($(1)_product)
 $(WORKINGDIR)/edm_checks/$($(1)_product): $($(1)_objdir)/$($(1)_product)
@@ -1164,6 +1165,7 @@ $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1
 	@$(CMD_touch) $$@
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
+endif
 endif
 endef
 
