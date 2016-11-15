@@ -1,3 +1,7 @@
+2016-11-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-14: Make use of new test tag for unit tests.
+
 2016-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-13: Fix enable/disable-biglib rules for patch releases.
