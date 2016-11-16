@@ -2200,6 +2200,11 @@ sub binary_template ()
 	  my $cmd = $core->command();
 	  my $prodfiles = "1";
 	  if ($cmd eq ""){$prodfiles = $core->productfiles();}
+	  elsif ($class ne "TEST")
+	  {
+	    print STDERR "****WARNING: '<test name=.../>' tag is only valid for test directories. Ignoring test '$safename' from $localbf\n";
+	    next;
+	  }
 	  if ($prodfiles ne "")
 	  {
 	    print $fh "ifeq (\$(strip \$($safename)),)\n",
