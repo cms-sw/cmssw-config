@@ -2198,7 +2198,7 @@ sub binary_template ()
 	  foreach my $err (@{$core->value("ERRORS")}){print $fh "${safename}_ERROR +=\"gmake: \*\*\* [$localbf:$safename: $err] Error 1\"\n"; $haserr=1;}
 	  if ($haserr){print $fh "BUILDFILE_ERRORS+=$safename\n";}
 	  my $cmd = "";
-          if ((exists $core->{_THISCOREPRODUCT}) && (exists $core->{_THISCOREPRODUCT}{COMMAND})){$cmd = $core->{_THISCOREPRODUCT}{COMMAND};}
+	  if ((exists $core->{_THISCOREPRODUCT}) && (exists $core->{_THISCOREPRODUCT}{COMMAND})){$cmd = $core->{_THISCOREPRODUCT}{COMMAND};}
 	  my $prodfiles = "1";
 	  if ($cmd eq ""){$prodfiles = $core->productfiles();}
 	  elsif ($class ne "TEST")
