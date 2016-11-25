@@ -1,6 +1,8 @@
-2016-11-25 Andrea Bocci  <Anrea.Bocci@cern.ch>
+2016-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-17: Do not symlink intel-vtune.
+	* new llvm-ccdb build rule to generate llvm compiler's commands db in
+	etc directory.
 
 2016-11-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
