@@ -86,6 +86,15 @@ endif
 ifdef FC
 CMD_g77 := $(FC)
 endif
+LLVM_CCDB_EXT=llvm-ccdb.json
+CODE_ANALYSIS_RULES:=NO
+ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
+CODE_ANALYSIS_RULES:=YES
+OBJEXT:=$(OBJEXT).$(LLVM_CCDB_EXT)
+endif
+ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
+CODE_ANALYSIS_RULES:=YES
+endif
 ###################################
 SetLocalCMDs    = $(if $($1),$(eval CMD_$2:=$($1)),)
 SetCompilerCMDs = $(if $($1),,$(eval $1:=$(CMD_$2)))
@@ -545,12 +554,20 @@ endef
 ##############################################################################
 ##############################################################################
 #Compilation Rules
+ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
+define run_compile_command
+  @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
+  echo '  {"directory":"'$(LOCALTOP)'", "file":"'$(subst $(LOCALTOP)/,,$<)'", "command":"$(notdir $(firstword $4)) '$$(echo $(wordlist 2,999999,$4) | sed 's|\"|\\\"|g') $(subst $(LOCALTOP)/,,$<) -o $(subst .$(LLVM_CCDB_EXT),,$@)'"}' > $@
+endef
+else
 define run_compile_command
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(2) $< " &&\
-  $(VERB_ECHO) $4 $5 $< -o $@ &&\
-              ($4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $4 $5 $< -o $@ &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) $4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
 endef
+endif
 define compile_cxx_common
   $(call run_compile_command,$2,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
 endef
@@ -1278,7 +1295,7 @@ $(1)_config += $$($(1)_objdir)/config
 all_$(1) += $(1)_copy_python_scripts
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
-$(1)_copy_python_scripts: $(logfile_$(1)) $(COMMON_WORKINGDIR)/cache/python_symlinks
+$(1)_copy_python_scripts: $(logfile_$(1)) $($(1)_CONFIGDEPS)
 	@:
 else
 $(1)_copy_python_scripts: $(logfile_$(1))
@@ -1390,7 +1407,7 @@ $(1) all_$(1): $($(1))
 	@:
 endef
 
-ifneq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
+ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
 define AddMOC
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$($(1)_objdir)/moc
 $(1)_FILE_MOC	  := $(foreach suffix,h cc cpp cxx,$(patsubst %.$(suffix),%_$(suffix)_moc.cc,$(filter %.$(suffix),$(2))))
@@ -1655,7 +1672,7 @@ $($(1)_objdir)/%_T_Context.$(OBJEXT): $($(1)_objdir)/%_T_Context.cpp $($(1)_objd
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_objdir)/%.cpp $($(1)_objdir)/precompile
 	$$(call compile_cxx,$(1),$(1))
 endef
-endif   #If not llvm-analyzer
+endif  #Finish CODE_ANALYSIS_RULES
 ##############################################################################
 define SetTargetType
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
@@ -1901,6 +1918,9 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(DIRCACHE_MKDIR)/DirCache.mk
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
+ifeq ($(strip $(CODE_ANALYSIS_RULES)),YES)
+CONFIGDEPS:=
+endif
 ifneq ($(strip $(filter deps-tree,$(MAKECMDGOALS))),)
     UFAST:=yes
     ALL_SUBSYSTEMS:=
@@ -1933,8 +1953,10 @@ ALL_BIGPRODS:=
 subdirs_$(SCRAM_SOURCEDIR):=$(filter-out $(SCRAM_SOURCEDIR)_BigProducts,$(subdirs_$(SCRAM_SOURCEDIR)))
 ALL_SUBSYSTEMS:=$(filter-out BigProducts,$(ALL_SUBSYSTEMS))
 endif
+ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
 ifneq ($(strip $(ALL_BIGPRODS)),)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.bigedm.rules
+endif
 endif
 ifeq ($(IS_MIC),yes)
 ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
@@ -2227,7 +2249,7 @@ CompilePython:
 endif
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
 	@$(CMD_echo) ">> Pluging of all type refreshed."
-.PHONY: dxr checker FORCE_LLVM_CHECK
+.PHONY: dxr checker FORCE_LLVM_CHECK llvm-ccdb
 FORCE_LLVM_CHECK:
 	@:
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)),)
@@ -2280,6 +2302,12 @@ check-biglib:
 deps-tree::
 	@$(CMD_echo) "Finding all dependencies paths from package/tool '$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))' to package/tool '$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))'"
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-deps-tree.pl $(DEPS_TREE_PACKAGE) $(DEPS_TREE_DEPENDENCY) $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)
+etc/$(LLVM_CCDB_EXT): FORCE_TARGET
+	@$(CMD_cd) $(LOCALTOP) && $(MAKE) -f $(SCRAM_MAKEFILE) compile COMPILER=llvm SCRAM_GENERATE_LLVM_CCDB=YES &&\
+	[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	$(SCRAM_CONFIGDIR)/SCRAM/llvm-ccdb.py $(LLVM_CCDB_EXT)
+llvm-ccdb: etc/$(LLVM_CCDB_EXT)
+	@:
 #Poisoned edm plugins Rules
 define getPluginCacheForPackage
 $(strip $(if $(strip $(RELEASETOP)),\
