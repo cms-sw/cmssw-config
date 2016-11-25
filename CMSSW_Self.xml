@@ -10,6 +10,7 @@
   <flags SKIP_TOOLS_SYMLINK="llvm-cxxcompiler llvm-ccompiler llvm-f77compiler"/>
   <flags SKIP_TOOLS_SYMLINK="llvm-analyzer-cxxcompiler llvm-analyzer-ccompiler"/>
   <flags SKIP_TOOLS_SYMLINK="icc-cxxcompiler  icc-ccompiler  icc-f77compiler"/>
+  <flags SKIP_TOOLS_SYMLINK="intel-vtune"/>
   <flags SKIP_TOOLS_SYMLINK="x11"/>
   <flags SKIP_TOOLS_SYMLINK="dpm"/>
   <flags EXTERNAL_SYMLINK="PATH"/>
