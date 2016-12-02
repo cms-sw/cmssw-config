@@ -19,7 +19,7 @@ except:
 
 def print_msg(msg,stream=stdout,newline="\n"): stream.write(msg+newline)
 try: LLVM_CCDB_NAME = argv[1]
-except: LLVM_CCDB_NAME = "llvm-ccdb.json"
+except: LLVM_CCDB_NAME = "compile_commands.json"
 #Read SCRAM Generated
 llvm_ccdb = []
 err, llvm_ccdb_files = run_cmd("find %s -name '*.%s' -type f" % (join(getenv("LOCALTOP"),"tmp",getenv("SCRAM_ARCH"),"src"), LLVM_CCDB_NAME))
@@ -36,7 +36,7 @@ for llvm_ccdb_file in llvm_ccdb_files.split("\n"):
 reltop = getenv("RELEASETOP",None)
 rel_llvm_ccdb = []
 if reltop:
-  rel_llvm_ccdb_file = join(reltop,"etc",LLVM_CCDB_NAME)
+  rel_llvm_ccdb_file = join(reltop,LLVM_CCDB_NAME)
   if exists(rel_llvm_ccdb_file): 
     rel_llvm_ccdb = json.load(rel_llvm_ccdb_file)
 
@@ -45,7 +45,7 @@ for llvm_ccdb_item in rel_llvm_ccdb:
   llvm_ccdb.append(llvm_ccdb_item)
 
 print_msg(json.dumps(llvm_ccdb, indent=2, sort_keys=True, separators=(',',': ')),
-          open(join(getenv("LOCALTOP"),"etc",LLVM_CCDB_NAME),"w"),newline="")
+          open(join(getenv("LOCALTOP"),LLVM_CCDB_NAME),"w"),newline="")
 
   
   

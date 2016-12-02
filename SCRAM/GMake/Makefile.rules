@@ -86,7 +86,7 @@ endif
 ifdef FC
 CMD_g77 := $(FC)
 endif
-LLVM_CCDB_EXT=llvm-ccdb.json
+LLVM_CCDB_EXT:=compile_commands.json
 CODE_ANALYSIS_RULES:=NO
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 CODE_ANALYSIS_RULES:=YES
@@ -555,10 +555,13 @@ endef
 ##############################################################################
 #Compilation Rules
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
+JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
   @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
-  echo '  {"directory":"'$(LOCALTOP)'", "file":"'$(subst $(LOCALTOP)/,,$<)'", "command":"$(notdir $(firstword $4)) '$$(echo $(wordlist 2,999999,$4) | sed 's|\"|\\\"|g') $(subst $(LOCALTOP)/,,$<) -o $(subst .$(LLVM_CCDB_EXT),,$@)'"}' > $@
+  $(CMD_echo) '{"directory":"$(call JsonStr,$(LOCALTOP))",\
+                "file":"$(call JsonStr,$(subst $(LOCALTOP)/,,$<))",\
+                "command":"$(call JsonStr,$(notdir $(firstword $4)) $(wordlist 2,999999,$4) $(subst $(LOCALTOP)/,,$<) -o $(subst .$(LLVM_CCDB_EXT),,$@))"}' > $@
 endef
 else
 define run_compile_command
@@ -2302,11 +2305,11 @@ check-biglib:
 deps-tree::
 	@$(CMD_echo) "Finding all dependencies paths from package/tool '$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))' to package/tool '$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))'"
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-deps-tree.pl $(DEPS_TREE_PACKAGE) $(DEPS_TREE_DEPENDENCY) $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)
-etc/$(LLVM_CCDB_EXT): FORCE_TARGET
+$(LLVM_CCDB_EXT): FORCE_TARGET
 	@$(CMD_cd) $(LOCALTOP) && $(MAKE) -f $(SCRAM_MAKEFILE) compile COMPILER=llvm SCRAM_GENERATE_LLVM_CCDB=YES &&\
 	[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	$(SCRAM_CONFIGDIR)/SCRAM/llvm-ccdb.py $(LLVM_CCDB_EXT)
-llvm-ccdb: etc/$(LLVM_CCDB_EXT)
+llvm-ccdb: $(LLVM_CCDB_EXT)
 	@:
 #Poisoned edm plugins Rules
 define getPluginCacheForPackage

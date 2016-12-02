@@ -1,3 +1,9 @@
+2016-12-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Remove intel-vtune ref as tool is replaced by ittnotify
+	* Rename llvm-ccdb.json to compile_commands.json which is automatically
+	searched by clang-tidy
+
 2016-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-17: Do not symlink intel-vtune.
