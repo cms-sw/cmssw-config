@@ -1298,7 +1298,7 @@ $(1)_config += $$($(1)_objdir)/config
 all_$(1) += $(1)_copy_python_scripts
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
-$(1)_copy_python_scripts: $(logfile_$(1)) $($(1)_CONFIGDEPS)
+$(1)_copy_python_scripts: $(logfile_$(1)) $$($(1)_CONFIGDEPS)
 	@:
 else
 $(1)_copy_python_scripts: $(logfile_$(1))
