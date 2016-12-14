@@ -1,3 +1,8 @@
+2016-12-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-20: Do not include makefile fragments for the deleted packages from
+	release area.
+
 2016-12-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-19: Bug fix; create python link is scram build <apckage name> rule is run

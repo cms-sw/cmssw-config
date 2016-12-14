@@ -1911,6 +1911,13 @@ release-freeze: release-check
 
 ###############################################################################
 PLUGIN_REFRESH_CMDS :=
+CHECK_DELETED_PACKS:=
+ifneq ($(strip $(CMSSW_GIT_HASH)),)
+ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git)),)
+CHECK_DELETED_PACKS:=YES
+ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
+endif
+endif
 ###############################################################################
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 $(foreach x,$(ALL_TOOLS),$(eval $x := $x))
@@ -1919,6 +1926,7 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
+$(foreach p,$(ALL_PACKAGES) $(ALL_DELETED_PACKAGES),$(if $(strip $($p)),,$(eval $p:=$(subst /,,$p))))
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
 ifeq ($(strip $(CODE_ANALYSIS_RULES)),YES)
@@ -2351,13 +2359,10 @@ $(WORKINGDIR)/$(SCRAM_SOURCEDIR)/%/AUTOCLEAN.poison_edmplugin.clean: $(WORKINGDI
 
 ifneq ($(strip $(filter PostBuild poisoned_edmplugins,$(MAKECMDGOALS))),)
 $(foreach d,edmplugins/poison,$(if $(strip $(wildcard $(WORKINGDIR)/$d)),,$(shell $(CMD_mkdir) -p $(WORKINGDIR)/$(d))))
-ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git)),)
-ifneq ($(strip $(CMSSW_GIT_HASH)),)
-ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
+ifeq ($(strip $(CHECK_DELETED_PACKS)),YES)
 ALL_KNOWN_DELETED_PACKAGES:=$(strip $(patsubst $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin,%,$(wildcard $(COMMON_WORKINGDIR)/cache/packs/*/*/poison_edmplugin)))
 DELETED_PACKAGES:=$(strip $(filter-out $(ALL_KNOWN_DELETED_PACKAGES),$(ALL_DELETED_PACKAGES)))
 UNDELETED_PACKAGES:=$(strip $(filter-out $(ALL_DELETED_PACKAGES),$(ALL_KNOWN_DELETED_PACKAGES)))
-endif
 endif
 
 $(COMMON_WORKINGDIR)/cache/packs/undeleted: FORCE_TARGET
