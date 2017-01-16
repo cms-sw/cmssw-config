@@ -2259,7 +2259,7 @@ CompilePython:
 	@$(CMD_echo) ">> Skipped python compilation"
 endif
 ProjectPluginRefresh: FORCE_TARGET $(foreach file,$(addsuffix _cache,$(PLUGIN_REFRESH_CMDS)),$($(file)))
-	@$(CMD_echo) ">> Pluging of all type refreshed."
+	@$(CMD_echo) ">> Plugins of all types refreshed."
 .PHONY: dxr checker FORCE_LLVM_CHECK llvm-ccdb
 FORCE_LLVM_CHECK:
 	@:
