@@ -249,19 +249,19 @@ define CUDA_CFLAGS
 $(filter-out $(USER_REM_CUDA_CFLAGS) $(REM_CUDA_CFLAGS) $($(1)_LOC_FLAGS_REM_CUDA_CFLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_CFLAGS) $($(1)_LOC_FLAGS_CUDA_CFLAGS)) $(USER_CUDA_CFLAGS)
 endef
 define Tool_CXXFLAGS
-$(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS)) $($(1)_LOC_FLAGS_CXXFLAGS_ALL) $(USER_CXXFLAGS)
+$(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)) $(USER_CXXFLAGS)
 endef
 define Tool_FFLAGS
-$(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS)) $($(1)_LOC_FLAGS_FFLAGS_ALL) $(USER_FFLAGS)
+$(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)) $(USER_FFLAGS)
 endef
 define Tool_CFLAGS
-$(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS)) $($(1)_LOC_FLAGS_CFLAGS_ALL) $(USER_CFLAGS)
+$(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)) $(USER_CFLAGS)
 endef
 define Tool_CPPFLAGS
-$(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS),$(CPPFLAGS)) $(filter-out $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPDEFINES)) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(USER_CPPFLAGS) $(USER_CPPDEFINE) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))
+$(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS) $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPFLAGS) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))) $(USER_CPPFLAGS) $(USER_CPPDEFINE)
 endef
 define Tool_LDFLAGS
-$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS)) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)) $($(1)_LOC_FLAGS_LDFLAGS_ALL)
+$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)))
 endef
 define Tool_DependenctPCMS
 $(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
@@ -1811,6 +1811,7 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	  $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/$$db.db* ;  \
 	done
 	$(CMD_rm) -rf $(SCRAM_ADMIN_DIR)/MakeData
+	$(CMD_rm) -f  $(LLVM_CCDB_EXT)
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
 	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
 	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | $(CMD_xargs) $(CMD_grep) '^#Automatically created by SCRAM' | $(CMD_sed) -e 's|/__init__.py:.*|/__init__.py|' | $(CMD_uniq) | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
