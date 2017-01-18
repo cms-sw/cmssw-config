@@ -243,25 +243,25 @@ define AdjustFlags
 $(strip $(foreach f,$3,$(filter-out $(strip $(REM_$f) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
 endef
 define CUDA_FLAGS
-$(filter-out $(USER_REM_CUDA_FLAGS) $(REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS)
+$(strip $(USER_PRE_CUDA_FLAGS) $(filter-out $(USER_REM_CUDA_FLAGS) $(REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS))
 endef
 define CUDA_CFLAGS
-$(filter-out $(USER_REM_CUDA_CFLAGS) $(REM_CUDA_CFLAGS) $($(1)_LOC_FLAGS_REM_CUDA_CFLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_CFLAGS) $($(1)_LOC_FLAGS_CUDA_CFLAGS)) $(USER_CUDA_CFLAGS)
+$(strip $(USER_PRE_CUDA_CFLAGS)$(filter-out $(USER_REM_CUDA_CFLAGS) $(REM_CUDA_CFLAGS) $($(1)_LOC_FLAGS_REM_CUDA_CFLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_CFLAGS) $($(1)_LOC_FLAGS_CUDA_CFLAGS)) $(USER_CUDA_CFLAGS))
 endef
 define Tool_CXXFLAGS
-$(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)) $(USER_CXXFLAGS)
+$(strip $(USER_PRE_CXXFLAGS) $(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)) $(USER_CXXFLAGS))
 endef
 define Tool_FFLAGS
-$(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)) $(USER_FFLAGS)
+$(strip $(USER_PRE_FFLAGS) $(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)) $(USER_FFLAGS))
 endef
 define Tool_CFLAGS
-$(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)) $(USER_CFLAGS)
+$(strip $(USER_PRE_CFLAGS) $(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)) $(USER_CFLAGS))
 endef
 define Tool_CPPFLAGS
-$(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS) $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPFLAGS) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))) $(USER_CPPFLAGS) $(USER_CPPDEFINE)
+$(strip $(USER_PRE_CPPFLAGS) $(USER_PRE_CPPDEFINES) $(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS) $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPFLAGS) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))) $(USER_CPPFLAGS) $(USER_CPPDEFINE))
 endef
 define Tool_LDFLAGS
-$(USER_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)))
+$(strip $(USER_PRE_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL))) $(USER_LDFLAGS))
 endef
 define Tool_DependenctPCMS
 $(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))

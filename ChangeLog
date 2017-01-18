@@ -1,3 +1,14 @@
+2017-01-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-21: Fixed for compile_commands.json
+	  - delete compile_commands.json when scram build clean is run
+	  - Do not copy contents of release/compile_commands.json in to dev area
+	    as the file and directory will not be pointing to correct path.
+	  - For patch releases, concatenate release/compile_commands.json and
+	    local compile_commands.json
+	  Fixes for compiler variables: Apply USER_REM_FLAG flags on all flags.
+	  Allow USER_PRE_Flags to be put in front of scram compilers flags.
+
 2016-12-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-20: Do not include makefile fragments for the deleted packages from
