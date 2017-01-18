@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from sys import exit, stdout, stderr, argv
 from os import getenv
-from os.path import join, exists
+from os.path import join, exists, basename
 try: import json
 except:import simplejson as json
 
@@ -20,33 +20,47 @@ except:
 def print_msg(msg,stream=stdout,newline="\n"): stream.write(msg+newline)
 try: LLVM_CCDB_NAME = argv[1]
 except: LLVM_CCDB_NAME = "compile_commands.json"
+
+llvm_ccdb   = []
+local_files = []
+localtop    = getenv("LOCALTOP")
+arch        = getenv("SCRAM_ARCH")
+tmpsrc      = join(localtop,"tmp",arch,"src")
+
 #Read SCRAM Generated
-llvm_ccdb = []
-err, llvm_ccdb_files = run_cmd("find %s -name '*.%s' -type f" % (join(getenv("LOCALTOP"),"tmp",getenv("SCRAM_ARCH"),"src"), LLVM_CCDB_NAME))
-if err:
-  print_msg(llvm_ccdb_files)
-  exit(err)
+if exists (tmpsrc):
+  err, llvm_ccdb_files = run_cmd("find %s -name '*.%s' -type f" % (tmpsrc, LLVM_CCDB_NAME))
+  if err:
+    print_msg(llvm_ccdb_files)
+    exit(err)
+  if llvm_ccdb_files:
+    for llvm_ccdb_file in llvm_ccdb_files.split("\n"):
+      obj = json.load(open(llvm_ccdb_file))
+      if obj['file'] in local_files:
+        print "Cont1:", obj['file']
+        continue
+      local_files.append(obj['file'])
+      llvm_ccdb.append(obj)
 
-llvm_ccdb_uniq_files = []
-for llvm_ccdb_file in llvm_ccdb_files.split("\n"):
-  llvm_ccdb_obj = json.load(open(llvm_ccdb_file))
-  llvm_ccdb.append(llvm_ccdb_obj)
-  llvm_ccdb_uniq_files.append(llvm_ccdb_obj['file'])
-
-reltop = getenv("RELEASETOP",None)
-rel_llvm_ccdb = []
-if reltop:
-  rel_llvm_ccdb_file = join(reltop,LLVM_CCDB_NAME)
-  if exists(rel_llvm_ccdb_file): 
-    rel_llvm_ccdb = json.load(rel_llvm_ccdb_file)
-
-for llvm_ccdb_item in rel_llvm_ccdb:
-  if llvm_ccdb_item['file'] in llvm_ccdb_uniq_files: continue
-  llvm_ccdb.append(llvm_ccdb_item)
+release_top = getenv("RELEASETOP",None)
+if not release_top:
+  proj_name = getenv("SCRAM_PROJECTNAME")
+  proj_ver = getenv("SCRAM_PROJECTVERSION")
+  err, full_release = run_cmd("scram tool info %s | grep '^%s_BASE=' | sed 's|%s_BASE=||'" %  (proj_name.lower(), proj_name, proj_name))
+  if full_release:
+    rel_llvm_ccdb_file = join(full_release,LLVM_CCDB_NAME)
+    if exists(rel_llvm_ccdb_file):
+      full_ver = basename(full_release)
+      for obj in json.load(open(rel_llvm_ccdb_file)):
+        obj_dir  = obj['directory']
+        obj_file = obj['file'].replace(obj_dir, localtop)
+        if obj_file in local_files:
+          print "Cont2:", obj['file']
+          continue
+        obj['directory'] = localtop
+        obj['command']   = obj['command'].replace(obj_dir, localtop).replace(full_ver,proj_ver)
+        llvm_ccdb.append(obj)
 
 print_msg(json.dumps(llvm_ccdb, indent=2, sort_keys=True, separators=(',',': ')),
-          open(join(getenv("LOCALTOP"),LLVM_CCDB_NAME),"w"),newline="")
-
-  
-  
+          open(join(localtop,LLVM_CCDB_NAME),"w"),newline="")
 
