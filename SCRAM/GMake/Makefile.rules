@@ -366,7 +366,7 @@ define biglib_setup
     BIGLIB_RESET_ENV=YES ;\
   done ;\
   if [ "X$$BIGLIB_RESET_ENV" = "XYES" ] ; then \
-    $(CMD_echo) "*** Please re-run cmsenv command to get your runtime environment uopdated ****";\
+    $(CMD_echo) "*** Please re-run cmsenv command to get your runtime environment updated ****";\
   fi
 endef
 ##############################################################################
