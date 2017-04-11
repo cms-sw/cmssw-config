@@ -1,3 +1,7 @@
+2017-04-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-23: Dump build product to source map file.
+
 2017-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-22: Fixes the bug when there is only <test /> in package/test/BuildFile
