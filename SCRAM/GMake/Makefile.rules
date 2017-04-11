@@ -1934,7 +1934,7 @@ CHECK_DELETED_PACKS:=
 ifneq ($(strip $(CMSSW_GIT_HASH)),)
 ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git)),)
 CHECK_DELETED_PACKS:=YES
-ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
+ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) -- | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
 endif
 endif
 ###############################################################################
