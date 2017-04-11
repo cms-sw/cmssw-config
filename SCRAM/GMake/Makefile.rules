@@ -551,6 +551,14 @@ define run_plugin_refresh_cmd
     touch $@ ;\
   fi
 endef
+ifdef SCRAM_DUMP_PRODUCT_TO_SOURCE
+define DumpProduct2SRC
+endef
+else
+DumpProduct2SRC=
+endif
+
+
 ##############################################################################
 ##############################################################################
 #Compilation Rules
@@ -1097,6 +1105,7 @@ $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
+$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),))
 $(1)_libdeps      := $$(call libdeps,$1)
@@ -1184,6 +1193,7 @@ $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@$(CMD_touch) $$@
 $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1)_link)
 	@$(CMD_touch) $$@
+	@$(CMD_echo) "$1 $$($(1)_prodsrc)" > $$(@D)/scram-prod2src.txt
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
 else
@@ -1523,6 +1533,7 @@ endef
 #safename,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
 ifeq ($(strip $(NO_CAPABILITIES)),)
 define LCGDict
+$(1)_prodsrc += $(patsubst src/%,%,$2 $3)
 $(1)$(6)_GENREFLEX_ARGS := $(5)
 $(eval $(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
 $(eval $(call AddSealCapabilitiesRule,$(1),$(1)$(6),a/))
@@ -1538,6 +1549,7 @@ endif
 endef
 else
 define LCGDict
+$(1)_prodsrc += $(patsubst src/%,%,$2 $3)
 $(1)$(6)_GENREFLEX_ARGS := $(5)
 $(1)_CLASSES_DEF_XML:=$3
 $(eval $(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
