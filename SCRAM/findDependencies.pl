@@ -38,6 +38,7 @@ my $cwd = Cwd::cwd();
 
 my %uses;
 my %usedby;
+my @prod2src;
 my $beginning="";
 
 # Traverse desired filesystems
@@ -56,16 +57,23 @@ foreach my $key (keys %usedby) {
 }
 close F1;
 
+open F1,">${rel}/etc/dependencies/prod2src.out";
+foreach my $dep (@prod2src) {print F1 "$dep";}
+close F1;
+
 &pythonDeps($rel);
 &buildFileDeps($rel, $scramarch, $scramroot);
 
 exit;
 
-
 sub wanted {
-    doexec(0, 'cat','{}') if ($name=~/^.*(\.dep)\z/os);
+  if ($name=~/^.*(\.dep)\z/os){doexec(0, 'cat','{}');}
+  elsif ($name=~/\/scram-prod2src[.]txt$/os){
+    open F1, $name;
+    push @prod2src, <F1>;
+    close F1;
+  }
 }
-
 
 sub doexec ($@) {
     my $ok = shift;
