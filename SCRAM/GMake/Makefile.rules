@@ -856,14 +856,7 @@ define python_script_copy
       $(CMD_cp) -rp $$f $($(1)_python_dir)/ || continue ;\
     fi \
   done &&\
-  $(call generate_python_bytecode,$(LOCALTOP)/$($(1)_python_dir)) &&\
-  for dir in `$(CMD_find) $($(1)_python_dir) -name "*" -type d` ; do \
-    if [ ! -f $$dir/__init__.py ] ; then \
-      $(CMD_touch) $$dir/__init__.py; \
-    fi \
-  done &&\
-  $(CMD_touch) $($(1)_python_dir)/__init__.py &&\
-  $(CMD_touch) $($(1)_python_dir)/../__init__.py $(endlog_$(2))
+  $(call generate_python_bytecode,$(LOCALTOP)/$($(1)_python_dir)) $(endlog_$(2))
 endef
 define copy_src_scripts
   @$(startlog_$(2))$(CMD_echo) "------- copying scripts from $(1) -------" &&\
@@ -1011,16 +1004,16 @@ $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__ini
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 ifeq ($(strip $(origin $2_python_parent)),undefined)
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py:
-	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) &&\
+	[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
 	$$(call create_package_init,$1)
 else
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAM_SOURCEDIR)/$1/python/__init__.py
-	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
+	[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
 	[ -e $$(@D) ] || $(CMD_ln) -s -T ../../$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
 endif
 $(SCRAM_SOURCEDIR)/$(1)/python/__init__.py:
-	@$$(call create_package_init,$1) &&\
+	$$(call create_package_init,$1) &&\
 	[ -d $(WORKINGDIR)/$$(@D) ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$(@D) &&\
 	$(CMD_echo) "01:$(CMD_rm) -f $$(@D)/__init__.py $$(@D)/__init__.pyc" > $(call AutoCleanFile,$(WORKINGDIR)/$$(@D)/__init__.py,python)
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
@@ -1340,18 +1333,16 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(WORKINGDIR)/$2/init_links:
-	@$$(call create_subdir_init,$2)
 $(1)_config += $$($(1)_objdir)/config
-all_$(1) += $(1)_copy_python_scripts $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
+all_$(1) += $(1)_copy_python_scripts
+ifeq ($(strip $(PYTHON_PRODUCT_SYMLINK)),YES)
+$(WORKINGDIR)/$2/init_links:
+	$$(call create_subdir_init,$2)
+all_$(1) += $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
+endif
 ifeq ($(strip $(4)),1)
-ifeq ($$(strip $(5)),1)
 $(1)_copy_python_scripts: $(logfile_$(1)) $$($(1)_CONFIGDEPS)
 	@:
-else
-$(1)_copy_python_scripts: $(logfile_$(1))
-	$$(call python_script_copy,$(1),$(logfile_$(1)),$(6))
-endif
 else
 $(1)_copy_python_scripts: $(logfile_$(1))
 	@$(CMD_echo) "No source files to compile. Nothing to be done for Python modules at $(2)."
