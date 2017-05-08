@@ -492,14 +492,6 @@ define edm_write_config
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
   ($(CMD_cd) $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
-    if [ ! -d $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) ] ; then \
-      $(CMD_mkdir) -p $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
-      if [ -d $(SCRAMSTORENAME_PYTHON)/$($(1)_package) ] ; then \
-        $(CMD_echo) "#Automatically created by SCRAM" > $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
-        $(CMD_echo) "import os" >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py &&\
-        $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$($(1)_package)/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)')"  >> $(SCRAMSTORENAME_PYTHON)/$($(1)_package)/__init__.py ;\
-      fi ;\
-    fi &&\
     $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
   done
@@ -938,6 +930,26 @@ endef
 define libdeps
 $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
 endef
+##############################################################################
+define create_subdir_init
+  for d in `find $1 -mindepth 1 -name '*' -type d` ; do \
+    [ -e $$d/__init__.py ] || $(CMD_echo) "#Automatically created by SCRAM" > $$d/__init__.py ;\
+  done
+endef
+define create_package_init
+  $(CMD_echo) "#Automatically created by SCRAM" > $@ &&\
+  $(CMD_echo) "import os" >> $@ &&\
+  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$(1)/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$(1)')" >> $@
+endef
+define create_subsystem_init
+  if [ "X${RELEASETOP}" = "X" ] ; then \
+    $(CMD_echo) "import os" > $@ ;\
+    $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $@ ;\
+    $(CMD_echo) "if localrt != None:__path__.insert(0,localrt+'/$(@D)')" >> $@ ;\
+  else \
+    $(CMD_echo) "__path__.append('${RELEASETOP}/$(@D)')" > $@ ;\
+  fi
+endef
 #############################################################################
 define SubSystem
 .PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2)
@@ -958,6 +970,8 @@ precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
+$(SCRAMSTORENAME_PYTHON)/$1/__init__.py: $(SCRAMSTORENAME_PYTHON)/__init__.py
+	@[ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && $$(call create_subsystem_init)
 endef
 define EmptyPackage
 $(1)_libdeps      := $$(call libdeps,$1)
@@ -993,6 +1007,22 @@ $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WOR
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+$(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
+ifeq ($(strip $(origin $2_python_parent)),undefined)
+$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py:
+	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) &&\
+	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
+	$$(call create_package_init,$1)
+else
+$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAM_SOURCEDIR)/$1/python/__init__.py
+	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
+	[ -e $$(@D) ] || $(CMD_ln) -s -T ../../$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
+endif
+$(SCRAM_SOURCEDIR)/$(1)/python/__init__.py:
+	@$$(call create_package_init,$1) &&\
+	[ -d $(WORKINGDIR)/$$(@D) ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$(@D) &&\
+	$(CMD_echo) "01:$(CMD_rm) -f $$(@D)/__init__.py $$(@D)/__init__.pyc" > $(call AutoCleanFile,$(WORKINGDIR)/$$(@D)/__init__.py,python)
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
@@ -1027,7 +1057,7 @@ $(1)_package       := $(subst $(space),/,$(wordlist 2,3,$(subst /,$(space),$(10)
 $$($(1)_package)_$(3)_plugins += $(1)
 ifndef SCRAM_NOEDMWRITECONFIG
 ifeq ($$(strip $(3)),edm)
-$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG)
+$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$$($(1)_package)/.scram
 endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
@@ -1292,7 +1322,7 @@ endef
 #safename,path,safepath,hasscripts,symlinkpython,pythonstore,xprodfiles,xproddirs
 define PythonProductHead
 $(3)          += all_$(1)
-.PHONY: $(1) all_$(1) $(1)_copy_python_scripts
+.PHONY: $(1) all_$(1) $(1)_copy_python_scripts $(WORKINGDIR)/$2/init_links
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_python_dir := $(addprefix $(6)/,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2)))
@@ -1310,8 +1340,10 @@ else
 $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
+$(WORKINGDIR)/$2/init_links:
+	@$$(call create_subdir_init,$2)
 $(1)_config += $$($(1)_objdir)/config
-all_$(1) += $(1)_copy_python_scripts
+all_$(1) += $(1)_copy_python_scripts $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
 ifeq ($(strip $(4)),1)
 ifeq ($$(strip $(5)),1)
 $(1)_copy_python_scripts: $(logfile_$(1)) $$($(1)_CONFIGDEPS)
@@ -2212,29 +2244,9 @@ ufast xfast fast:
 	fi
 echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
-
+$(SCRAMSTORENAME_PYTHON)/__init__.py:
+	@$(CMD_touch) $@
 $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
-	@[ -d $(SCRAMSTORENAME_PYTHON) ] || $(CMD_mkdir) $(SCRAMSTORENAME_PYTHON) &&\
-	$(SCRAM_CONFIGDIR)/SCRAM/createPyInitFiles.pl &&\
-	$(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
-	@for d in `$(CMD_find) $(SCRAMSTORENAME_PYTHON) -name "*" -type l | $(CMD_sed) -e s'|^$(SCRAMSTORENAME_PYTHON)/||'`; do \
-	  [ -d $(SCRAM_SOURCEDIR)/$$d/python ] || continue ;\
-	  for dir in `$(CMD_find) $(SCRAM_SOURCEDIR)/$$d/python -name "*" -type d | $(CMD_grep) -v '/CVS$$\|/CVS/'`; do \
-	    if [ ! -f $$dir/__init__.py ] ; then \
-	      $(CMD_echo) "#Automatically created by SCRAM" > $$dir/__init__.py;\
-	      if [ "$$dir" == "$(SCRAM_SOURCEDIR)/$$d/python" ] ; then \
-	        if [ "X$(SCRAM_NOEDMWRITECONFIG)" = "X" ] ; then \
-	          $(CMD_echo) "import os" >> $$dir/__init__.py;\
-	          $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$$d/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$$d')"  >> $$dir/__init__.py;\
-	        fi;\
-	      fi;\
-	      [ -d $(WORKINGDIR)/$$dir ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$dir ;\
-	      cf=$(call AutoCleanFile,$(WORKINGDIR)/$$dir/__init__.py,python) ;\
-	      $(CMD_echo) "01:$(CMD_rm) -f $$dir/__init__.py $$dir/__init__.pyc" > $$cf;\
-	    fi;\
-	  done;\
-	  if [ ! -f $(SCRAMSTORENAME_PYTHON)/$$d/__init__.py ] ; then $(CMD_rm) -f $(SCRAMSTORENAME_PYTHON)/$$d; fi;\
-	done
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \

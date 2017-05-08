@@ -33,7 +33,6 @@ sub Project()
   $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
-  $common->addSymLinks("src python 2 python '' -/LCG/");
   $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "COND_SERIALIZATION:=\$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python/condformats_serialization_generate.py\n";  
   if ($ENV{SCRAM_ARCH}=~/_mic_/)
