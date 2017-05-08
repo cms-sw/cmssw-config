@@ -20,7 +20,7 @@
 
 #<!-- Rules for LCG/CORAL Packages build in CMSSW -->
 <classpath path="+Project/LCG+SubSystem/+Package/tests+binary"/>
-<flags PYTHON_PRODUCT_SYMLINK="YES"/>
+<flags PYTHON_PACKAGE_SYMLINK="YES"/>
 <flags REM_ROOTDICT_CXXFLAGS="-pedantic"/>
 <flags ROOTDICT_CXXFLAGS="-Wno-unknown-pragmas"/>
 

@@ -1335,7 +1335,7 @@ $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 endif
 $(1)_config += $$($(1)_objdir)/config
 all_$(1) += $(1)_copy_python_scripts
-ifeq ($(strip $(PYTHON_PRODUCT_SYMLINK)),YES)
+ifeq ($(strip $(PYTHON_PACKAGE_SYMLINK)),YES)
 $(WORKINGDIR)/$2/init_links:
 	@$$(call create_subdir_init,$2)
 all_$(1) += $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
