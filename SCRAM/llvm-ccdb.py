@@ -37,7 +37,6 @@ if exists (tmpsrc):
     for llvm_ccdb_file in llvm_ccdb_files.split("\n"):
       obj = json.load(open(llvm_ccdb_file))
       if obj['file'] in local_files:
-        print "Cont1:", obj['file']
         continue
       local_files.append(obj['file'])
       llvm_ccdb.append(obj)
@@ -55,7 +54,6 @@ if not release_top:
         obj_dir  = obj['directory']
         obj_file = obj['file'].replace(obj_dir, localtop)
         if obj_file in local_files:
-          print "Cont2:", obj['file']
           continue
         obj['directory'] = localtop
         obj['command']   = obj['command'].replace(obj_dir, localtop).replace(full_ver,proj_ver)
