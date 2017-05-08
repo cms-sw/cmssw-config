@@ -1000,15 +1000,15 @@ $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WOR
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
-$(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
+$(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 ifeq ($(strip $(origin $2_python_parent)),undefined)
-$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py:
+$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
 	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
 	$$(call create_package_init,$1)
 else
-$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAM_SOURCEDIR)/$1/python/__init__.py
+$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAM_SOURCEDIR)/$1/python/__init__.py
 	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
 	[ -e $$(@D) ] || $(CMD_ln) -s -T ../../$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
 endif
