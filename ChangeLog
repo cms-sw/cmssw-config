@@ -1,3 +1,9 @@
+2017-05-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-24: Bug fix creation of python __init__.py build rules.
+	Previously there was chance that two process can write in the same file at
+	same time causing it to be a invalid python file.
+
 2017-04-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-23: Dump build product to source map file.
