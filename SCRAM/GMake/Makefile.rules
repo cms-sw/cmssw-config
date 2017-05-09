@@ -2237,7 +2237,7 @@ echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
 $(SCRAMSTORENAME_PYTHON)/__init__.py:
 	@$(CMD_touch) $@
-$(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links FORCE_TARGET
+$(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links $(addsuffix __init__.py,$(addprefix python/,$(dir $(ALL_PYTHON_DIRS))))
 	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
