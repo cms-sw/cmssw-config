@@ -993,7 +993,7 @@ $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARG
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
-$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2)))
+$(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2))) $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
@@ -1957,7 +1957,7 @@ CHECK_DELETED_PACKS:=
 ifneq ($(strip $(CMSSW_GIT_HASH)),)
 ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git)),)
 CHECK_DELETED_PACKS:=YES
-ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) -- | $(CMD_grep) '/BuildFile.xml$$' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
+ALL_DELETED_PACKAGES:=$(strip $(foreach p,$(sort $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(CMD_git) diff --name-only $(CMSSW_GIT_HASH) -- | $(CMD_grep) '/' | $(CMD_cut) -d/ -f1,2)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$p)),,$(p))))
 endif
 endif
 ###############################################################################
@@ -2249,7 +2249,7 @@ outputlog: buildlog
 	@:
 buildlog:
 	@for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR) -name "build.log" -type f` ; do \
-	  pack=`dirname $$f` &&\
+	  pack=`$(CMD_dirname) $$f` &&\
 	  for l in `$(CMD_find) $$pack -name "*" -type f | grep -v "$$pack/build.log"` ; do \
 	    $(CMD_cat) $$l >> $$f && $(CMD_cat) $$l && $(CMD_rm) -f $$l ;\
 	  done;\
@@ -2398,6 +2398,21 @@ $(COMMON_WORKINGDIR)/cache/packs/undeleted: FORCE_TARGET
 
 $(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/$(d)/poison_edmplugin) $(if $(UNDELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/undeleted)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
+	@for pkg in $(DELETED_PACKAGES) ; do \
+	  $(CMD_echo) ">> Generating python/$$pkg/__init__.py file for deleted packaged" &&\
+	  $(CMD_rm) -rf $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
+	  $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
+	  $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/$$pkg/__init__.py  &&\
+	  SUBSYS=$$($(CMD_dirname) $$pkg) &&\
+	  if [ "X${RELEASETOP}" = "X" ] ; then \
+	    $(CMD_echo) "import os" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	    $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	    $(CMD_echo) "if localrt != None:__path__.insert(0,localrt+'/$$SUBSYS')" >> $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	  else \
+	    $(CMD_echo) "__path__.append('${RELEASETOP}/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	  fi;\
+	done;\
+	[ -f $(SCRAMSTORENAME_PYTHON)/__init__.py ] || $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
 
 $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
 	@$(call GetPackagePluginCache)

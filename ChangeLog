@@ -1,3 +1,8 @@
+2017-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-25: For each package create python/package/__init__.py to
+	avoid picking package/python files from release
+
 2017-05-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-24: Bug fix creation of python __init__.py build rules.
