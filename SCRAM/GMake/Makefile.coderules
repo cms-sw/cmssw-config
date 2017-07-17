@@ -1,0 +1,50 @@
+.PHONY: format format/$(SCRAM_SOURCEDIR)/% style style-apply style-check internal-run-style
+DEFAULT_STYLE_CHECKS:=modernize-use-nullptr,modernize-use-override,boost-use-to-string,misc-sizeof-container,misc-sizeof-expression,misc-string-compare,misc-uniqueptr-reset-release,misc-use-after-move,modernize-deprecated-headers,modernize-make-shared,modernize-make-unique,modernize-replace-auto-ptr,modernize-use-bool-literals,modernize-use-equals-delete,performance-implicit-cast-in-loop,performance-unnecessary-copy-initialization,performance-unnecessary-value-param,readability-avoid-const-params-in-decls,readability-container-size-empty,readability-delete-null-pointer,readability-redundant-declaration,readability-redundant-string-cstr,readability-simplify-boolean-expr,readability-static-definition-in-anonymous-namespace,readability-uniqueptr-delete-release,clang-analyzer-core.CallAndMessage,clang-analyzer-core.UndefinedBinaryOperatorResult,clang-analyzer-core.uninitialized.ArraySubscript,clang-analyzer-core.uninitialized.Assign,clang-analyzer-core.uninitialized.Branch,clang-analyzer-core.uninitialized.UndefReturn,clang-analyzer-cplusplus.NewDelete,clang-analyzer-deadcode.DeadStores,modernize-loop-convert,modernize-redundant-void-arg,modernize-use-emplace
+DEFAULT_FORMAT_CHECK:=Google
+ALL_StyleRules:=
+ALL_FormatRules:=
+define SCRAM_StyleRule
+ALL_StyleRules+=$(WORKINGDIR)/style/$1.yaml
+$(WORKINGDIR)/style/$1.yaml: $(SCRAM_SOURCEDIR)/$1
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
+	$(CMD_echo) clang-tidy $(USER_STYLE_CHECK_ARGS) -export-fixes $$@ -checks=$(if $(strip $(USER_STYLE_CHECKS)),-*$(comma)$(USER_STYLE_CHECKS),-*$(comma)$(DEFAULT_STYLE_CHECKS)) -header-filter "$(CMSSW_BASE)/src/.*" $$< &&\
+	clang-tidy             $(USER_STYLE_CHECK_ARGS) -export-fixes $$@ -checks=$(if $(strip $(USER_STYLE_CHECKS)),-*$(comma)$(USER_STYLE_CHECKS),-*$(comma)$(DEFAULT_STYLE_CHECKS)) -header-filter "$(CMSSW_BASE)/src/.*" $$< &&\
+	$(CMD_touch) $$@
+endef
+define SCRAM_FormatRule
+ALL_FormatRules+=format/$1
+format/$1: $1
+	@$(CMD_echo) clang-format $(USER_FORMAT_CHECK_ARGS) --style=$(if $(strip $(USER_FORMAT_CHECK)),$(USER_FORMAT_CHECK),$(DEFAULT_FORMAT_CHECK)) -i $$< &&\
+	clang-format              $(USER_FORMAT_CHECK_ARGS) --style=$(if $(strip $(USER_FORMAT_CHECK)),$(USER_FORMAT_CHECK),$(DEFAULT_FORMAT_CHECK)) -i $$<
+endef
+style-check: llvm-ccdb
+	@$(MAKE) -f $(SCRAM_MAKEFILE) internal-run-style
+	$(CMD_echo) "You can run 'scram build style-apply' to apply the changes"
+style: style-check
+	@$(MAKE) -f $(SCRAM_MAKEFILE) style-apply
+style-apply:
+	clang-apply-replacements $(USER_STYLE_APPLY_ARGS) $(WORKINGDIR)/style
+	@$(CMD_rm) -rf $(WORKINGDIR)/style
+ifneq ($(strip $(filter format,$(MAKECMDGOALS))),)
+  CODE_CHECK_FILES:=
+  ifeq ($(strip $(USER_CODE_CHECK_FILES)),)
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) -name '*.cc' -type f) $(shell find $(SCRAM_SOURCEDIR) -name '*.h' -type f))
+  else
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
+  endif
+  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call SCRAM_FormatRule,$f)))
+format: $(ALL_SCRAM_FormatRule)
+	@echo g1 $@  $(ALL_SCRAM_FormatRule)
+endif
+ifneq ($(strip $(filter internal-run-style,$(MAKECMDGOALS))),)
+  CODE_CHECK_FILES:=
+  ifeq ($(strip $(USER_CODE_CHECK_FILES)),)
+    CODE_CHECK_FILES:=$(patsubst $(CMSSW_BASE)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in  json.load(open("compile_commands.json"))])'))
+  else
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
+  endif
+  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call SCRAM_StyleRule,$f)))
+internal-run-style: $(ALL_StyleRules)
+	@:
+endif
+

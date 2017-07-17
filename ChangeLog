@@ -1,3 +1,15 @@
+2017-07-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-26: Added new style, format build rules to run clang-tidy and
+	clang-format. Following user env variables can be used to override various
+	default settings
+	 - USER_CODE_CHECK_FILES: list of files for which to run rules (SSV)
+	 - USER_STYLE_CHECKS: clang-tidy checks (CSV)
+	 - USER_STYLE_CHECK_ARGS: clang-tidy extra command-line args
+	 - USER_STYLE_APPLY_ARGS: clang-apply-replacements extra command-line args
+	 - USER_FORMAT_CHECK: clang-format style. Default is Google
+	 - USER_FORMAT_CHECK_ARGS: clang-fiormat extra command-line args
+
 2017-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-25: For each package create python/package/__init__.py to

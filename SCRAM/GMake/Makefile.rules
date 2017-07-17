@@ -2341,6 +2341,7 @@ $(LLVM_CCDB_EXT): FORCE_TARGET
 	$(SCRAM_CONFIGDIR)/SCRAM/llvm-ccdb.py $(LLVM_CCDB_EXT)
 llvm-ccdb: $(LLVM_CCDB_EXT)
 	@:
+-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.coderules
 #Poisoned edm plugins Rules
 define getPluginCacheForPackage
 $(strip $(if $(strip $(RELEASETOP)),\
@@ -2404,13 +2405,7 @@ $(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMM
 	  $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
 	  $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/$$pkg/__init__.py  &&\
 	  SUBSYS=$$($(CMD_dirname) $$pkg) &&\
-	  if [ "X${RELEASETOP}" = "X" ] ; then \
-	    $(CMD_echo) "import os" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
-	    $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
-	    $(CMD_echo) "if localrt != None:__path__.insert(0,localrt+'/$$SUBSYS')" >> $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
-	  else \
-	    $(CMD_echo) "__path__.append('${RELEASETOP}/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
-	  fi;\
+	  $(CMD_echo) "__path__.append('${RELEASETOP}/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
 	done;\
 	[ -f $(SCRAMSTORENAME_PYTHON)/__init__.py ] || $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
 
