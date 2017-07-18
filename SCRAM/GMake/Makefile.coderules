@@ -3,7 +3,7 @@ DEFAULT_STYLE_CHECKS:=modernize-use-nullptr,modernize-use-override,boost-use-to-
 DEFAULT_FORMAT_CHECK:=Google
 ALL_StyleRules:=
 ALL_FormatRules:=
-define SCRAM_StyleRule
+define CODE_StyleRule
 ALL_StyleRules+=$(WORKINGDIR)/style/$1.yaml
 $(WORKINGDIR)/style/$1.yaml: $(SCRAM_SOURCEDIR)/$1
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
@@ -11,9 +11,9 @@ $(WORKINGDIR)/style/$1.yaml: $(SCRAM_SOURCEDIR)/$1
 	clang-tidy             $(USER_STYLE_CHECK_ARGS) -export-fixes $$@ -checks=$(if $(strip $(USER_STYLE_CHECKS)),-*$(comma)$(USER_STYLE_CHECKS),-*$(comma)$(DEFAULT_STYLE_CHECKS)) -header-filter "$(CMSSW_BASE)/src/.*" $$< &&\
 	$(CMD_touch) $$@
 endef
-define SCRAM_FormatRule
+define CODE_FormatRule
 ALL_FormatRules+=format/$1
-format/$1: $1
+format/$1: $(SCRAM_SOURCEDIR)/$1
 	@$(CMD_echo) clang-format $(USER_FORMAT_CHECK_ARGS) --style=$(if $(strip $(USER_FORMAT_CHECK)),$(USER_FORMAT_CHECK),$(DEFAULT_FORMAT_CHECK)) -i $$< &&\
 	clang-format              $(USER_FORMAT_CHECK_ARGS) --style=$(if $(strip $(USER_FORMAT_CHECK)),$(USER_FORMAT_CHECK),$(DEFAULT_FORMAT_CHECK)) -i $$<
 endef
@@ -32,9 +32,9 @@ ifneq ($(strip $(filter format,$(MAKECMDGOALS))),)
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
   endif
-  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call SCRAM_FormatRule,$f)))
-format: $(ALL_SCRAM_FormatRule)
-	@echo g1 $@  $(ALL_SCRAM_FormatRule)
+  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call CODE_FormatRule,$f)))
+format: $(ALL_FormatRules)
+	@:
 endif
 ifneq ($(strip $(filter internal-run-style,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
@@ -43,7 +43,7 @@ ifneq ($(strip $(filter internal-run-style,$(MAKECMDGOALS))),)
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
   endif
-  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call SCRAM_StyleRule,$f)))
+  $(foreach f,$(CODE_CHECK_FILES),$(eval $(call CODE_StyleRule,$f)))
 internal-run-style: $(ALL_StyleRules)
 	@:
 endif
