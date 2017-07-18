@@ -1,3 +1,7 @@
+2017-07-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-27: bug fix: fixed new build rules format/style 
+
 2017-07-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-26: Added new style, format build rules to run clang-tidy and
