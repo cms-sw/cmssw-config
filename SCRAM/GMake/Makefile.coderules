@@ -27,8 +27,10 @@ style-apply:
 	@$(CMD_rm) -rf $(WORKINGDIR)/style
 ifneq ($(strip $(filter format,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
-  ifeq ($(strip $(USER_CODE_CHECK_FILES)),)
+  ifeq ($(strip $(USER_CODE_CHECK_FILES)$(USER_CODE_CHECK_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) -name '*.cc' -type f) $(shell find $(SCRAM_SOURCEDIR) -name '*.h' -type f))
+  else ifneq ($(strip $(USER_CODE_CHECK_FILE)),)
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_CHECK_FILE)))
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
   endif
@@ -38,8 +40,10 @@ format: $(ALL_FormatRules)
 endif
 ifneq ($(strip $(filter internal-run-style,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
-  ifeq ($(strip $(USER_CODE_CHECK_FILES)),)
+  ifeq ($(strip $(USER_CODE_CHECK_FILES)$(USER_CODE_CHECK_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(CMSSW_BASE)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in  json.load(open("compile_commands.json"))])'))
+  else ifneq ($(strip $(USER_CODE_CHECK_FILE)),)
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_CHECK_FILE)))
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECK_FILES))
   endif
