@@ -1,3 +1,9 @@
+2017-08-08 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-28: update for clang-tidy/format
+	- USER_CODE_CHECK_FILES: Filename which contains the list of files for
+	which to run rules
+
 2017-07-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-27: bug fix: fixed new build rules format/style 
