@@ -1,3 +1,20 @@
+2017-08-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-29: update for clang-tidy/format
+	 - Use .clang-tidy and .clang-format files if avauilable
+	 - Rename user parameters
+	   - USER_CODE_CHECK_FILES  -> USER_CODE_CHECKS_FILES
+	   - USER_CODE_CHECK_FILE   -> USER_CODE_CHECKS_FILE
+	   - USER_STYLE_CHECKS      -> USER_CODE_CHECKS
+	   - USER_STYLE_CHECK_ARGS  -> USER_CODE_CHECKS_ARGS
+	   - USER_STYLE_APPLY_ARGS  -> USER_CODE_CHECKS_APPLY_ARGS
+	   - USER_FORMAT_CHECK      -> USER_CODE_FORMAT
+	   - USER_FORMAT_CHECK_ARGS -> USER_CODE_FORMAT_ARGS
+	 - Added new user parameters
+	   - USER_CODE_FORMAT_FILES: list of files for which to run format rules (SSV)
+	   - USER_CODE_FORMAT_FILE: Filename which contains the list of files for
+	which to run format rules
+
 2017-08-08 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-28: update for clang-tidy/format
