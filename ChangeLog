@@ -1,5 +1,9 @@
 2017-08-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-05-30: Added new build rule apply-code-checks-on-changes
+	to apply code-checks on changed files only using
+	    git diff --name-only $CMSSW_VERSION
+
 	* V05-05-29: update for clang-tidy/format
 	 - Use .clang-tidy and .clang-format files if avauilable
 	 - Rename user parameters

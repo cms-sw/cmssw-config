@@ -74,3 +74,22 @@ ifneq ($(strip $(filter internal-code-checks,$(MAKECMDGOALS))),)
 internal-code-checks: $(ALL_CodeCheckRules)
 	@:
 endif
+.PHONY: apply-code-checks-on-changes
+$(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
+	@$(CMD_rm) -rf $(@D) &&\
+	$(CMD_mkdir) -p $(@D) &&\
+	$(CMD_cd) $(LOCALTOP)/$(SCRAM_SOURCEDIR) &&\
+	DIFF_COMMAND='$(CMD_git) diff --name-only $(CMSSW_VERSION)' &&\
+	if [ "X$(USER_FILES_CHANGED_COMMAND)" != "X" ] ; then \
+	  DIFF_COMMAND="$(USER_FILES_CHANGED_COMMAND)" ;\
+	fi &&\
+	$$DIFF_COMMAND > $(LOCALTOP)/$@
+$(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-checks-logs/changed-files-all.log llvm-ccdb
+	@$(CMD_touch) $@ &&\
+	for f in $$($(CMD_cat) $< | grep -v '/test/') ; do \
+	  if [ $$(grep "/src/$$f\"" $(LOCALTOP)/$(LLVM_CCDB_EXT) | wc -l) -gt 0 ] ; then \
+	    $(CMD_echo) $$f >> $@;\
+	  fi ;\
+	done
+apply-code-checks-on-changes: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
+	@[ -s $< ] && USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks
