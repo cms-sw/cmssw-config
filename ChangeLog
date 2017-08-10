@@ -1,6 +1,6 @@
 2017-08-10 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* V05-05-32: Bug fixed for code-checks buildrule
+	* V05-05-33: Bug fixed for code-checks buildrule
 	  - Do not fail if no changed file found for code-checks
 
 2017-08-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
