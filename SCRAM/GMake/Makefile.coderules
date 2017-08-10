@@ -1,4 +1,4 @@
-.PHONY: code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply internal-code-checks code-checks-dump-config
+.PHONY: code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply internal-code-checks code-checks-dump-config code-checks-all
 CODE_CHECKS_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-tidy)
 CODE_FORMAT_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-format)
 ifeq ($(strip $(CODE_CHECKS_CONFIG_FILE)),)
@@ -30,7 +30,7 @@ code-format/$1: $(SCRAM_SOURCEDIR)/$1
 	clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$<
 endef
 NO_CODE_CHECKS_APPLY_MSG:=
-ifeq ($(strip $(filter code-checks,$(MAKECMDGOALS))),code-checks)
+ifeq ($(strip $(filter code-checks-all,$(MAKECMDGOALS))),code-checks-all)
 NO_CODE_CHECKS_APPLY_MSG:=:
 endif
 code-checks-dump-config:
@@ -40,7 +40,7 @@ code-format-dump-config:
 code-checks-run: llvm-ccdb
 	@$(MAKE) -f $(SCRAM_MAKEFILE) internal-code-checks
 	@$(NO_CODE_CHECKS_APPLY_MSG) $(CMD_echo) "You can run 'scram build code-checks-apply' to apply the changes"
-code-checks: code-checks-run
+code-checks-all: code-checks-run
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
 code-checks-apply:
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
@@ -74,7 +74,6 @@ ifneq ($(strip $(filter internal-code-checks,$(MAKECMDGOALS))),)
 internal-code-checks: $(ALL_CodeCheckRules)
 	@:
 endif
-.PHONY: apply-code-checks-on-changes
 $(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
 	@$(CMD_rm) -rf $(@D) &&\
 	$(CMD_mkdir) -p $(@D) &&\
@@ -91,5 +90,5 @@ $(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-ch
 	    $(CMD_echo) $$f >> $@;\
 	  fi ;\
 	done
-apply-code-checks-on-changes: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
-	@[ -s $< ] && USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks
+code-checks: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
+	@[ -s $< ] && USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all

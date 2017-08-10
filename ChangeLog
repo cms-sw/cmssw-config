@@ -1,5 +1,9 @@
 2017-08-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-05-31: Rename following build rules
+	  apply-code-checks-on-changes -> code-checks
+	  code-checks ->  code-checks-all
+
 	* V05-05-30: Added new build rule apply-code-checks-on-changes
 	to apply code-checks on changed files only using
 	    git diff --name-only $CMSSW_VERSION
