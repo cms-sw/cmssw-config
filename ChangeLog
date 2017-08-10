@@ -1,5 +1,8 @@
 2017-08-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-05-32: Bug fixed for code-checks buildrule
+	  - Do not fail if no changed file found for code-checks
+
 	* V05-05-31: Rename following build rules
 	  apply-code-checks-on-changes -> code-checks
 	  code-checks ->  code-checks-all

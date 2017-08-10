@@ -91,4 +91,8 @@ $(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-ch
 	  fi ;\
 	done
 code-checks: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
-	@[ -s $< ] && USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all
+	@if [ -s $< ] ; then \
+	  USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all ;\
+	else \
+	  $(CMD_echo) ">> No changed files found: No running code-checks" ;\
+	fi
