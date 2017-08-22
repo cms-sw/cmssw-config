@@ -1,4 +1,4 @@
-.PHONY: code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply internal-code-checks code-checks-dump-config code-checks-all
+.PHONY: code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply code-checks-internal code-checks-dump-config code-checks-all
 CODE_CHECKS_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-tidy)
 CODE_FORMAT_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-format)
 ifeq ($(strip $(CODE_CHECKS_CONFIG_FILE)),)
@@ -38,7 +38,7 @@ code-checks-dump-config:
 code-format-dump-config:
 	clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -dump-config $(CODE_FORMAT_CONFIG_FILE)
 code-checks-run: llvm-ccdb
-	@$(MAKE) -f $(SCRAM_MAKEFILE) internal-code-checks
+	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-internal
 	@$(NO_CODE_CHECKS_APPLY_MSG) $(CMD_echo) "You can run 'scram build code-checks-apply' to apply the changes"
 code-checks-all: code-checks-run
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
@@ -61,7 +61,7 @@ ifneq ($(strip $(filter code-format,$(MAKECMDGOALS))),)
 code-format: $(ALL_CodeFormatRules)
 	@:
 endif
-ifneq ($(strip $(filter internal-code-checks,$(MAKECMDGOALS))),)
+ifneq ($(strip $(filter code-checks-internal,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
   ifeq ($(strip $(USER_CODE_CHECKS_FILES)$(USER_CODE_CHECKS_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in  json.load(open("compile_commands.json"))])'))
@@ -71,7 +71,7 @@ ifneq ($(strip $(filter internal-code-checks,$(MAKECMDGOALS))),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(USER_CODE_CHECKS_FILES))
   endif
   $(foreach f,$(CODE_CHECK_FILES),$(eval $(call CodeCheckRule,$f)))
-internal-code-checks: $(ALL_CodeCheckRules)
+code-checks-internal: $(ALL_CodeCheckRules)
 	@:
 endif
 $(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
