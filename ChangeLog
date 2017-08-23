@@ -1,3 +1,10 @@
+2017-08-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-35: Apply clang-tidy changes to changed files only if
+	USER_CODE_CHECKS_CHANGE_ONLY is set to YES otherwise included headers
+	are also updated.
+	USER_FILES_CHANGED_COMMAND is not supported use USER_CODE_CHECKS_FILE instead
+
 2017-08-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-34: New build rule checkdeps add to checkout

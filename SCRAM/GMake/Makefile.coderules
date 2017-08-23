@@ -41,9 +41,10 @@ code-checks-run: llvm-ccdb
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-internal
 	@$(NO_CODE_CHECKS_APPLY_MSG) $(CMD_echo) "You can run 'scram build code-checks-apply' to apply the changes"
 code-checks-all: code-checks-run
-	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
+	@USER_CODE_CHECKS_CHANGE_ONLY=NO $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
 code-checks-apply:
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
+	  if [ "$(USER_CODE_CHECKS_CHANGE_ONLY)" = "YES" ] ; then $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks ; fi &&\
 	  $(CMD_echo) clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
 	  clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
 	  $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
@@ -78,18 +79,14 @@ $(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
 	@$(CMD_rm) -rf $(@D) &&\
 	$(CMD_mkdir) -p $(@D) &&\
 	$(CMD_cd) $(LOCALTOP)/$(SCRAM_SOURCEDIR) &&\
-	DIFF_COMMAND='$(CMD_git) diff --name-only $(CMSSW_VERSION)' &&\
-	if [ "X$(USER_FILES_CHANGED_COMMAND)" != "X" ] ; then \
-	  DIFF_COMMAND="$(USER_FILES_CHANGED_COMMAND)" ;\
-	fi &&\
-	$$DIFF_COMMAND > $(LOCALTOP)/$@
+	if [ "$(USER_CODE_CHECKS_FILE)" != "" ] ; then \
+	  $(CMD_cat) $(USER_CODE_CHECKS_FILE) > $(LOCALTOP)/$@ ;\
+	else \
+	  $(CMD_git) diff --name-only $(CMSSW_VERSION) > $(LOCALTOP)/$@ ;\
+	fi
 $(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-checks-logs/changed-files-all.log llvm-ccdb
 	@$(CMD_touch) $@ &&\
-	for f in $$($(CMD_cat) $< | grep -v '/test/') ; do \
-	  if [ $$(grep "/src/$$f\"" $(LOCALTOP)/$(LLVM_CCDB_EXT) | wc -l) -gt 0 ] ; then \
-	    $(CMD_echo) $$f >> $@;\
-	  fi ;\
-	done
+	for f in $$($(CMD_cat) $< | grep -v '/test/') ; do $(CMD_echo) $$f >> $@; done
 code-checks: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
 	@if [ -s $< ] ; then \
 	  USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all ;\
