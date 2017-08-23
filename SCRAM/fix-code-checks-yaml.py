@@ -13,10 +13,11 @@ if e:
 
 localtop = environ["CMSSW_BASE"]
 files = [ "/src/"+f.split(argv[1],1)[-1][:-5].strip("/") for f in o.split("\n") ]
-print "files:",files
+print "Changed files:",files
 for f in o.split("\n"):
   obj = yaml.load(open(f))
   if not obj: obj={"Diagnostics":[]}
+  print "Working on",f
   change = 0
   new_dia = []
   for d in obj["Diagnostics"]:
@@ -24,7 +25,9 @@ for f in o.split("\n"):
     for r in d["Replacements"]:
       rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
       if rf in files: new_rep.append(r)
-      else: change+=1
+      else:
+        print "  Ignoring file",rf," as it is not part of changed fileset"
+        change+=1
     if new_rep: new_dia.append(d)
   if new_dia:
     print "Clang Tidy cleanup: ",f,change
@@ -35,4 +38,5 @@ for f in o.split("\n"):
       yaml.dump(obj,ref,default_flow_style=False)
       ref.write("...\n")
       ref.close()
+  else: run_cmd("rm -f %s" % f)
 
