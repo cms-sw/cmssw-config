@@ -41,7 +41,7 @@ code-checks-run: llvm-ccdb
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-internal
 	@$(NO_CODE_CHECKS_APPLY_MSG) $(CMD_echo) "You can run 'scram build code-checks-apply' to apply the changes"
 code-checks-all: code-checks-run
-	@USER_CODE_CHECKS_CHANGE_ONLY=NO $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
+	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
 code-checks-apply:
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
 	  if [ "$(USER_CODE_CHECKS_CHANGE_ONLY)" = "YES" ] ; then $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks ; fi &&\
@@ -89,7 +89,7 @@ $(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-ch
 	for f in $$($(CMD_cat) $< | grep -v '/test/') ; do $(CMD_echo) $$f >> $@; done
 code-checks: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
 	@if [ -s $< ] ; then \
-	  USER_CODE_CHECKS_FILE=$< $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all ;\
+	  $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all USER_CODE_CHECKS_CHANGE_ONLY=YES USER_CODE_CHECKS_FILE=$< ;\
 	else \
 	  $(CMD_echo) ">> No changed files found: No running code-checks" ;\
 	fi
