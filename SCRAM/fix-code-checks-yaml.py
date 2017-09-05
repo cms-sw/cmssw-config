@@ -13,20 +13,27 @@ if e:
 
 localtop = environ["CMSSW_BASE"]
 files = [ "/src/"+f.split(argv[1],1)[-1][:-5].strip("/") for f in o.split("\n") ]
+ignore_files=[]
 print "Changed files:",files
 for f in o.split("\n"):
+  print "Working on",f
   obj = yaml.load(open(f))
   if not obj: obj={"Diagnostics":[]}
-  print "Working on",f
   change = 0
   new_dia = []
+  if (not "Diagnostics" in obj) or (not obj["Diagnostics"]):
+    run_cmd("rm -f %s" % f)
+    continue
   for d in obj["Diagnostics"]:
     new_rep = []
+    if (not "Replacements" in d) or (not d["Replacements"]): continue
     for r in d["Replacements"]:
       rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
       if rf in files: new_rep.append(r)
       else:
-        print "  Ignoring file",rf," as it is not part of changed fileset"
+        if not rf in ignore_files:
+          ignore_files.append(rf)
+          print "  Ignoring file",rf," as it is not part of changed fileset"
         change+=1
     if new_rep: new_dia.append(d)
   if new_dia:

@@ -47,7 +47,7 @@ code-checks-apply:
 	  if [ "$(USER_CODE_CHECKS_CHANGE_ONLY)" = "YES" ] ; then $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks ; fi &&\
 	  $(CMD_echo) clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
 	  clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
-	  $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
+	  echo $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
 	fi
 ifneq ($(strip $(filter code-format,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
