@@ -1,3 +1,8 @@
+2017-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-36: Use gti diff TAG and git/info/sparse-checkout to find out
+	actual deleted packages.
+
 2017-08-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-35: Apply clang-tidy changes to changed files only if
