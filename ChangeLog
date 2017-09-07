@@ -1,5 +1,9 @@
 2017-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* V05-05-39: Cleanup the code-checks internals files when done
+
+2017-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* V05-05-37: Use gti diff TAG and git/info/sparse-checkout to find out
 	actual deleted packages.
 
