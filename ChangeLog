@@ -1,3 +1,10 @@
+2017-09-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-40: Set max line-width for code-checks yaml file to 4096
+	This should fix the issues like 
+	https://github.com/cms-sw/cmssw/pull/20433/commits/9f57c6768c4045d2a7f6c4da672df3a7ff5c5e10#diff-616cc1e4006d02189e27f55aafb4c9a8R1446
+	where an extra new line was added
+
 2017-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-39: Cleanup the code-checks internals files when done

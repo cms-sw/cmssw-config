@@ -42,7 +42,7 @@ for f in o.split("\n"):
       obj["Diagnostics"]=new_dia
       ref = open(f,"w")
       ref.write("---\n")
-      yaml.dump(obj,ref,default_flow_style=False)
+      yaml.dump(obj,ref,default_flow_style=False, width=4096)
       ref.write("...\n")
       ref.close()
   else: run_cmd("rm -f %s" % f)
