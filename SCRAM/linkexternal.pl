@@ -140,14 +140,15 @@ if(exists $cache{toolcache}{SETUP})
   %tmphash=();
   foreach my $t (keys %{$cache{toolcache}{SETUP}})
   {
-    if (exists $cache{skipTools}{$t})
+    my $tc=$cache{toolcache}{SETUP}{$t};
+    if ((exists $cache{skipTools}{$t}) ||
+        ((exists $tc->{FLAGS}) && ($tc->{FLAGS}{SKIP_TOOL_SYMLINKS})))
     {
       &removeLinks($t);
       delete $cache{BASES}{$t};
       next;
     }
     my %nbases=();
-    my $tc=$cache{toolcache}{SETUP}{$t};
     foreach my $x (keys %{$cache{defaultlinks}})
     {
       if (!exists $ocache{"${x}_BASES"}{$t}){$ocache{"${x}_BASES"}{$t}=[];}

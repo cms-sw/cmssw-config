@@ -1,3 +1,8 @@
+2017-10-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-41: Allow tools to set SKIP_TOOL_SYMLINKS so that scram
+	does not create symlinks for libs and bins
+
 2017-09-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-40: Set max line-width for code-checks yaml file to 4096
