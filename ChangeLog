@@ -1,3 +1,7 @@
+2017-10-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-42: Bug fix with SKIP_TOOL_SYMLINKS flags for tools
+
 2017-10-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-41: Allow tools to set SKIP_TOOL_SYMLINKS so that scram

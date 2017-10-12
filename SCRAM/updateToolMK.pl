@@ -184,6 +184,8 @@ if (($reltop ne "") && (exists $tools{self}))
 sub isSymlinkSkipped()
 {
   my ($cache,$tool)=@_;
+  my $tc = $cache->{SETUP}{$tool};
+  if ((exists $tc->{FLAGS}) && ($tc->{FLAGS}{SKIP_TOOL_SYMLINKS})){return 1;}
   my $tools=$cache->{SETUP}{self}{FLAGS}{SKIP_TOOLS_SYMLINK} || [];
   foreach my $t (@$tools){if ($t eq $tool){return 1;}}
   return 0;
