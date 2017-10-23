@@ -589,7 +589,7 @@ define compile_fortran_common
 endef
 endif
 define compile_cude_common
-  $(call run_compile_command,$2,$4,$5,$(NVCC) -c $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
+  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
   $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
 
@@ -628,7 +628,7 @@ define compile_fortran
 endef  
 define compile_cude
   $(call compile_cude_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS))
-endef  
+endef
 define compile_boost
   $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
 endef  
@@ -641,6 +641,13 @@ define analyze_cxx
 endef
 define analyze_c
   $(call analyze_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS))
+endef
+
+define link_cuda_objs
+  @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Cuda Device Link $@ " &&\
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) nvcc -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? -o $@ &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) nvcc -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation
@@ -1129,12 +1136,16 @@ $(eval $(call LogFile,$(1),$(2)))
 .PHONY: $(1) all_$(1)
 $(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
-$(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
-$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2),$$($(1)_files))
-$(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
+ifneq ($(strip $(CUDASRC_FILES_SUFFIXES)),)
+$(1)_cudafiles    := $$(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES),%.$e),$($(1)_files))
+$(1)_cudaobj      := $$($(1)_objdir)/$(1)_scramcuda.$(OBJEXT)
+endif
+$(1)_files        := $$(filter-out $($(1)_SKIP_FILES) $$($(1)_cudafiles), $($(1)_files))
+$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2),$$($(1)_files) $($(1)_cudafiles))
+$(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files) $$($(1)_cudafiles))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),) $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),))
 $(1)_libdeps      := $$(call libdeps,$1)
-$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files))))
+$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(basename $$($(1)_files)))) $$($(1)_cudaobj)
 ifneq ($(strip $(5)),)
 .PHONY: $(1)_install_scripts_rule
 $(1)_install_scripts_rule: $(logfile_$(1))
@@ -1160,6 +1171,10 @@ endef
 #safename,path,productstore,type,logprodstore,safepath
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
+ifneq ($(strip $($(1)_cudaobj)),)
+$($(1)_cudaobj): $$(addprefix $($(1)_objdir)/, $(addsuffix .$(OBJEXT), $(basename $($(1)_cudafiles))))
+	$$(call link_cuda_objs,$1)
+endif
 ifneq ($(strip $($(1)_objs)),)
 $$(eval $$(call AddBigObjRule,$1,$2))
 ALL_$(4)_PRODUCTS += $(1)
