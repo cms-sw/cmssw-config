@@ -259,6 +259,9 @@ endef
 define Tool_CFLAGS
 $(strip $(USER_PRE_CFLAGS) $(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)) $(USER_CFLAGS))
 endef
+define Tool_CUDA_DEVICE_FLAGS
+$(strip $(USER_PRE_CUDA_DEVICE_FLAGS) $(filter-out $(USER_REM_CUDA_DEVICE_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_DEVICE_FLAGS),$(CUDA_DEVICE_FLAGS) $($(1)_LOC_FLAGS_CUDA_DEVICE_FLAGS_ALL)) $(USER_CUDA_DEVICE_FLAGS))
+endef
 define Tool_CPPFLAGS
 $(strip $(USER_PRE_CPPFLAGS) $(USER_PRE_CPPDEFINES) $(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS) $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPFLAGS) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))) $(USER_CPPFLAGS) $(USER_CPPDEFINE))
 endef
@@ -646,8 +649,8 @@ endef
 define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? -o $@ &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? -o $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? $(call AdjustFlags,$1,,CUDA_DEVICE_FLAGS) -o $@ &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? $(call AdjustFlags,$1,,CUDA_DEVICE_FLAGS) -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation
