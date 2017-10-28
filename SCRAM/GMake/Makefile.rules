@@ -624,9 +624,9 @@ define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
   $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) \
-     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_DEVICE_FLAGS) $? -o $@ &&\
+     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS) $? -o $@ &&\
               ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) \
-     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_DEVICE_FLAGS) $? -o $@) $(endlog_$(1))
+     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS) $? -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation
