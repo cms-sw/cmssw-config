@@ -1,6 +1,6 @@
 -include $(TOOLS_MKDIR).mk
-LLVM_ANALYZER     := $(self_EX_FLAGS_LLVM_ANALYZER)
-OVERRIDABLE_FLAGS := $(filter $(self_EX_FLAGS_OVERRIDABLE_FLAGS),$(ALL_COMPILER_FLAGS))
+$(foreach f,OVERRIDABLE_FLAGS LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
@@ -244,48 +244,21 @@ endef
 define AdjustFlags
 $(strip $(foreach f,$3,$(filter-out $(strip $(REM_$f) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
 endef
-define CUDA_FLAGS
-$(strip $(USER_PRE_CUDA_FLAGS) $(filter-out $(USER_REM_CUDA_FLAGS) $(REM_CUDA_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_FLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_FLAGS) $($(1)_LOC_FLAGS_CUDA_FLAGS)) $(USER_CUDA_FLAGS))
-endef
-define CUDA_CFLAGS
-$(strip $(USER_PRE_CUDA_CFLAGS)$(filter-out $(USER_REM_CUDA_CFLAGS) $(REM_CUDA_CFLAGS) $($(1)_LOC_FLAGS_REM_CUDA_CFLAGS),$($(CUDA_TYPE_COMPILER)_EX_FLAGS_CUDA_CFLAGS) $($(1)_LOC_FLAGS_CUDA_CFLAGS)) $(USER_CUDA_CFLAGS))
-endef
-define Tool_CXXFLAGS
-$(strip $(USER_PRE_CXXFLAGS) $(filter-out $(USER_REM_CXXFLAGS) $($(1)_LOC_FLAGS_REM_CXXFLAGS),$(CXXFLAGS) $($(1)_LOC_FLAGS_CXXFLAGS_ALL)) $(USER_CXXFLAGS))
-endef
-define Tool_FFLAGS
-$(strip $(USER_PRE_FFLAGS) $(filter-out $(USER_REM_FFLAGS) $($(1)_LOC_FLAGS_REM_FFLAGS),$(FFLAGS) $($(1)_LOC_FLAGS_FFLAGS_ALL)) $(USER_FFLAGS))
-endef
-define Tool_CFLAGS
-$(strip $(USER_PRE_CFLAGS) $(filter-out $(USER_REM_CFLAGS) $($(1)_LOC_FLAGS_REM_CFLAGS),$(CFLAGS) $($(1)_LOC_FLAGS_CFLAGS_ALL)) $(USER_CFLAGS))
-endef
-define Tool_CUDA_DEVICE_FLAGS
-$(strip $(USER_PRE_CUDA_DEVICE_FLAGS) $(filter-out $(USER_REM_CUDA_DEVICE_FLAGS) $($(1)_LOC_FLAGS_REM_CUDA_DEVICE_FLAGS),$(CUDA_DEVICE_FLAGS) $($(1)_LOC_FLAGS_CUDA_DEVICE_FLAGS_ALL)) $(USER_CUDA_DEVICE_FLAGS))
-endef
-define Tool_CPPFLAGS
-$(strip $(USER_PRE_CPPFLAGS) $(USER_PRE_CPPDEFINES) $(filter-out $(USER_REM_CPPFLAGS) $($(1)_LOC_FLAGS_REM_CPPFLAGS) $(USER_REM_CPPDEFINES) $($(1)_LOC_FLAGS_REM_CPPDEFINES),$(CPPFLAGS) $($(1)_LOC_FLAGS_CPPFLAGS_ALL) $(CPPDEFINES) $($(1)_LOC_FLAGS_CPPDEFINES_ALL) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL)))) $(USER_CPPFLAGS) $(USER_CPPDEFINE))
-endef
-define Tool_LDFLAGS
-$(strip $(USER_PRE_LDFLAGS) $(filter-out $(USER_REM_LDFLAGS) $($(1)_LOC_FLAGS_REM_LDFLAGS),$(LDFLAGS) $($(1)_LOC_FLAGS_LDFLAGS_ALL) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL))) $(USER_LDFLAGS))
-endef
-define Tool_DependenctPCMS
-$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
-endef
-define CalculateToolOrder
-$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
-endef
-define FindToolDependency
-$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL))))
-endef
-define FindUOLibDependency
-$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
-endef
-define FindToolDepVariable
-$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),$($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2)))
-endef
-define FindToolDepVariableR
-$(foreach var,$(call rsort,$(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),$($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2))) $($(1)_$(3)_$(2))
-endef
+TOOLS_FLAGS_FUNC=$(strip $(USER_PRE_$(1)) $(filter-out $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $(USER_$(1)))
+$(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
+$(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
+Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call PreTool_CPPDEFINES,$1) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL))))
+Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)))
+Tool_DependenctPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
+                      $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
+CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
+                     @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
+FindToolDependency=$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL))))
+FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
+FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
+                      $($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2)))
+FindToolDepVariableR=$(foreach var,$(call rsort,$(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
+                      $($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2))) $($(1)_$(3)_$(2))
 
 define ProductOrder
 ifeq ($(strip $($(1)_ORDER)),)
@@ -591,9 +564,10 @@ define compile_fortran_common
   $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
 endef
 endif
-define compile_cude_common
-  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS),)
-  $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
+define compile_cuda_common
+  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS),)
+  $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options \
+     "$(call AdjustFlags,$1,,CUDA_CFLAGS)" $(call AdjustFlags,$1,,CUDA_FLAGS) $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
 
 #LLVM Analyzer Rules
@@ -629,8 +603,8 @@ endef
 define compile_fortran
   $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS))
 endef  
-define compile_cude
-  $(call compile_cude_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS))
+define compile_cuda
+  $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS))
 endef
 define compile_boost
   $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
@@ -649,8 +623,10 @@ endef
 define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? $(call AdjustFlags,$1,,CUDA_DEVICE_FLAGS) -o $@ &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) --compiler-options "$(CUDA_CFLAGS)" $(CUDA_FLAGS) $? $(call AdjustFlags,$1,,CUDA_DEVICE_FLAGS) -o $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) \
+     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_DEVICE_FLAGS) $? -o $@ &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink $(call AdjustFlags,$1,,CPPFLAGS) \
+     --compiler-options '"$(call AdjustFlags,$1,,CUDA_CFLAGS)"' $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_DEVICE_FLAGS) $? -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation
@@ -1109,7 +1085,7 @@ endef
 
 define CudeCompileRule
 $($(1)_objdir)/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
-	$$(call compile_cude,$(1),$(3))
+	$$(call compile_cuda,$(1),$(3))
 endef
 
 define EmptyProduct
