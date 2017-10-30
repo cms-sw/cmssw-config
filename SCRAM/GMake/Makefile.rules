@@ -468,7 +468,7 @@ ifndef SCRAM_NOEDMWRITECONFIG
 define edm_write_config
   $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
-  ($(CMD_cd) $(<D)/edm_write_config && $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
+  ($(CMD_cd) $(<D)/edm_write_config && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
     $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
@@ -2167,7 +2167,7 @@ define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3,$4) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $@ -x $$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
+    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -2176,7 +2176,7 @@ define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $@ -x $$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
