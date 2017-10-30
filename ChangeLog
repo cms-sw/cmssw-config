@@ -7,6 +7,8 @@
 	* V05-05-52: Use EDM_TOOLS_PREFIX for edm plugin refresh and edm plugin
 	transient checks
 	* V05-05-53: Fix for overrideable flags in BuildFile
+	* V05-05-54: Drop CUDA_CFLAGS flag instead use CXXFLAGS for
+	compiler-options
 
 2017-10-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
