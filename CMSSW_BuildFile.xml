@@ -54,5 +54,5 @@
   <flags CPPDEFINES="thread_local="/>
 </architecture>
 <release name="_ASAN_">
-  <flags CXXFLAGS="-g -fno-omit-frame-pointer -fsanitize=address"/>
+  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address"/>
 </release>
