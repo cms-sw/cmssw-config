@@ -2191,14 +2191,14 @@ ifeq ($(strip $(NO_CAPABILITIES)),)
 define check_edm_class_transients
   && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
   $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $@ $(foreach r,$2,-f $r) &&\
-  ((cd $(LOCALTOP)/$3 && $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
 endef
 else
 define check_edm_class_transients
   && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
   $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $@ $(foreach r,$2,-f $r) &&\
-  ((cd $(LOCALTOP)/$3 && $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
+  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
 endef
 endif
