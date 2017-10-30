@@ -1,3 +1,9 @@
+2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* V05-05-51: Treat CUDA_FLAGS CUDA_CFLAGS CUDA_LDFLAGS flags the same
+	way we treat other compilers flags.
+	Build rules cleanup
+
 2017-10-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-50: Added cuda device link steps for cuda sources
