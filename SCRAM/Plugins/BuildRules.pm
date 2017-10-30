@@ -1604,14 +1604,23 @@ sub initTemplate_PROJECT ()
   }
   my $stash=$self->{context}->stash();
   my $defcompiler="";
-  if ((exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}) && (exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER}))
-  {$defcompiler=$self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER}[0];}
+  my %comFlags = ();
+  foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS"){$comFlags{$flag}=1;}
+  if (exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS})
+  {
+    if (exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER})
+    {$defcompiler=$self->{cache}{toolcache}{SETUP}{self}{FLAGS}{DEFAULT_COMPILER}[0];}
+    if (exists $self->{cache}{toolcache}{SETUP}{self}{FLAGS}{OVERRIDABLE_FLAGS})
+    {
+      foreach my $flag (@{$self->{cache}{toolcache}{SETUP}{self}{FLAGS}{OVERRIDABLE_FLAGS}}){$comFlags{$flag}=1;}
+    }
+  }
   if ($defcompiler eq ""){$defcompiler="gcc";}
   $self->{cache}{Compiler}=$defcompiler;
   $self->{cache}{CompilerTypes}=[];
   $self->{cache}{DefaultCompilerFlags}=[];
   $self->{cache}{DefaultBuildFileFlagsToDump}=[];
-  foreach my $flag ("CXXFLAGS","CFLAGS","FFLAGS","CPPDEFINES","LDFLAGS","CPPFLAGS"){push @{$self->{cache}{DefaultCompilerFlags}},$flag;}
+  foreach my $flag (keys %comFlags){push @{$self->{cache}{DefaultCompilerFlags}},$flag;}
   foreach my $type ("CXX","C","F77")
   {
     push @{$self->{cache}{CompilerTypes}},$type;
