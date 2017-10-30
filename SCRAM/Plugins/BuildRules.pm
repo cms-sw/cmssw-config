@@ -1839,7 +1839,7 @@ sub Project_template()
     print $fh "PLUGIN_REFRESH_CMDS += ${refreshcmd}\n",
               "define do_${refreshcmd}\n",
               "  echo \"\@\@\@\@ Refreshing Plugins:${refreshcmd}\" &&\\\n",
-              "${refreshcmd} \$(1)\n",
+              "\$(EDM_TOOLS_PREFIX) ${refreshcmd} \$(1)\n",
               "endef\n";
     foreach my $dir ($self->getPluginProductDirs($ptype))
     {
