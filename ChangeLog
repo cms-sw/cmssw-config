@@ -1,3 +1,9 @@
+2017-10-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-55: Allow to set overrideable flags via tools instead of
+	updating cmssw/self.xml
+	- For now hard-code -lcuda-devrt for cuda device link step see
+	https://github.com/cms-sw/cmsdist/pull/3543#issuecomment-340669814
+
 2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* V05-05-51: Treat CUDA_FLAGS CUDA_CFLAGS CUDA_LDFLAGS flags the same
