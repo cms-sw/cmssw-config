@@ -107,7 +107,11 @@ foreach my $t (keys %tools)
       if($k eq "CPPDEFINES"){$join=" -D";}
       my $x=join($join,@{$c->{FLAGS}{$k}});
       if (($k eq "PCMS") && ($x eq "1")){$x="\$(${t}_EX_LIB)";}
-      if($x!~/^\s*$/){print TFILE "${t}_EX_FLAGS_${k}  :=$join$x\n";}
+      if ($x!~/^\s*$/)
+      {
+        if ($k eq "OVERRIDABLE_FLAGS"){print TFILE "TOOLS_${k}  +=$x\n";}
+        else{print TFILE "${t}_EX_FLAGS_${k}  :=$join$x\n";}
+      }
     }
   }
   my $sproj=$c->{SCRAM_PROJECT} || 0;

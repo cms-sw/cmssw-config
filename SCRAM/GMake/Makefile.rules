@@ -1,5 +1,6 @@
 -include $(TOOLS_MKDIR).mk
-$(foreach f,OVERRIDABLE_FLAGS LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+$(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+OVERRIDABLE_FLAGS:=$(sort $(TOOLS_OVERRIDABLE_FLAGS))
 ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
