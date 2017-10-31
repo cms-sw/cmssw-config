@@ -1,5 +1,5 @@
 2017-10-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
-	* V05-05-55: Allow to set overrideable flags via tools instead of
+	* V05-05-56: Allow to set overrideable flags via tools instead of
 	updating cmssw/self.xml
 	- For now hard-code -lcuda-devrt for cuda device link step see
 	https://github.com/cms-sw/cmsdist/pull/3543#issuecomment-340669814
@@ -15,6 +15,8 @@
 	* V05-05-53: Fix for overrideable flags in BuildFile
 	* V05-05-54: Drop CUDA_CFLAGS flag instead use CXXFLAGS for
 	compiler-options
+	* V05-05-55: Drop -g for asan build to redeuce the size of cmssw package
+	with -g the cmssw rpm is 8.9G which hit the internal rpm size limits (int overflow)
 
 2017-10-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
