@@ -3,6 +3,7 @@
 	updating cmssw/self.xml
 	- For now hard-code -lcuda-devrt for cuda device link step see
 	https://github.com/cms-sw/cmsdist/pull/3543#issuecomment-340669814
+	* V05-05-57: Pass -shared flag to -dlink cuda step
 
 2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
