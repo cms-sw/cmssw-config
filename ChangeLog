@@ -1,3 +1,7 @@
+2017-11-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-70: Added support for UBSAN IBs
+	Added support for lib types
+
 2017-10-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-56: Allow to set overrideable flags via tools instead of
 	updating cmssw/self.xml
