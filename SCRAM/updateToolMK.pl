@@ -73,8 +73,15 @@ foreach my $t (keys %tools)
     else{$tvars[0]="LIBDIR"}
   }
   elsif(&isSymlinkSkipped($tcache,$t)){push @tvars,"LIBDIR";}
+  my $libtypes="";
+  if (exists $c->{LIBTYPES})
+  {
+    $libtypes=join(" ",@{$c->{LIBTYPES}});
+    push (@tvars,@{$c->{LIBTYPES}});
+  }
   open(TFILE,">${tooldir}/${t}.mk") || die "Can not open file for writing: ${tooldir}/${t}.mk\n";
   print TFILE "ALL_TOOLS      += $t\n";
+  if ($libtypes ne ""){print TFILE "ALL_LIB_TYPES += $libtypes\n";}
   if ($sproj) {print TFILE "ALL_SCRAM_PROJECTS += $t\n";}
   foreach my $f (@tvars)
   {

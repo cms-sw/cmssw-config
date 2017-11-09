@@ -56,3 +56,6 @@
 <release name="_ASAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address"/>
 </release>
+<release name="_UBSAN_">
+  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
+</release>

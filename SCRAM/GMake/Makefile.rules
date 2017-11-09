@@ -1,6 +1,7 @@
 -include $(TOOLS_MKDIR).mk
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
-OVERRIDABLE_FLAGS:=$(sort $(TOOLS_OVERRIDABLE_FLAGS))
+LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
+OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
@@ -246,10 +247,13 @@ define AdjustFlags
 $(strip $(foreach f,$3,$(filter-out $(strip $(REM_$f) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
 endef
 TOOLS_FLAGS_FUNC=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
+TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
+TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(addprefix -l,$($(1)_LOC_$(2)_ALL)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
-Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call PreTool_CPPDEFINES,$1) $(addprefix -I,$(wildcard $(INCLUDE))) $(addprefix -I,$(wildcard $($(1)_LOC_INCLUDE_ALL))))
-Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(addprefix -L,$(LIBDIR) $(filter-out $(LIBDIR),$($(1)_LOC_LIBDIR_ALL))) $(addprefix -l,$(LIB)) $(addprefix -l,$($(1)_LOC_LIB_ALL)))
+$(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
+Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call PreTool_CPPDEFINES,$1) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
+Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(call TOOLS_LIB_FUNC,$1,LIB))
 Tool_DependenctPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
@@ -270,7 +274,7 @@ endef
 
 define ProductCommonVarsTools
 $(eval $(call ProductOrder,$1,$2,$3,$4))
-$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
+$(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariableR:$(1):$(type):EX,)))
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
 $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
@@ -278,7 +282,7 @@ endef
 
 define ProductCommonVars
 $(eval $(call ProductOrder,$1,$2,$3,$4))
-$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
@@ -624,8 +628,8 @@ endef
 define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink -shared $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS) -lcudadevrt $? -o $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink -shared $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS) -lcudadevrt $? -o $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink -shared $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS)  $? -o $@" &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) -dlink -shared $(call AdjustFlags,$1,,CUDA_FLAGS CUDA_LDFLAGS) $? -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation

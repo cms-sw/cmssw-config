@@ -1561,7 +1561,7 @@ sub updateEnvVarMK
   my $fref;
   open($fref,">$mkfile") || die "Can not open file for writing: $mkfile";
   print $fref "############## All Tools Variables ################\n";
-  print $fref "TOOLS_OVERRIDABLE_FLAGS:=\n";
+  print $fref "TOOLS_OVERRIDABLE_FLAGS:=\nALL_LIB_TYPES:=\n";
   foreach my $var ($self->addAllVariables())
   {print $fref "$var\n";}
   my $env=$self->{context}->stash()->get('environment');
