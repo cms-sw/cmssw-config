@@ -1,3 +1,7 @@
+2017-11-10 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-71: Get Cuda device link options from CUDA_FLAGS instead of
+	hardcoding then in build rules
+
 2017-11-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-70: Added support for UBSAN IBs
 	Added support for lib types
