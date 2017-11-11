@@ -1,3 +1,6 @@
+2017-11-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-72: Disabled ASAN alloc_dealloc_mismatch check.
+
 2017-11-10 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-71: Get Cuda device link options from CUDA_FLAGS instead of
 	hardcoding then in build rules
