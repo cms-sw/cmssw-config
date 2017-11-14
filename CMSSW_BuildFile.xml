@@ -59,3 +59,7 @@
 <release name="_UBSAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
 </release>
+<release name="_TSAN_">
+  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=thread"/>
+</release>
+

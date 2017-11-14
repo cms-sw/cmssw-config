@@ -1,3 +1,6 @@
+2017-11-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-73: Added TSAN IBs.
+
 2017-11-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-72: Disabled ASAN alloc_dealloc_mismatch check.
 
