@@ -1,3 +1,9 @@
+2017-11-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-74: Bug fix for python/Subsystem/__init__.py files
+	when packages are deleted.
+        https://github.com/cms-sw/cmssw-config/blob/master/SCRAM/GMake/Makefile.rules#L2443
+        https://hypernews.cern.ch/HyperNews/CMS/get/recoDevelopment/1558.html
+
 2017-11-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-73: Added TSAN IBs.
 
