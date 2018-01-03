@@ -384,15 +384,16 @@ define copy_build_product
 endef
 
 define copy_lib_to_main_productstore
-  $(call install_name_tool,$(LOCALTOP)/$(1)/$(@F),$@) && $(call copy_build_product,$(1))
+  $(call install_name_tool, @rpath/$(@F),$@) && \
+  $(call install_name_tool_rpath, $(LOCALTOP)/$(1),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_bin_to_main_productstore
-  $(call copy_build_product,$(1))
+   $(call install_name_tool_rpath, $(LOCALTOP)/$(patsubst bin%,lib%,$1)/,$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_test_to_main_productstore
-  $(call copy_build_product,$(1))
+  $(call install_name_tool_rpath, ${LOCALTOP)/$(patsubst test%, lib%,$1),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_py_to_main_productstore
@@ -452,10 +453,18 @@ endef
 ##############################################################################
 ifeq ($(filter-out osx%,$(SCRAM_ARCH)),)
   define install_name_tool
+    $(CMD_echo) "calling install_name_tool -id $(1) $(2)" &&\
     install_name_tool -id $1 $2
+  endef
+  define install_name_tool_rpath
+    $(CMD_echo) "calling install_name_tool -add_rpath $(1) $(2)" &&\
+    install_name_tool -add_rpath $1 $2
   endef
 else
   define install_name_tool
+    $(CMD_true)
+  endef
+  define install_name_tool_rpath
     $(CMD_true)
   endef
 endif
@@ -488,7 +497,8 @@ endif
 define rivet_register_plugin
   @$(startlog_$(2)) if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,$(LOCALTOP)/$@,$<) &&\
+    $(call install_name_tool,@rpath/$(@D)/$(@F),$<) &&\
+    $(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
     $(CMD_echo) "--- Registered Rivet Plugin: $(1)"; \
@@ -504,7 +514,8 @@ define edm_register_plugin
     ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    (($(call install_name_tool,$(LOCALTOP)/$(@D)/$(patsubst lib%,plugin%,$(<F)),$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
+    ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
+    ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
