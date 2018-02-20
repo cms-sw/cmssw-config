@@ -1,6 +1,9 @@
 2018-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
-	* V05-05-75: Use the library name set in
+	* V05-05-76: Use the library name set in
 	<export><lib name="libname"/></export>.
+
+2018-01-03 Patrick Gartung  <@gartung>
+	* V05-05-75: Fixes for OSX.
 
 2017-11-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-74: Bug fix for python/Subsystem/__init__.py files
