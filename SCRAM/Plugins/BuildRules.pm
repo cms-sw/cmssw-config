@@ -1495,7 +1495,7 @@ sub runTemplate ()
 #############################################
 sub safename_coral ()  {return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
 sub safename_cmssw ()  {return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
-sub safename_default (){return &safename_CMSProjects(shift,"safename_SubsystemPackageBased",shift);}
+sub safename_default (){return &safename_CMSProjects(shift,"safename_JoinAll",shift);}
 
 sub safename_CMSProjects ()
 {
@@ -1533,6 +1533,13 @@ sub safename_SubsystemPackageBased ()
     else{$name="${1}${2}";}
   }
   return $name;
+}
+
+sub safename_JoinAll ()
+{
+  my $dir=shift;
+  $dir=~s/\///g;
+  return $dir;
 }
 ########################################
 sub addCacheData ()
@@ -1676,7 +1683,8 @@ sub initTemplate_LIBRARY ()
 {
   my $self=shift;
   $self->initTemplate_common2all();
-  my $stash=$self->{context}->stash(); 
+  my $stash=$self->{context}->stash();
+  if ($stash->get('safename') ne ""){return;}
   my $path=$stash->get('path');
   my $sname=$self->runToolFunction("safename","self", "$ENV{LOCALTOP}/${path}");
   if($sname eq "")
@@ -1986,8 +1994,17 @@ sub library_template ()
 {
   my $self=shift;
   if($self->get("suffix") ne ""){return 1;}
-  $self->initTemplate_LIBRARY ();
   my $core=$self->core();
+  my $ex=$core->data("EXPORT");
+  if ($ex ne "")
+  {
+    my $libs= $core->value("LIB",$ex);
+    if (length(@$libs)==1)
+    {
+      if ($libs->[0] ne "1"){$self->set("safename",$libs->[0]);}
+    }
+  }
+  $self->initTemplate_LIBRARY ();
   my $types=$core->buildproducts();
   if($types)
   {
