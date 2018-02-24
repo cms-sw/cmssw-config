@@ -2255,6 +2255,14 @@ sub binary_template ()
 	        else{$fval = $core->flags("TEST_RUNNER_CMD");}
 	        if ($fval ne ""){print $fh "${safename}_TEST_RUNNER_CMD :=  $fval\n";}
 	        else{print $fh "${safename}_TEST_RUNNER_CMD :=  $safename ",$core->flags("TEST_RUNNER_ARGS"),"\n";}
+	        foreach my $fval (@{$core->flagsdata("SETENV_SCRIPT")})
+	        {
+	          if ($fval ne ""){print $fh "${safename}_TEST_ENV += source $fval && \n";}
+	        }
+	        foreach my $fval (@{$core->flagsdata("SETENV")})
+	        {
+	          if ($fval ne ""){print $fh "${safename}_TEST_ENV += export $fval && \n";}
+	        }
 	      }
 	      $fval = $core->flags("PRE_TEST");
 	      if ($fval ne ""){print $fh "${safename}_PRE_TEST := $fval\n";}
