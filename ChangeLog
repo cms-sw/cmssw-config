@@ -1,3 +1,7 @@
+2018-02-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-77: Added SETENV_SCRIPT and SETENV flags for
+	test/BuildFile.xml so that one can set extra env during unittest.  
+
 2018-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-76: Use the library name set in
 	<export><lib name="libname"/></export>.
