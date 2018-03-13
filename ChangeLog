@@ -1,3 +1,9 @@
+2018-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* V05-05-80: New features added
+	- Added support for DD4Hep plugin
+	- Cleanup Plug rules and put then in separate makefiles.
+	- Allow to get compiler specific flags for a product
+
 2018-02-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-77: Added SETENV_SCRIPT and SETENV flags for
 	test/BuildFile.xml so that one can set extra env during unittest.  
