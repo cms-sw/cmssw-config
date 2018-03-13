@@ -31,6 +31,7 @@ sub Project()
   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
   $common->addPluginSupport("edm","EDM_PLUGIN","edmPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".edmplugincache",'$name="${name}.edmplugin"',"yes");
   $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
+  $common->addPluginSupport("dd4hep","DD4HEP_PLUGIN","DD4HepPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".dd4hepcache",'$name="lib${name}.components"',"yes");
   $common->setProjectDefaultPluginType ("edm");
   $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src/LCG include/LCG 1 . ''");
@@ -60,7 +61,7 @@ sub Project()
     }
   }
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
-  print $fh "CPPDEFINES+=-DCMSSW_GIT_HASH='\"\$(CMSSW_GIT_HASH)\"' -DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
+  print $fh "self_EX_FLAGS_CPPDEFINES+=-DCMSSW_GIT_HASH='\"\$(CMSSW_GIT_HASH)\"' -DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
   print $fh "ifeq (\$(strip \$(RELEASETOP)\$(IS_PATCH)),yes)\n",
             "CMSSW_SEARCH_PATH:=\${CMSSW_SEARCH_PATH}:\$(\$(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE)/\$(SCRAM_SOURCEDIR)\n",
             "endif\n";

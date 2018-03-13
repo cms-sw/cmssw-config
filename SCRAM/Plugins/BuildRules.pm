@@ -1813,6 +1813,7 @@ sub Project_template()
   {
     my $val=join(" ",@{$flags->{$flag}});
     if ($flag=~/^HOOK_.+$/){print $fh "$flag:=$val\n";}
+    elsif($flag=~/.*FLAGS$/){print $fh "self_EX_FLAGS_$flag+=$val\n";}
     else{print $fh "$flag+=$val\n";}
   }
 
@@ -1868,6 +1869,7 @@ sub Project_template()
     
     print $fh "\$(SCRAM_INTwork)/cache/${ptype}_${refreshcmd}: \n",
               "\t\@:\n";
+    print $fh "-include \$(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.${ptype}plugin\n";
   }
   print $fh "###############################################################################\n\n";
   $self->processTemplate("Common_rules");

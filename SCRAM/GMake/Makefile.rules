@@ -1,5 +1,4 @@
 -include $(TOOLS_MKDIR).mk
-$(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
@@ -244,15 +243,27 @@ define AdjustFlag
 $(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 endef
 define AdjustFlags
-$(strip $(foreach f,$3,$(filter-out $(strip $(REM_$f) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f))),$($1_$f)) $(foreach t,$2 $($1_CLASS),$($t_$f))))
+$(strip \
+  $(foreach f,$3,\
+    $(strip \
+      $(USER_PRE_$f) \
+      $(filter-out \
+        $(strip $(USER_PRE_$f) $(USER_$f) $(USER_REM_$f) $(REM_$f) $($1_LOC_FLAGS_REM_$f) $($1_LOC_FLAGS_$f)\
+          $(if $(strip $4),$($4_EX_FLAGS_REM_$f_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f) $($t_$f))),\
+        $(if $(strip $4),$($4_EX_FLAGS_$f_ALL),$($f)) $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_$f))\
+      $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
+    )\
+  )\
+)
 endef
-TOOLS_FLAGS_FUNC=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
+TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
+TOOLS_FLAGS_FUNC_ORIG=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
 TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
 TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(addprefix -l,$($(1)_LOC_$(2)_ALL)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
-Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call PreTool_CPPDEFINES,$1) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
+Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(call TOOLS_LIB_FUNC,$1,LIB))
 Tool_DependenctPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
@@ -438,15 +449,6 @@ define clean_files
   done
 endef
 
-define edm_plugin_clean
-  $(call clean_prod,$($(1)_plugindir)/plugin$(1).$(SHAREDSUFFIX))
-  $(call clean_prod,$($(1)_pluginprod))
-endef
-
-define rivet_plugin_clean
-  $(call clean_prod,$($(1)_pluginprod))
-endef
-
 define do_plugin_refresh
 endef
 #############################################################################
@@ -469,61 +471,6 @@ else
   endef
 endif
 
-ifndef SCRAM_NOEDM_CHECKS
-define run_edm_checks
-  $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) \
-  $(if $(strip $($(1)_ROOTMAP_FILES)),$(call check_edm_class_transients,$1,$($(1)_ROOTMAP_FILES),$3,$4))
-endef
-else
-run_edm_checks:=
-endif
-
-ifndef SCRAM_NOEDMWRITECONFIG
-define edm_write_config
-  $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
-  $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
-  ($(CMD_cd) $(<D)/edm_write_config && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
-  for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
-    $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
-  done
-endef
-else
-define edm_write_config
-  $(CMD_echo) "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
-endef
-endif
-
-define rivet_register_plugin
-  @$(startlog_$(2)) if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(call install_name_tool,@rpath/$(@D)/$(@F),$<) &&\
-    $(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
-    $(CMD_cp) -f $< $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $@"               > $(call AutoCleanFile,$<,rivet) &&\
-    $(CMD_echo) "--- Registered Rivet Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ ;\
-  fi $(endlog_$(2))
-endef
-
-define edm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
-  if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
-    plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
-    ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
-    ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
-  else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
-  fi $(endlog_$(2))
-endef
 define run_plugin_refresh_cmd
   @if [ -f $< ] ; then \
     if [ -f $@ ] ; then \
@@ -543,7 +490,6 @@ endef
 else
 DumpProduct2SRC=
 endif
-
 
 ##############################################################################
 ##############################################################################
@@ -726,8 +672,8 @@ endef
 define generate_CondSerialization
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating CondFormat Serialization code from header file $< " &&\
-  $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) &&\
-  (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm-cxxcompiler) &&\
+  (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm-cxxcompiler) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
 endef
 # Pre-Compile Header generation
 define generate_PreCompileHeader
@@ -1047,7 +993,7 @@ $(1)_plugincache   := $(7)
 $(1)_pluginprod    := $(5)/$(8)
 $(1)_pluginlib     := $($(2)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 all_$(2)           += $(5)/$(8)
-$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(6) 
+$(1)_extra_deps    += $(if $(strip $(6)),$(WORKINGDIR)/cache/prod/$(6),)
 $(1)_package       := $(subst $(space),/,$(wordlist 2,3,$(subst /,$(space),$(10))))
 $$($(1)_package)_$(3)_plugins += $(1)
 ifndef SCRAM_NOEDMWRITECONFIG
@@ -1057,19 +1003,6 @@ endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
-endef
-define edmPlugin
-ifneq ($(strip $($(1)_objs)$(filter $1,${2}Capabilities)),)
-$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1,$4))
-$(1)_BUILDRULES := _edm
-else
-ifeq ($(strip $($(1)_SKIP_FILES)),)
-$$(info gmake: *** [$4 contains only $(SCRAM_BUILDFILE).xml without any sources. Better to remove $(SCRAM_BUILDFILE).xml too or do not tag this directory] Error 1)
-endif
-endif
-endef
-define rivetPlugin
-$(eval $(call addPlugin,$1,$2,rivet,yes,$3,,,Rivet$(1).$(SHAREDSUFFIX),$1,$4))
 endef
 
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
@@ -2007,6 +1940,8 @@ $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
+$(foreach f,LLVM_ANALYZER MISSING_SYMBOL_FLAGS,$(eval $f:=$(self_EX_FLAGS_$f)))
+$(foreach f,CXXFLAGS CPPFLAGS,$(foreach t,LCGDICT ROOTDICT BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY,$(eval $t_$f:=$(self_EX_FLAGS_$t_$f))$(eval REM_$t_$f:=$(self_EX_FLAGS_REM_$t_$f))))
 $(foreach p,$(ALL_PACKAGES) $(ALL_DELETED_PACKAGES),$(if $(strip $($p)),,$(eval $p:=$(subst /,,$p))))
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk
@@ -2138,89 +2073,6 @@ define check_missing_symbols
   $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
 endef
 endif
-###############################################################################
-ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_VERSION))
-ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Version test" && $(CMD_true)
-endif
-endif
-ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
-EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_TRANSIENTS))
-ifeq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT)),)
-EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Transients test" && $(CMD_true)
-endif
-endif
-
-#product,list of def.xmls file,plugin,productstore
-ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
-ifneq ($(strip $(UPDATE_CLASSVERSION)),)
-define update_edm_class_version
-  && for x in $2; do \
-    fname=`$(CMD_basename) $$x` &&\
-    $(CMD_echo) ">> Checking $$x for EDM Class Version update" &&\
-    [ -d $(@D)/$$fname ] || $(CMD_mkdir) -p $(@D)/$$fname &&\
-    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $@ -x $$x &&\
-    (($(CMD_cd) $(@D)/$$fname && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(LOCALTOP)/$@ -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
-    if [ -f $(@D)/$$fname/classes_def.xml.generated ] ; then \
-      if [ "X`$(CMD_diff) $(@D)/$$fname/classes_def.xml.generated $$x | $(CMD_wc) -l`" != "X0" ] ; then \
-        $(CMD_cp) $(@D)/$$fname/classes_def.xml.generated  $$x.generated &&\
-        $(CMD_echo) ">> New Class Version File:  $$x.generated" ;\
-      fi ;\
-    fi;\
-    $(CMD_rm) -rf $(@D)/$$fname ;\
-  done &&\
-  $(CMD_echo) "@@@@ ----> Generated EDM Class Version"
-endef
-else
-define update_edm_class_version
-endef
-endif
-ifeq ($(strip $(NO_CAPABILITIES)),)
-define check_edm_class_version
-  $(call update_edm_class_version,$1,$2,$3,$4) && for x in $2; do \
-    $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $@ -x $$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) ;\
-  done &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
-endef
-else
-define check_edm_class_version
-  $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
-    $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $@ -x $$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
-  done &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
-endef
-endif
-else
-define check_edm_class_version
-endef
-endif
-
-ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
-ifeq ($(strip $(NO_CAPABILITIES)),)
-define check_edm_class_transients
-  && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $@ $(foreach r,$2,-f $r) &&\
-  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
-endef
-else
-define check_edm_class_transients
-  && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $@ $(foreach r,$2,-f $r) &&\
-  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
-endef
-endif
-else
-define check_edm_class_transients
-endef
-endif
-###########################################################
 
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% edm_checks_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
@@ -2388,96 +2240,6 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-#Poisoned edm plugins Rules
-define getPluginCacheForPackage
-$(strip $(if $(strip $(RELEASETOP)),\
-     $(if $(strip $(IS_PATCH)),\
-          $(if $(strip $($(1)_inpatch)),\
-               $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache,\
-               $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
-          $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
-     $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache))
-endef
-define GetPackagePluginCache
-  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_touch) $@ &&\
-  cache=$(call getPluginCacheForPackage,$*) &&\
-  for p in $($*_edm_plugins); do \
-    $(CMD_grep) "^plugin$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^plugin|plugin-poisoned-|' >> $@ || true;\
-  done
-endef
 
-.PHONY: poisoned_edmplugins
-ifeq ($(strip $(edmPluginRefresh_cache)),)
-poisoned_edmplugins:
-	@:
-else
-ifneq ($(FULL_RELEASE_FOR_A_PATCH),)
--include $(FULL_RELEASE_FOR_A_PATCH)/$(PUB_DIRCACHE_MKDIR)/edmplugins
-endif
-ifneq ($(strip $(RELEASETOP)),)
--include $(RELEASETOP)/$(PUB_DIRCACHE_MKDIR)/edmplugins
-endif
-.PRECIOUS: $(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin
-$(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin:
-	@$(call GetPackagePluginCache)
-$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/%/AUTOCLEAN.poison_edmplugin.clean: $(WORKINGDIR)/edmplugins/poison/%/poison_edmplugin
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	$(CMD_echo) "01:$(CMD_rm) -rf $(<D)" > $@ &&\
-	$(CMD_echo) "01:$(CMD_touch) $(COMMON_WORKINGDIR)/cache/packs/changed" >> $@
-
-ifneq ($(strip $(filter PostBuild poisoned_edmplugins,$(MAKECMDGOALS))),)
-$(foreach d,edmplugins/poison,$(if $(strip $(wildcard $(WORKINGDIR)/$d)),,$(shell $(CMD_mkdir) -p $(WORKINGDIR)/$(d))))
-ifeq ($(strip $(CHECK_DELETED_PACKS)),YES)
-ALL_KNOWN_DELETED_PACKAGES:=$(strip $(patsubst $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin,%,$(wildcard $(COMMON_WORKINGDIR)/cache/packs/*/*/poison_edmplugin)))
-DELETED_PACKAGES:=$(strip $(filter-out $(ALL_KNOWN_DELETED_PACKAGES),$(ALL_DELETED_PACKAGES)))
-UNDELETED_PACKAGES:=$(strip $(filter-out $(ALL_DELETED_PACKAGES),$(ALL_KNOWN_DELETED_PACKAGES)))
-endif
-
-$(COMMON_WORKINGDIR)/cache/packs/undeleted: FORCE_TARGET
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	for p in $(UNDELETED_PACKAGES); do \
-	  if [ ! -f $(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$$p/AUTOCLEAN.poison_edmplugin.clean ] ; then \
-	    $(CMD_rm) -rf $(COMMON_WORKINGDIR)/cache/packs/$$p;\
-	  fi;\
-	done;\
-	$(CMD_touch) $@
-
-$(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/$(d)/poison_edmplugin) $(if $(UNDELETED_PACKAGES),$(COMMON_WORKINGDIR)/cache/packs/undeleted)
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
-	@for pkg in $(DELETED_PACKAGES) ; do \
-	  $(CMD_echo) ">> Generating python/$$pkg/__init__.py file for deleted packaged" &&\
-	  $(CMD_rm) -rf $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
-	  $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
-	  $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/$$pkg/__init__.py  &&\
-	  SUBSYS=$$($(CMD_dirname) $$pkg) &&\
-	  $(CMD_echo) "__path__.append('${RELEASETOP}/$(SCRAMSTORENAME_PYTHON)/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
-	done;\
-	[ -f $(SCRAMSTORENAME_PYTHON)/__init__.py ] || $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
-
-$(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
-	@$(call GetPackagePluginCache)
-
-poisoned_edmplugins: $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache) $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins)
-	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
-
-$(PUB_DIRCACHE_MKDIR)/edmplugins:
-	@$(CMD_echo) "#Auto generated EDM Plugins information" > $@
-	@for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_edm_plugins:=" >> $@; done
-	@$(if $(strip $(IS_PATCH)),for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_inpatch:=1" >> $@; done, true)
-	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_package)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
-	@$(CMD_echo) ">> Generated $@"
-
-$(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	$(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
-	for d in $(WORKINGDIR)/edmplugins/poison $(COMMON_WORKINGDIR)/cache/packs ; do \
-	  [ -d $$d ] || continue ;\
-	  for c in `$(CMD_find) $$d -name poison_edmplugin -type f` ; do \
-	    $(CMD_cat) $$c >> $@;\
-	  done;\
-	done
-endif
-endif
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
