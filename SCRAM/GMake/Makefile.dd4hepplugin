@@ -1,5 +1,5 @@
 define dd4hep_register_plugin
-  $(startlog_$(2)) \
+  @$(startlog_$(2)) \
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
     $(DD4HEP_BASE)/bin/listcomponents $< | $(CMD_sed) 's|.*/$(<F):|$(<F):|' > $(<D)/$(@F) &&\
