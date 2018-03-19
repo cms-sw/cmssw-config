@@ -256,7 +256,7 @@ $(strip \
           $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
         )\
       )\
-      $(ADJUST_$1_$f_COMP$4_FILE$5)$(info ADJUST_$1_$f)\
+      $(ADJUST_$1_$f_COMP$4_FILE$5)\
     )\
   )\
 )
