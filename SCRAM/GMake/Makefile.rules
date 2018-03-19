@@ -245,13 +245,18 @@ endef
 define AdjustFlags
 $(strip \
   $(foreach f,$3,\
-    $(strip \
-      $(USER_PRE_$f) \
-      $(filter-out \
-        $(strip $(USER_PRE_$f) $(USER_$f) $(USER_REM_$f) $(REM_$f) $($1_LOC_FLAGS_REM_$f) $($1_LOC_FLAGS_$f)\
-          $(if $(strip $4),$($4_EX_FLAGS_REM_$f_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f) $($t_$f))),\
-        $(if $(strip $4),$($4_EX_FLAGS_$f_ALL),$($f)) $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_$f))\
-      $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
+    $(if $(subst undefined,,$(origin ADJUST_$1_$f_COMP$4_FILE$5)),$(ADJUST_$1_$f_COMP$4_FILE$5),\
+      $(eval ADJUST_$1_$f_COMP$4_FILE$5:=\
+        $(strip \
+          $(USER_PRE_$f) \
+          $(filter-out \
+            $(strip $(USER_PRE_$f) $(USER_$f) $(USER_REM_$f) $(REM_$f) $($1_LOC_FLAGS_REM_$f) $($1_LOC_FLAGS_$f)\
+              $(if $(strip $4),$($4_EX_FLAGS_REM_$f_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f) $($t_$f))),\
+            $(if $(strip $4),$($4_EX_FLAGS_$f_ALL),$($f)) $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_$f))\
+          $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
+        )\
+      )\
+      $(ADJUST_$1_$f_COMP$4_FILE$5)$(info ADJUST_$1_$f)\
     )\
   )\
 )
