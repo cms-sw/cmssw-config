@@ -1,5 +1,6 @@
 2018-03-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-81: Cache the generated flags
+	* V05-05-82: Remove debug statement
 
 2018-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-80: New features added
