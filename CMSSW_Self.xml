@@ -34,8 +34,8 @@
  <runtime name="LD_LIBRARY_PATH"       value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path" handler="warn"/>
  <runtime name="PATH"                  value="$LOCALTOP/bin/$SCRAM_ARCH"             type="path"/>
  <runtime name="PATH"                  value="$LOCALTOP/external/$SCRAM_ARCH/bin"    type="path" handler="warn"/>
- <runtime name="PYTHONPATH"            value="$LOCALTOP/python"                      type="path"/>
- <runtime name="PYTHONPATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
+ <runtime name="PYTHON27PATH"            value="$LOCALTOP/python"                      type="path"/>
+ <runtime name="PYTHON27PATH"            value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/external/$SCRAM_ARCH/data"   type="path" handler="warn"/>
  <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
