@@ -15,8 +15,8 @@
  </client>
  <runtime name="LD_LIBRARY_PATH"   value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path"/>
  <runtime name="LD_LIBRARY_PATH"   value="$LOCALTOP/external/$SCRAM_ARCH/lib"  type="path" handler="warn"/>
- <runtime name="PYTHONPATH"        value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
- <runtime name="PYTHONPATH"        value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
+ <runtime name="PYTHON27PATH"        value="$LOCALTOP/$SCRAM_ARCH/python"        type="path" handler="warn"/>
+ <runtime name="PYTHON27PATH"        value="$LOCALTOP/$SCRAM_ARCH/lib"           type="path" handler="warn"/>
  <runtime name="PATH"              value="$LOCALTOP/$SCRAM_ARCH/bin"           type="path" handler="warn"/>
  <runtime name="PATH"              value="$LOCALTOP/external/$SCRAM_ARCH/bin"  type="path" handler="warn"/>
 </tool>
