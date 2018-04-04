@@ -245,8 +245,8 @@ endef
 define AdjustFlags
 $(strip \
   $(foreach f,$3,\
-    $(if $(subst undefined,,$(origin ADJUST_$1_$f_COMP$4_FILE$5)),$(ADJUST_$1_$f_COMP$4_FILE$5),\
-      $(eval ADJUST_$1_$f_COMP$4_FILE$5:=\
+    $(if $(subst undefined,,$(origin ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2))),$(ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2)),\
+      $(eval ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2):=\
         $(strip \
           $(USER_PRE_$f) \
           $(filter-out \
@@ -256,7 +256,7 @@ $(strip \
           $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
         )\
       )\
-      $(ADJUST_$1_$f_COMP$4_FILE$5)\
+      $(ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2))\
     )\
   )\
 )
