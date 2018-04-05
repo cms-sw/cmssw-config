@@ -1,3 +1,17 @@
+2018-04-05 Shahzad Muzaffar  <@smuzaffar>
+	* 05-05-86: Same as V05-05-83-01
+	* V05-06-00: Same as V05-05-85
+
+2018-04-04 Shahzad Muzaffar  <@smuzaffar>
+	* V05-05-83-01: Bug fix in caching compilation flags
+	* V05-05-85: Bug fix in caching compilation flags
+
+2018-03-24 David Lange <@davidlange6>
+	* V05-05-84: Added cmssw-tool-conf PYTHON27PATH
+
+2018-03-22 David Lange <@davidlange6>
+	* V05-05-83: Migration to PYTHON27PATH to support python3
+
 2018-03-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-81: Cache the generated flags
 	* V05-05-82: Remove debug statement
