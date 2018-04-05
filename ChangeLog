@@ -1,6 +1,9 @@
 2018-04-05 Shahzad Muzaffar  <@smuzaffar>
 	* 05-05-86: Same as V05-05-83-01
 	* V05-06-00: Same as V05-05-85
+	* V05-07-00: Split Makefile.rules in few smaller files.
+	- Generate File.ext.o instead of File.o to allow files with different
+	extensions in same directories e.g Foo.cc and Foo.cu
 
 2018-04-04 Shahzad Muzaffar  <@smuzaffar>
 	* V05-05-83-01: Bug fix in caching compilation flags
