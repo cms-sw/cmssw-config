@@ -1,6 +1,5 @@
 # Root Dictionary compilation
 define compile_rootdict
-  echo "COMP ROT $@" &&\
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
   @$(startlog_$(2))$(call processTmpMMDData,$<,$@,$3)$(endlog_$(2))
 endef
