@@ -82,19 +82,19 @@ endef
 #############################################################################
 #Compiler Rules for big objects
 define CXXCompileRuleBigObj
-$($(1)_objdir)/bigobj/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(OBJEXT) $($($(1)_bigobj)_BuildFile)
+$($(1)_objdir)/bigobj/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(2).$(OBJEXT) $($($(1)_bigobj)_BuildFile)
 	$$(call bigobj_compile_cxx$(4),$(1),$(3))
 endef
 define CCompileRuleBigObj
-$($(1)_objdir)/bigobj/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(OBJEXT) $($($(1)_bigobj)_BuildFile)
+$($(1)_objdir)/bigobj/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(2).$(OBJEXT) $($($(1)_bigobj)_BuildFile)
 	$$(call bigobj_compile_c$(4),$(1),$(3))
 endef
 define F77CompileRuleBigObj
-$($(1)_objdir)/bigobj/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(OBJEXT) $($($(1)_bigobj)_BuildFile)
+$($(1)_objdir)/bigobj/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(2).$(OBJEXT) $($($(1)_bigobj)_BuildFile)
 	$$(call bigobj_compile_fortran$(4),$(1),$(3))
 endef
 define CudeCompileRuleBigObj
-$($(1)_objdir)/bigobj/%.$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(OBJEXT) $($($(1)_bigobj)_BuildFile)
+$($(1)_objdir)/bigobj/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/%.$(2).$(OBJEXT) $($($(1)_bigobj)_BuildFile)
 	$$(call bigobj_compile_cude,$(1),$(3))
 endef
 define CompileRulesBigObj
@@ -122,7 +122,7 @@ endif
 endef
 define AddBigObjLCGDICTRule
 ifneq ($(strip $($(1)_bigobj)),)
-$($(1)_objdir)/bigobj/$(2)r.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
+$($(1)_objdir)/bigobj/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call bigobj_compile_lcgdict,$(1),$(1))
 endif
 endef
