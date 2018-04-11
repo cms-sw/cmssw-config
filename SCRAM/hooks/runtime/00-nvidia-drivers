@@ -1,0 +1,27 @@
+#! /bin/bash -e
+NVIDIA_VERSION=
+
+# first, check if the module is loaded and exported on /proc
+if [ -f /proc/driver/nvidia/version ]; then
+  NVIDIA_VERSION=`cat /proc/driver/nvidia/version | sed -ne's/.*Kernel Module *\([0-9.]\+\).*/\1/p'`
+else 
+  # check if a kernel module is available, even if not currently loaded (e.g. for an OPTIMUS system)
+  # if there are multiple modules, pick the newest one
+  NVIDIA_MODULE=`modprobe -q -R nvidia 2>/dev/null || true`
+  if [ "$NVIDIA_MODULE" ]; then
+    NVIDIA_VERSION=`modinfo "$NVIDIA_MODULE" | grep '^version:' | sed 's|.*:\s*||;s|\s*$||'`
+  fi
+fi
+
+if [ "$NVIDIA_VERSION" ]; then
+  CUDA_LIB=$(locate libcuda.so.$NVIDIA_VERSION | grep '/libcuda.so.' | head -1 || true)
+  if [ "$CUDA_LIB" ] ; then
+    echo "RUNTIME:path:append:LD_LIBRARY_PATH=$(dirname $CUDA_LIB)"
+    exit 0
+  else
+    >&2 echo "WARNING: Nvidia version $NVIDIA_VERSION but could not locate libcuda.so.${NVIDIA_VERSION}"
+  fi
+fi
+DD=$(scram tool tag cuda CUDA_BASE)/drivers
+echo "RUNTIME:path:append:LD_LIBRARY_PATH=${DD}"
+
