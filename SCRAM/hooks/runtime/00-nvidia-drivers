@@ -1,4 +1,7 @@
-#! /bin/bash -e
+#!/bin/bash -e
+CUDA_BASE=$(scram tool tag cuda CUDA_BASE 2>&1 | grep -v 'SCRAM error' || true)
+if [ ! "${CUDA_BASE}" ] ; then exit 0; fi
+
 NVIDIA_VERSION=
 
 # first, check if the module is loaded and exported on /proc
@@ -22,6 +25,7 @@ if [ "$NVIDIA_VERSION" ]; then
     >&2 echo "WARNING: Nvidia version $NVIDIA_VERSION but could not locate libcuda.so.${NVIDIA_VERSION}"
   fi
 fi
-DD=$(scram tool tag cuda CUDA_BASE)/drivers
-echo "RUNTIME:path:append:LD_LIBRARY_PATH=${DD}"
 
+if [ -e ${CUDA_BASE}/drivers ] ; then
+  echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
+fi
