@@ -1,4 +1,8 @@
-2018-04-05 Shahzad Muzaffar  <@smuzaffar>
+2018-04-12 Shahzad Muzaffar  <@smuzaffar>
+
+	* V05-07-03: Fix cuda/driver env: Set only for projects which has cuda
+
+2018-04-11 Shahzad Muzaffar  <@smuzaffar>
 	* V05-07-02: Added SCRAM runtime hooks for setting up Nvidia driver env
 
 2018-04-10 David Lange <@davidlange6>
