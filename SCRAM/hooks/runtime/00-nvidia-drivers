@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 CUDA_BASE=$(scram tool tag cuda CUDA_BASE 2>&1 | grep -v 'SCRAM error' || true)
 if [ ! "${CUDA_BASE}" ] ; then exit 0; fi
 if [ ! -e "${CUDA_BASE}" ] ; then exit 0; fi
