@@ -1,4 +1,4 @@
-.PHONY: check_headers
+.PHONY: check-headers
 define CheckHeaderRule
 ADD_CHECK_HEADER_RULE:=
 ifeq ($(strip $($(2)_CLASS)),LIBRARY)
@@ -28,4 +28,4 @@ else ifneq ($(strip $(USER_CODE_CHECKS_FILE)),)
 endif
 $(foreach h,$(shell $(HEADER_CHECK_CMD)),$(eval $(call CheckHeaderRule,$h,$(subst $(space),,$(wordlist 1,2,$(subst /,$(space),$h))))))
 
-check_headers: $(ALL_CHECK_HEADERS)
+check-headers: $(ALL_CHECK_HEADERS)

@@ -1896,7 +1896,7 @@ ifneq ($(strip $(RELEASETOP)),)
 ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
-ifeq ($(strip $(filter check_headers,$(MAKECMDGOALS))),check_headers)
+ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 endif
