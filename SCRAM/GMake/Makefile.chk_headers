@@ -1,0 +1,31 @@
+.PHONY: check_headers
+define CheckHeaderRule
+ADD_CHECK_HEADER_RULE:=
+ifeq ($(strip $($(2)_CLASS)),LIBRARY)
+ADD_CHECK_HEADER_RULE:=YES
+else ifneq ($(strip $(subst /interface/,/,$(1))),$1)
+ADD_CHECK_HEADER_RULE:=YES
+endif
+ifeq ($$(strip $$(ADD_CHECK_HEADER_RULE)),YES)
+ALL_CHECK_HEADERS+=$(WORKINGDIR)/check_header/$1
+$(WORKINGDIR)/check_header/$1: $(SCRAM_SOURCEDIR)/$1
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
+	$(CMD_echo) ">> Checking header $(1)" &&\
+	$(VERB_ECHO) $(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $$(call AdjustFlags,$2,,CPPFLAGS CXXFLAGS) $(SCRAM_SOURCEDIR)/$1 &&\
+	$(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $$(call AdjustFlags,$2,,CPPFLAGS CXXFLAGS) $(SCRAM_SOURCEDIR)/$1 &&\
+	$(CMD_touch) $$@
+endif
+endef
+
+ALL_CHECK_HEADERS:=
+HEADER_CHECK_CMD:=
+ifneq ($(strip $(USER_CHECK_HEADERS_FILES)),)
+  HEADER_CHECK_CMD:=echo $(USER_CHECK_HEADERS_FILES)
+else ifeq ($(strip $(USER_CHECK_HEADERS_FILE)),)
+  HEADER_CHECK_CMD:=gunzip -c $(RELEASETOP)/etc/dependencies/usedby.out.gz | sed 's| .*||' | grep -v ':$$'
+else ifneq ($(strip $(USER_CODE_CHECKS_FILE)),)
+  HEADER_CHECK_CMD:=cat $(USER_CHECK_HEADERS_FILE)
+endif
+$(foreach h,$(shell $(HEADER_CHECK_CMD)),$(eval $(call CheckHeaderRule,$h,$(subst $(space),,$(wordlist 1,2,$(subst /,$(space),$h))))))
+
+check_headers: $(ALL_CHECK_HEADERS)
