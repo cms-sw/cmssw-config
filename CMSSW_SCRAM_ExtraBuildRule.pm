@@ -158,6 +158,7 @@ sub Extra_template()
   $common->pushstash();$common->lexyacc_template();$common->popstash();
   $common->pushstash();$common->codegen_template();$common->popstash();
   $common->pushstash();$common->dict_template();   $common->popstash();
+  $common->pushstash();$common->dnn_template();   $common->popstash();
   return 1;
 }
 

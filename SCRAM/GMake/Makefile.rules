@@ -368,6 +368,14 @@ define biglib_setup
     $(CMD_echo) "*** Please re-run cmsenv command to get your runtime environment updated ****";\
   fi
 endef
+define UpdateXDEPS
+ifneq ($$(strip $($(1)_DNN_NAME)),)
+$$(eval $$(call DNNXDEPS,$1))
+endif
+endef
+define FileSearchPath
+$(eval file_search_path_tmp_:=)$(foreach d,$(subst $(path_seperator),$(space),$($(2))),$(if $(file_search_path_tmp_),,$(if $(strip $(wildcard $(d)/$(1))),$(eval file_search_path_tmp_:=$(d)/$(1)))))$(file_search_path_tmp_)
+endef
 ##############################################################################
 define BuildClean
   if [ "X$(1)" != "X" ] ; then \
@@ -379,6 +387,10 @@ define BuildClean
       $(CMD_sh) $(WORKINGDIR)/$(1)/.AUTOCLEAN;\
       $(CMD_rm) -rf $(WORKINGDIR)/$(1); \
       $(CMD_rm) -rf $(WORKINGDIR)/classes/$(1); \
+    fi;\
+    if [ -d $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(1) ] ; then \
+      $(CMD_rm) -rf $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(1)); \
+      $(CMD_rm) -rf $(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(1); \
     fi;\
   fi
 endef
@@ -1010,6 +1022,9 @@ $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
 $(1)_config += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $$($(1)_objdir)/config $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
+ifneq ($(strip $($(1)_DNN_NAME)),)
+$$(eval $$(call AddDNNRules,$1,$2))
+endif
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
@@ -1317,6 +1332,7 @@ include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pch
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lexyacc
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.codegen
+include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.dnn
 endif  #Finish CODE_ANALYSIS_RULES
 ##############################################################################
 define SetTargetType
@@ -1664,6 +1680,7 @@ $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(
 ifeq ($(strip $(XFAST)),)
 $(foreach x,$(ALL_EXTERNAL_PRODS),$(eval $(call ProductCommonVarsExternal,$(x)))$(eval $($(x)_INIT_FUNC)))
 $(foreach x,$(ALL_BIGPRODS),$(eval $(call BigProductVars,$x)))
+$(foreach x,$(ALL_PRODS),$(eval $(call UpdateXDEPS,$(x))))
 $(foreach x,$(ALL_PRODS),$(eval $(call ProductCommonVars,$(x),,,$($(x)_BuildFile))))
 $(foreach x,$(ALL_BIGPRODS),$(eval $(call ProductCommonVars,$(x),,,$($(x)_BuildFile))))
 ifeq ($(strip $(FAST)),)

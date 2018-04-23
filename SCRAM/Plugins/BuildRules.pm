@@ -1891,6 +1891,19 @@ sub plugin_template ()
   return;
 }
 
+sub dnn_template()
+{
+  my $self=shift;
+  my $core=$self->core();
+  my $dnn_name=$core->flags("DNN_NAME");
+  if($dnn_name ne "")
+  {
+    my $safename=$self->get("safename");
+    my $fh=$self->{FH};
+    print $fh "${safename}_DNN_NAME   := ${dnn_name}\n";
+  }
+}
+
 sub dict_template()
 {
   my $self=shift;
