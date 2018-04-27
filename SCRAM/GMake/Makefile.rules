@@ -7,6 +7,8 @@ TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
 .PHONY: FORCE_TARGET
 ##############################################################################
+GetToolFlag=$($1_EX_FLAGS_$2)
+GetVariable=$($(1))
 multipletools := info
 wrongtool := info
 comma:= ,
@@ -236,12 +238,7 @@ else
 $(1) = $$(call get_uniq_cached_var_,$(1))
 endif
 endef
-define GetVariable
-$($(1))
-endef
-define AdjustFlag
-$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
-endef
+AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 define AdjustFlags
 $(strip \
   $(foreach f,$3,\
@@ -261,6 +258,7 @@ $(strip \
   )\
 )
 endef
+AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
 TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
 TOOLS_FLAGS_FUNC_ORIG=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
 TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
@@ -544,9 +542,9 @@ define compile_fortran_common
 endef
 endif
 define compile_cuda_common
-  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '$(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
+  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
   $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options \
-     '$(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
+     '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
 
 #LLVM Analyzer Rules
