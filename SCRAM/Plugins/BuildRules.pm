@@ -2102,6 +2102,7 @@ sub dumpBuildFileData ()
   my $path=$self->get("path");
   $self->dumpBuildFileLOC ($core,$fh,$localbf,$safename,$path,\%no_export,$lib);
   if ($lib){$self->processTemplate("Extra_template");}
+  $self->dnn_template();
   if (($lib) && ($localbf ne ""))
   {
     my $ex=$core->data("EXPORT");

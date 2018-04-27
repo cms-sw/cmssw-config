@@ -14,7 +14,12 @@ $($(1)_$($(1)_DNN_NAME)_HEADER): $($(1)_DNN_PB) $($(1)_DNN_CONFIG_PBTXT) $($(1)_
 endef
 
 define DNNXDEPS
+ifeq ($(strip $(filter %LIBRARY,$($1_CLASS))),)
+$(1)_$($(1)_DNN_NAME)_HEADER:=$(WORKINGDIR)/include/$(1)/$(patsubst self/%,%,$($(1)_PACKAGE))/$($(1)_DNN_NAME)/header.h
+$(1)_LOC_FLAGS_CPPFLAGS+=-I$(WORKINGDIR)/include/$(1)/$(SCRAM_SOURCEDIR) -I$(WORKINGDIR)/include/$(1)/$(patsubst self/%,%,$($(1)_PACKAGE))
+else
 $(1)_$($(1)_DNN_NAME)_HEADER:=$(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/$(patsubst self/%,%,$($(1)_PACKAGE))/$($(1)_DNN_NAME)/header.h
+endif
 $(1)_DNN_PB:=$(call FileSearchPath,$(patsubst self/$(SCRAM_SOURCEDIR)/%,%,$($(1)_PACKAGE))/$($(1)_DNN_NAME).pb,CMSSW_SEARCH_PATH)
 $(1)_DNN_CONFIG_PBTXT:=$$(patsubst %.pb,%.config.pbtxt,$$($(1)_DNN_PB))
 $(1)_XDEPS += $$($(1)_$($(1)_DNN_NAME)_HEADER)
