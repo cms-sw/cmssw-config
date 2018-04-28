@@ -26,6 +26,6 @@ else ifeq ($(strip $(USER_CHECK_HEADERS_FILE)),)
 else ifneq ($(strip $(USER_CODE_CHECKS_FILE)),)
   HEADER_CHECK_CMD:=cat $(USER_CHECK_HEADERS_FILE)
 endif
-$(foreach h,$(shell $(HEADER_CHECK_CMD)),$(eval $(call CheckHeaderRule,$h,$(subst $(space),,$(wordlist 1,2,$(subst /,$(space),$h))))))
+$(foreach h,$(shell $(HEADER_CHECK_CMD)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$h)),$(eval $(call CheckHeaderRule,$h,$(subst $(space),,$(wordlist 1,2,$(subst /,$(space),$h)))))))
 
 check-headers: $(ALL_CHECK_HEADERS)

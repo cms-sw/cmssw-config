@@ -1,6 +1,7 @@
 2018-04-27 Shahzad Muzaffar  <@smuzaffar>
         * V05-07-10: Make use of CUDA_HOST[_REM]_CXXFLAGS.
 	* V05-07-11: Allow to run dnn_name rules for bin products.
+	* V05-07-12: Run check-headers only for local files. 
 
 2018-04-23 Shahzad Muzaffar  <@smuzaffar>
 	* V05-07-09: Added tensorflow graphs rules
