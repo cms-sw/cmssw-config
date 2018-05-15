@@ -1,5 +1,11 @@
-DNN_TARGET_TRIPLET:=x86_64-pc-linux
+DNN_TARGET_TRIPLET:=$(shell $(CXX) -dumpmachine)
+DNN_TARGET_FEATURE:=
+ifeq ($(IS_AMD64),YES)
 DNN_TARGET_FEATURE:=+sse4.2
+endif
+ifeq ($(IS_AARCH64),YES)
+DNN_TARGET_FEATURE:=+neon
+endif
 define AddDNNRules
   $(foreach d,$($(1)_DNN_NAME),$(call  AddDNNRule,$1,$2,$d))
 endef

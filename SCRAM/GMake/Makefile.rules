@@ -99,6 +99,15 @@ ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_
 CODE_ANALYSIS_RULES:=YES
 endif
 ###################################
+IS_AARCH64:=
+IS_AMD64:=
+ifneq ($(strip $(subst _aarch64_,,$(SCRAM_ARCH))),$(SCRAM_ARCH))
+IS_AARCH64:=YES
+endif
+ifneq ($(strip $(subst _amd64_,,$(SCRAM_ARCH))),$(SCRAM_ARCH))
+IS_AMD64:=YES
+endif
+###################################
 SetLocalCMDs    = $(if $($1),$(eval CMD_$2:=$($1)),)
 SetCompilerCMDs = $(if $($1),,$(eval $1:=$(CMD_$2)))
 ShellCMDs       = $(if $(CMD_$1),,$(eval CMD_$1:=$(eval x:=$(strip $(firstword $(shell $(BASECMD_which) $1 2>&1))))$(if $(wildcard $x),$x,$1)))
