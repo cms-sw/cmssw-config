@@ -8,5 +8,5 @@ $($(1)_objdir)/$$($(1)_AOCX): $($(1)_srcdir)/$(2)
 	$(AOC) -v $(AOC_OPTIONS) $$< -o $$@ $(endlog_$(1))
 $(SCRAMSTORENAME_BIN)/$$($(1)_AOCX): $($(1)_objdir)/$$($(1)_AOCX)
         [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-        cp -f $$< $$@
+        $(CMD_cp) -f $$< $$@
 endef
