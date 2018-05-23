@@ -1037,7 +1037,7 @@ endef
 #safename,path,productstore,type,logprodstore,safepath
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
-$(foreach $(f),$(strip $($(1)_OPENCL_DEVICE_FILES)),$(eval $(call GenerateAOCX,$1,$(f))))
+$(foreach f,$($(1)_OPENCL_DEVICE_FILES),$(eval $(call GenerateAOCX,$1,$(f))))
 ifneq ($(strip $($(1)_cudaobj)),)
 $($(1)_cudaobj): $$(addprefix $($(1)_objdir)/, $(addsuffix .$(OBJEXT), $($(1)_cudafiles)))
 	$$(call link_cuda_objs,$1)
