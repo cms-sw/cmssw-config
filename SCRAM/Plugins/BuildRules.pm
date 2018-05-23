@@ -1904,6 +1904,19 @@ sub dnn_template()
   }
 }
 
+sub opencl_template()
+{
+  my $self=shift;
+  my $core=$self->core();
+  my $cl_name=$core->flags("OPENCL_DEVICE_FILES");
+  if($cl_name ne "")
+  {
+    my $safename=$self->get("safename");
+    my $fh=$self->{FH};
+    print $fh "${safename}_OPENCL_DEVICE_FILES   := ${cl_name}\n";
+  }
+}
+
 sub dict_template()
 {
   my $self=shift;
@@ -2103,6 +2116,7 @@ sub dumpBuildFileData ()
   $self->dumpBuildFileLOC ($core,$fh,$localbf,$safename,$path,\%no_export,$lib);
   if ($lib){$self->processTemplate("Extra_template");}
   $self->dnn_template();
+  $self->opencl_template();
   if (($lib) && ($localbf ne ""))
   {
     my $ex=$core->data("EXPORT");
