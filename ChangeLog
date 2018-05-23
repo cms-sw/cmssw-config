@@ -1,3 +1,6 @@
+2018-05-23 Shahzad Muzaffar  <@smuzaffar>
+	* V05-07-14: Added OpenCL device to AOCX compilation rule
+
 2018-05-15 Shahzad Muzaffar  <@smuzaffar>
         * V05-07-13: Use correct machine triplet for DNN.
 
