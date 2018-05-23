@@ -98,6 +98,10 @@ endif
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
 CODE_ANALYSIS_RULES:=YES
 endif
+SYNTAX_ONLY:=
+ifneq ($(strip $(filter -fsyntax-only,$(USER_CXXFLAGS))),)
+SYNTAX_ONLY:=YES
+endif
 ###################################
 IS_AARCH64:=
 IS_AMD64:=
@@ -1008,7 +1012,7 @@ $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),)
 $(1)_libdeps      := $$(call libdeps,$1)
-$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files))) $$($(1)_cudaobj)
+$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files))) $$(if $(SYNTAX_ONLY),,$$($(1)_cudaobj))
 ifneq ($(strip $(5)),)
 .PHONY: $(1)_install_scripts_rule
 $(1)_install_scripts_rule: $(logfile_$(1))
@@ -1038,9 +1042,11 @@ endef
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
 $(foreach f,$($(1)_OPENCL_DEVICE_FILES),$(eval $(call GenerateAOCX,$1,$(f))))
+ifeq ($(strip $(SYNTAX_ONLY)),)
 ifneq ($(strip $($(1)_cudaobj)),)
 $($(1)_cudaobj): $$(addprefix $($(1)_objdir)/, $(addsuffix .$(OBJEXT), $($(1)_cudafiles)))
 	$$(call link_cuda_objs,$1)
+endif
 endif
 ifneq ($(strip $($(1)_objs)),)
 $$(eval $$(call AddBigObjRule,$1,$2))
