@@ -1,3 +1,7 @@
+2018-05-27 Shahzad Muzaffar  <@smuzaffar>
+        * V05-07-16: Fix check-header rules to find correct product name
+	for a given header file.
+
 2018-05-23 Shahzad Muzaffar  <@smuzaffar>
 	* V05-07-14: Added OpenCL device to AOCX compilation rule
 	* V05-07-15: Do not generate cudaobj when run in syntax-only mode.

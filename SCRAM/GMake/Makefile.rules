@@ -76,7 +76,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -307,12 +307,16 @@ $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_REM_$(f)),$(eval $(call A
 $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
 endef
 
-define ProductCommonVars
-$(eval $(call ProductOrder,$1,$2,$3,$4))
+define SetProductCommonVars
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
+endef
+
+define ProductCommonVars
+$(eval $(call ProductOrder,$1,$2,$3,$4))
+$(eval $(call SetProductCommonVars,$1))
 endef
 
 define ProductCommonVarsExternal
@@ -1007,7 +1011,7 @@ ifneq ($(strip $$($(1)_cudafiles)),)
 $(1)_cudaobj      := $$($(1)_objdir)/$(1)_scramcuda.$(OBJEXT)
 endif
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
-$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2),$$($(1)_files))
+$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2/),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),)

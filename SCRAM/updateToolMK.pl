@@ -230,6 +230,7 @@ sub mkprocessfile ()
     {
       $line=~s/_forbigobj\+=/_relbigobj+=/;
       if($line=~/^\s*[^\s]+_(LOC_|relbigobj\+=)/){print $oref "$line\n";}
+      elsif($line=~/^ALL_PRODS (.+)/){print $oref "ALL_EXTERNAL_PLUGIN_PRODS $1\n";}
       next;
     }
     my $skip=0;
