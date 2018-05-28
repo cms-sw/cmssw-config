@@ -2076,6 +2076,17 @@ sub dumpBuildFileLOC ()
         if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
       }
     }
+    foreach my $k (keys %{$core->allflags()})
+    {
+      foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
+      {
+        if ($k=~/^(FILE.+?)_((REM_|)${xflag})$/)
+        {
+          my $v = $core->flags($k);
+          if($v ne ""){print $fh "${safename}_$1_LOC_FLAGS_$2   := $v\n";}
+        }
+      }
+    }
     foreach my $data ("INCLUDE")
     {
       my $dataval=$self->fixData($core->value($data),$data,$localbf);

@@ -252,23 +252,20 @@ $(1) = $$(call get_uniq_cached_var_,$(1))
 endif
 endef
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
-define AdjustFlags
-$(strip \
-  $(foreach f,$3,\
-    $(if $(subst undefined,,$(origin ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2))),$(ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2)),\
-      $(eval ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2):=\
-        $(strip \
-          $(USER_PRE_$f) \
-          $(filter-out \
-            $(strip $(USER_PRE_$f) $(USER_$f) $(USER_REM_$f) $(REM_$f) $($1_LOC_FLAGS_REM_$f) $($1_LOC_FLAGS_$f)\
-              $(if $(strip $4),$($4_EX_FLAGS_REM_$f_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$f) $($t_$f))),\
-            $(if $(strip $4),$($4_EX_FLAGS_$f_ALL),$($f)) $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_$f))\
-          $(strip $(foreach t,$2 $($1_CLASS),$($t_$f)) $($1_LOC_FLAGS_$f) $($(2)_LOC_FLAGS_$f) $(USER_$f))\
-        )\
-      )\
-      $(ADJUST_$1_$f_COMP$4_FILE$5_TYPE_$(subst $(space),_,$2))\
+AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$4,$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,))))
+define AdjustFlagsImp
+$(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)),$(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3),\
+  $(eval ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3:=\
+    $(strip \
+      $(USER_PRE_$3) \
+      $(filter-out \
+        $(strip $(USER_PRE_$3) $(USER_$3) $(USER_REM_$3) $(REM_$3) $($1_FILE$5_LOC_FLAGS_REM_$3) $($1_LOC_FLAGS_REM_$3) $($1_FILE$5_LOC_FLAGS_$3) $($1_LOC_FLAGS_$3)\
+        $(if $(strip $4),$($4_EX_FLAGS_REM_$3_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$3) $($t_$3))),\
+        $(if $(strip $4),$($4_EX_FLAGS_$3_ALL),$($3)) $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_$3))\
+      $(strip $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_LOC_FLAGS_$3) $($(2)_LOC_FLAGS_$3) $($(1)_FILE$5_LOC_FLAGS_$3) $(USER_$3))\
     )\
   )\
+  $(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)\
 )
 endef
 AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
