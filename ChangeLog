@@ -1,3 +1,8 @@
+2018-06-01 Shahzad Muzaffar  <@smuzaffar>
+        * V05-07-19: Do not set PYTHON*PATH for tool-conf via Self.
+	Do it via extrnal tool otherwise in dev area we get tool-conf
+	from release instead of local build.
+
 2018-05-31 Shahzad Muzaffar  <@smuzaffar>
         * V05-07-18: Fix classes.h and serialization headers.h compiler
 	generated dependency.
