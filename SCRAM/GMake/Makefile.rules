@@ -853,7 +853,7 @@ precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
 $(SCRAMSTORENAME_PYTHON)/$1/__init__.py: $(SCRAMSTORENAME_PYTHON)/__init__.py
-	@[ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && $$(call create_subsystem_init)
+	@[ -L $$(@D) ] || ([ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && $$(call create_subsystem_init))
 endef
 define EmptyPackage
 $(1)_libdeps      := $$(call libdeps,$1)
