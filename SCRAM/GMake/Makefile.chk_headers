@@ -33,7 +33,7 @@ endif
 ifneq ($(strip $(USER_CHECK_HEADERS_FILES)),)
   HEADER_CHECK_CMD:=$(CMD_echo) $(USER_CHECK_HEADERS_FILES)
 else ifeq ($(strip $(USER_CHECK_HEADERS_FILE)),)
-  HEADER_CHECK_CMD:=$(CMD_cat) $(USEDBY_FILE) | $(CMD_sed) 's| .*||'
+  HEADER_CHECK_CMD:=$(CMD_cat) $(USEDBY_FILE) | $(CMD_sed) 's| .*||' | $(CMD_sort) | $(CMD_uniq)
 else
   HEADER_CHECK_CMD:=$(CMD_cat) $(USER_CHECK_HEADERS_FILE)
 endif
