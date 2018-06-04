@@ -1,3 +1,6 @@
+2018-06-04 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-20: header check rule fixed for patch releases.
+
 2018-06-01 Shahzad Muzaffar  <@smuzaffar>
         * V05-07-19: Do not set PYTHON*PATH for tool-conf via Self.
 	Do it via extrnal tool otherwise in dev area we get tool-conf
