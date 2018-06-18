@@ -37,7 +37,7 @@ else ifeq ($(strip $(USER_CHECK_HEADERS_FILE)),)
 else
   HEADER_CHECK_CMD:=$(CMD_cat) $(USER_CHECK_HEADERS_FILE)
 endif
-$(foreach h,$(shell $(HEADER_CHECK_CMD)),$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$h)),$(eval $(call CheckHeaderRule,$h))))
+$(foreach h,$(shell $(HEADER_CHECK_CMD)),$(if $(strip $(subst interface,,$(word 3,$(subst /,$(space),$(h))))),,$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$h)),$(eval $(call CheckHeaderRule,$h)))))
 
 check-headers: $(ALL_CHECK_HEADERS)
 	@$(CMD_echo) ">> Done checking headers"
