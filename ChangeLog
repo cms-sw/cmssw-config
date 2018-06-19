@@ -1,4 +1,8 @@
-2018-06-04 Shahzad Muzaffar  <@smuzaffar>
+2018-06-19 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-22: Fix for headers checks: Use current package if no build
+	product found for a header file.
+
+2018-06-18 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-21: Only check headers of interface directory.
 
 2018-06-04 Shahzad Muzaffar  <@smuzaffar>

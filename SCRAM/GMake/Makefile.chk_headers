@@ -53,7 +53,8 @@ $(USEDBY_FILE): $(RELEASETOP)/etc/dependencies/usedby.out.gz
 $(WORKINGDIR)/check_header/.prods/%: $(PROD2SRC_FILE) $(USEDBY_FILE)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	for s in $$($(CMD_grep) '^$* ' $(USEDBY_FILE) | $(CMD_sed) 's|^$* ||') ; do \
-	p=$$($(CMD_grep) " $$s" $(PROD2SRC_FILE)  | head -1 | awk '{print $$1}') &&\
+	  p=$$($(CMD_grep) " $$s" $(PROD2SRC_FILE)  | head -1 | awk '{print $$1}') &&\
+	  if [ "$$p" = "" ] ; then continue ; fi &&\
 	  ok=no &&\
 	  if [ -e $(SCRAM_SOURCEDIR)/$$s ] ; then \
 	    ok=yes;\
