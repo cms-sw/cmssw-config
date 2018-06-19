@@ -1,3 +1,6 @@
+2018-06-19 Patrick E Gartung  <@gartung>
+        V05-07-23: Fix for DXR.
+
 2018-06-19 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-22: Fix for headers checks: Use current package if no build
 	product found for a header file.
