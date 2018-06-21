@@ -1,5 +1,7 @@
-2018-06-19 Shahzad Muzaffar  <@smuzaffar>
+2018-06-21 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-24: Fixed missing symbol rule
+	V05-07-25: USER_CHECK_HEADERS_IGNORE to provide list of headers to be
+	ignored for header-checks
 
 2018-06-19 Patrick E Gartung  <@gartung>
         V05-07-23: Fix for DXR.
