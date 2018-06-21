@@ -1,3 +1,6 @@
+2018-06-21 Shahzad Muzaffar  <@smuzaffar>
+       V05-05-87: Fixed DXR rule
+
 2018-03-19 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* V05-05-81: Cache the generated flags
 	* V05-05-82: Remove debug statement

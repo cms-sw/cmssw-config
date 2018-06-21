@@ -1,4 +1,5 @@
 -include $(TOOLS_MKDIR).mk
+$(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
@@ -1942,10 +1943,10 @@ endif
 $(foreach x,$(ALL_TOOLS),$(eval $x := $x))
 $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
 -include $(PUB_DIRCACHE_MKDIR)/src.mk
+$(foreach f,MISSING_SYMBOL_FLAGS,$(eval $f:=$(self_EX_FLAGS_$f)))
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
-$(foreach f,LLVM_ANALYZER MISSING_SYMBOL_FLAGS,$(eval $f:=$(self_EX_FLAGS_$f)))
 $(foreach f,CXXFLAGS CPPFLAGS,$(foreach t,LCGDICT ROOTDICT BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY,$(eval $t_$f:=$(self_EX_FLAGS_$t_$f))$(eval REM_$t_$f:=$(self_EX_FLAGS_REM_$t_$f))))
 $(foreach p,$(ALL_PACKAGES) $(ALL_DELETED_PACKAGES),$(if $(strip $($p)),,$(eval $p:=$(subst /,,$p))))
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
