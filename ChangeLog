@@ -1,3 +1,6 @@
+2018-07-06 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-30: Update cuda compilation rules for device code.
+
 2018-06-21 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-24: Fixed missing symbol rule
 	V05-07-25: USER_CHECK_HEADERS_IGNORE to provide list of headers to be
