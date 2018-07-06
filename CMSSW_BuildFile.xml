@@ -5,6 +5,7 @@
 <productstore name="objs"      type="arch" swap="true"/>
 <productstore name="biglib"    type="arch" swap="true"/>
 <productstore name="cfipython" type="arch" swap="true"/>
+<productstore name="static" type="arch" swap="true"/>
 <productstore name="include"/>
 <productstore name="doc"/>
 <productstore name="python"/>

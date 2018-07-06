@@ -34,6 +34,7 @@ XFAST:=
 UFAST:=
 ONLYECHOTARGETS:=
 OBJEXT:=o
+AREXT:=a
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
@@ -56,6 +57,7 @@ HOOK_PROJECT                :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
+SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 NO_CAPABILITIES             := $(if $(strip $(filter yes YES Yes 1,$(root_EX_FLAGS_NO_CAPABILITIES))),yes)
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
@@ -77,7 +79,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -269,7 +271,6 @@ $(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)),$(ADJUS
   $(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)\
 )
 endef
-AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
 TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
 TOOLS_FLAGS_FUNC_ORIG=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
 TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
@@ -279,7 +280,7 @@ $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
 Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(call TOOLS_LIB_FUNC,$1,LIB))
-Tool_DependenctPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
+Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
                      @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
@@ -306,7 +307,7 @@ $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
 endef
 
 define SetProductCommonVars
-$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(SET_PRODUCT_VARIABLES),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
@@ -556,11 +557,6 @@ define compile_fortran_common
   $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
 endef
 endif
-define compile_cuda_common
-  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
-  $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options \
-     '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
-endef
 
 #LLVM Analyzer Rules
 define run_analyze_command
@@ -595,9 +591,6 @@ endef
 define compile_fortran
   $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS))
 endef  
-define compile_cuda
-  $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CUDA_FLAGS))
-endef
 define compile_boost
   $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
 endef  
@@ -610,13 +603,6 @@ define analyze_cxx
 endef
 define analyze_c
   $(call analyze_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS))
-endef
-
-define link_cuda_objs
-  @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS)  $? -o $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(NVCC) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) $? -o $@) $(endlog_$(1))
 endef
 ##############################################################################
 # Dictionary compilation
@@ -972,11 +958,6 @@ $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompil
 	$$(call compile_fortran$(4),$(1),$(3))
 endef
 
-define CudeCompileRule
-$($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
-	$$(call compile_cuda,$(1),$(3))
-endef
-
 define EmptyProduct
 .PHONY: $(1) all_$(1) $(2) all_$(2)
 $(1) $(2): all_$(1)
@@ -1002,19 +983,15 @@ define CommonBinaryHead
 $(3)          += all_$(1)
 $(eval $(call LogFile,$(1),$(2)))
 .PHONY: $(1) all_$(1)
-$(1)_objdir := $(WORKINGDIR)/$(2)/$(1)
+$(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
-$(1)_cudafiles    := $$(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES),%.$e),$($(1)_files))
-ifneq ($(strip $$($(1)_cudafiles)),)
-$(1)_cudaobj      := $$($(1)_objdir)/$(1)_scramcuda.$(OBJEXT)
-endif
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
 $(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2/),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
-$(1)_LOC_USE      += $$(if $$(strip $$(filter $(CUDASRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(CUDA_TYPE_COMPILER),)
+$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
+$$(eval $$(call AddCudaRules,$1))
 $(1)_libdeps      := $$(call libdeps,$1)
-$(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files))) $$(if $(SYNTAX_ONLY),,$$($(1)_cudaobj))
 ifneq ($(strip $(5)),)
 .PHONY: $(1)_install_scripts_rule
 $(1)_install_scripts_rule: $(logfile_$(1))
@@ -1044,12 +1021,6 @@ endef
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
 $(foreach f,$($(1)_OPENCL_DEVICE_FILES),$(eval $(call GenerateAOCX,$1,$(f))))
-ifeq ($(strip $(SYNTAX_ONLY)),)
-ifneq ($(strip $($(1)_cudaobj)),)
-$($(1)_cudaobj): $$(addprefix $($(1)_objdir)/, $(addsuffix .$(OBJEXT), $($(1)_cudafiles)))
-	$$(call link_cuda_objs,$1)
-endif
-endif
 ifneq ($(strip $($(1)_objs)),)
 $$(eval $$(call AddBigObjRule,$1,$2))
 ALL_$(4)_PRODUCTS += $(1)
@@ -1154,7 +1125,6 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
-$(if $(strip $(CUDASRC_FILES_SUFFIXES)),$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call CudeCompileRule,$(1),$(ext),$(1)))))
 endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
@@ -1341,6 +1311,7 @@ $(1) all_$(1): $($(1))
 endef
 
 ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
+include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.cuda
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.qtmoc
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.rootdict
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
@@ -1934,6 +1905,5 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 endif
-
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
