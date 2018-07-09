@@ -38,8 +38,8 @@ endef
 define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(NVCC) -dlink $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@" &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@) $(endlog_$(1))
 endef
 define generate_cuda_nv_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
