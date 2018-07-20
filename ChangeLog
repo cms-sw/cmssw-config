@@ -1,3 +1,6 @@
+2018-07-20 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-32: Fix EDM Poison plugin rule.
+
 2018-07-10 Andrea Bocci  <@fwyzard>
 	V05-07-31: Reorder CUDA device libraries
 

@@ -1,3 +1,6 @@
+ifneq ($(strip $(edmPluginRefresh_cache)),)
+  POISON_EDMPLUGIN_CACHE      := $(strip $(if $(strip $(RELEASETOP)$(IS_PATCH)),yes))
+endif
 ifndef SCRAM_NOEDM_CHECKS
 define run_edm_checks
   $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) \

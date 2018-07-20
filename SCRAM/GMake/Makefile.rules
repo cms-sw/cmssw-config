@@ -1620,9 +1620,6 @@ endif
 HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
 HOOK_PRODUCT := $(if $(strip $(USER_HOOK_PRODUCT)),$(USER_HOOK_PRODUCT),$(HOOK_PRODUCT))
-ifneq ($(strip $(edmPluginRefresh_cache)),)
-POISON_EDMPLUGIN_CACHE      := $(strip $(if $(strip $(RELEASETOP)$(IS_PATCH)),yes))
-endif
 FULL_RELEASE_FOR_A_PATCH    := $(strip $($(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE))
 ifeq ($(IS_LINUX),yes)
 ifeq ($(strip $(CXXSHAREDFLAGS)),)
