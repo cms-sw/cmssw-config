@@ -1,3 +1,6 @@
+2018-09-14 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-33: Add cmssw/poison in CMSSW_SEARCH_PATH
+
 2018-07-20 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-32: Fix EDM Poison plugin rule.
 
