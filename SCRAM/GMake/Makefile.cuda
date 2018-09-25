@@ -87,8 +87,8 @@ ifeq ($(strip $(SYNTAX_ONLY)),)
 $(1)_cudadlink    := $($(1)_objdir)/$(1)_cudadlink.$(OBJEXT)
 $(1)_objs         += $$($(1)_cudadlink)
 $(1)_PRE_INIT_FUNC:=$$($(1)_PRE_INIT_FUNC) $$(eval $$(call SetCudaRules,$1))
-$(1)_LOC_USE      += $(CUDA_TYPE_COMPILER)
 endif
+$(1)_LOC_USE      += $(CUDA_TYPE_COMPILER)
 else
 $(WORKINGDIR)/cache/cuda_dlink/$(1): $$($(1)_cuda_dlink_deps)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
