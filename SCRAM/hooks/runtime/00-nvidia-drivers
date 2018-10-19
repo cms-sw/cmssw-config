@@ -18,15 +18,11 @@ else
 fi
 
 if [ "$NVIDIA_VERSION" ]; then
-  CUDA_LIB=$(locate libcuda.so.$NVIDIA_VERSION | grep '/libcuda.so.' | head -1 || true)
-  if [ "$CUDA_LIB" ] ; then
-    echo "RUNTIME:path:append:LD_LIBRARY_PATH=$(dirname $CUDA_LIB)"
-    exit 0
-  else
-    >&2 echo "WARNING: Nvidia version $NVIDIA_VERSION but could not locate libcuda.so.${NVIDIA_VERSION}"
+  # if a driver is available, assume that a library is available as well
+  true
+else
+  # otherwise, use the library packaged with CMSSW
+  if [ -e "${CUDA_BASE}/drivers" ] ; then
+    echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
   fi
-fi
-
-if [ -e "${CUDA_BASE}/drivers" ] ; then
-  echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
 fi
