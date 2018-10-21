@@ -16,7 +16,7 @@ except:
   sparse_file = ".git/info/sparse-checkout"
   if not exists(sparse_file): exit(0)
 
-checkout_pkgs = [ re.compile("^"+line.strip("\n").strip("/")+"/.+$") for line in open(sparse_file).readlines() if line.strip("\n")[-1]=="/" ]
+checkout_pkgs = [ re.compile("^"+line.strip("\n").replace("/*/","/.*/").strip("/")+"/.+$") for line in open(sparse_file).readlines() if line.strip("\n")[-1]=="/" ]
 e, o = run ("git diff --name-only %s -- | cut -d/ -f1,2 | sort -u" % tag)
 if e:
   print(o,file=stderr)
