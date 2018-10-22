@@ -1,3 +1,10 @@
+2018-10-22 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-36: Bug fix for finding out removed packages when '*' is used to
+	git-cms-addpkg.
+
+2018-10-19 Andrea Bocci <@fwyzard>
+	V05-07-35: Do not check the CUDA library version.
+
 2018-09-25 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-34: Bug fix, do not drop the cuda dependency if running in
 	syntax-only mode.
