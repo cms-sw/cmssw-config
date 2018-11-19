@@ -105,6 +105,10 @@ SYNTAX_ONLY:=
 ifneq ($(strip $(filter -fsyntax-only,$(USER_CXXFLAGS))),)
 SYNTAX_ONLY:=YES
 endif
+SKIP_SCRIPTS_COPY:=
+ifneq ($(strip $(filter skip-scripts-copy,$(MAKECMDGOALS))),)
+  SKIP_SCRIPTS_COPY:=yes
+endif
 ###################################
 IS_AARCH64:=
 IS_AMD64:=
@@ -330,7 +334,7 @@ endif
 endef
 
 define outputlog
-  @if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
+  if [ -d $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) ] ; then \
     $(DO_BUILD_LOG) for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | $(CMD_grep) -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) $(CMD_cat) $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) $(CMD_rm) -f $$f;  $(DO_BUILD_LOG) done ;\
   fi
 endef
@@ -614,6 +618,13 @@ define compile_python
   $(VERB_ECHO) "$(CMD_python) -m compileall -q $1" &&\
   $(CMD_python) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
 endef
+
+define run_postprocess
+  $(if $(strip $($(1)_POSTPROCESSING)),($(FORCE_BUILD_START) $(foreach f,$(foreach x,$(sort $($(1)_POSTPROCESSING)),$(lastword $(subst :,$(space),$x))),$(call $(firstword $(subst @,$(space),$f)),$1,$(word 2,$(subst @,$(space),$f)));) $(FORCE_BUILD_END)) $2)
+endef
+define add_postprocessing
+  $(eval f:=$(subst $(space),_,$2:$3@arg1=$4;arg2=$5;arg3=$6;arg4=$7;arg5=$8))$(if $(strip $(filter $(f),$($1_POSTPROCESSING))),,$1_POSTPROCESSING+=$(f))
+endef
 ##############################################################################
 # Source Generators Rules
 # boost source generation from Pyste
@@ -820,13 +831,21 @@ define create_subsystem_init
   fi
 endef
 #############################################################################
+define FinalizeSubSystem
+  $(CMD_echo) ">> Subsystem $(1) built"
+endef
+define FinalizePackage
+  $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" $2 &&\
+  $(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+endef
 define SubSystem
-.PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2)
+.PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2) scripts_$(2)
 ifneq ($(strip $(SCRAM_IGNORE_PACKAGES)),)
 subdirs_$(2) := $$(filter-out $$(addprefix $(SCRAM_SOURCEDIR)_,$$(subst /,_,$(SCRAM_IGNORE_PACKAGES))),$$(subdirs_$(2)))
 endif
+$(call add_postprocessing,$1,99,FinalizeSubSystem)
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $$(subdirs_$(2))
-	@$(CMD_echo) ">> Subsystem $(1) built"
+	@$$(call run_postprocess,$1)
 runtests_$(2): $$(addprefix runtests_,$$(subdirs_$(2)))
 	@:
 unittests_$(2): $$(addprefix unittests_,$$(subdirs_$(2)))
@@ -838,6 +857,8 @@ compile_$(2): $$(addprefix compile_,$$(subdirs_$(2)))
 precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
+	@:
+scripts_$(2): $$(addprefix scripts_,$$(subdirs_$(2)))
 	@:
 $(SCRAMSTORENAME_PYTHON)/$1/__init__.py: $(SCRAMSTORENAME_PYTHON)/__init__.py
 	@[ -L $$(@D) ] || ([ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && $$(call create_subsystem_init))
@@ -854,7 +875,9 @@ $(WORKINGDIR)/cache/prod/lib$(1): $($(1)_BuildFile) $$($(1)_libdeps)
 	@$(CMD_touch) $$@
 endef
 define Package
-.PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2)
+.PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2) scripts_$(2)
+$(call add_postprocessing,$1,99,FinalizePackage)
+$(1)_SUBSYSTEM:=$(patsubst %/,%,$(dir $1))
 ifeq ($(strip $(BUILD_LOG)),yes)
 logfile_$(2) := $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log
 redirectlog_$(2) := >> $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log
@@ -870,10 +893,9 @@ $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARG
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2))) $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
-	$$(call outputlog,$(1),$(2))
-	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)"  $$(redirectlog_$(2)) &&\
-	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $$(redirectlog_$(2)) &&\
-	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
+	@$$(call run_postprocess,$1,$(redirectlog_$(2)))
+	@$$(call outputlog,$(1),$(2))
+	@$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
@@ -904,6 +926,8 @@ compile_$(2): $$(addprefix compile_,$$(subdirs_$(2)))
 	@:
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
+scripts_$(2): all_$(2)_scripts
+	@:
 ifeq ($$(filter $(2)_python,$$(subdirs_$(2))),$(2)_python)
 runpython_$(2): runpython_$(2)_python
 	@$(CMD_echo) ">> Python for package $(1) ran."
@@ -922,11 +946,10 @@ $(1)_pluginprod    := $(5)/$(8)
 $(1)_pluginlib     := $($(2)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 all_$(2)           += $(5)/$(8)
 $(1)_extra_deps    += $(if $(strip $(6)),$(WORKINGDIR)/cache/prod/$(6),)
-$(1)_package       := $(subst $(space),/,$(wordlist 2,3,$(subst /,$(space),$(10))))
-$$($(1)_package)_$(3)_plugins += $(1)
+$($(1)_PROD_PACKAGE)_$(3)_plugins += $(1)
 ifndef SCRAM_NOEDMWRITECONFIG
 ifeq ($$(strip $(3)),edm)
-$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$$($(1)_package)/.scram
+$(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE)/.scram
 endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
@@ -980,6 +1003,8 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,binstore
 define CommonBinaryHead
+$(1)_PROD_PACKAGE  := $(patsubst $(SCRAM_SOURCEDIR)/%/,%,$(dir $2))
+$(1)_PROD_SUBSYSTEM:=$$(patsubst %/,%,$$(dir $$($(1)_PROD_PACKAGE)))
 $(3)          += all_$(1)
 $(eval $(call LogFile,$(1),$(2)))
 .PHONY: $(1) all_$(1)
@@ -992,11 +1017,13 @@ $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
 $$(eval $$(call AddCudaRules,$1))
 $(1)_libdeps      := $$(call libdeps,$1)
+ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 ifneq ($(strip $(5)),)
 .PHONY: $(1)_install_scripts_rule
 $(1)_install_scripts_rule: $(logfile_$(1))
 	$$(call copy_src_scripts,$(2),$(1),$(5),$(4))
 all_$(1) += $(1)_install_scripts_rule
+endif
 endif
 $(1)_CONFIGDEPS := $(CONFIGDEPS) $(WORKINGDIR)/$(2)/productautocleanup $$(sort $$(foreach u,$$(sort $$($(1)_LOC_USE) $($(1)_EX_USE)),$$($$($$(u))_XDEPS) $$(if $$($$($$(u))_BuildFile),$$($$($$(u))_BuildFile),$$(filter $(SCRAM_TOOLS_DIR)/$$(u),$(ToolTimeStamps)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
@@ -1275,6 +1302,7 @@ $(1) all_$(1): $(all_$(1))
 endif
 endef
 
+ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 define Src2StoreCopy
 .PHONY: $(1) all_$(1)
 $(1)_files := $(filter-out CVS $(SCRAM_BUILDFILE) $(SCRAM_BUILDFILE).xml $($(1)_SKIP_FILES), $($(1)_files))
@@ -1288,6 +1316,7 @@ all_$(1): $(logfile_$(1))
 	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir))
 endif
 endef
+endif
 
 define CommonDataRules
 .PHONY: $(1) all_$(1)
@@ -1436,7 +1465,7 @@ all: all_$(TARGETDIR)
 project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR)
 	@:
 
-.PHONY: python help compile precompile edm_checks runtests unittests clean distclean cache_clean project_clean project_help
+.PHONY: python help compile precompile edm_checks runtests unittests clean distclean cache_clean project_clean project_help scripts
 .PHONY: clean_$(SCRAM_SOURCEDIR) help_$(SCRAM_SOURCEDIR)
 help: help_$(TARGETDIR)
 clean: clean_$(TARGETDIR)
@@ -1446,6 +1475,7 @@ python: runpython_$(TARGETDIR)
 compile: compile_$(TARGETDIR)
 precompile: precompile_$(TARGETDIR)
 edm_checks: edm_checks_$(TARGETDIR)
+scripts: scripts_$(TARGETDIR)
 
 project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	@$(CMD_echo) "Cleaning ProductStore directories:"
@@ -1684,7 +1714,7 @@ endif
 ###########################################################
 LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
-PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR)
+PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
 	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
@@ -1706,6 +1736,8 @@ precompile_$(SCRAM_SOURCEDIR): $(addprefix precompile_, $(subdirs_$(SCRAM_SOURCE
 	@$(CMD_echo) ">> Pre-compile sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 edm_checks_$(SCRAM_SOURCEDIR): $(addprefix edm_checks_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> EDM Checks sequence completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
+scripts_$(SCRAM_SOURCEDIR): $(addprefix scripts_, $(subdirs_$(SCRAM_SOURCEDIR)))
+	@$(CMD_echo) ">> Scripts copy completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 ###########################################################
 define GetMissingSymbolFlags
   $(if $($(1)_libcheck),$(if $2,$(info @@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)),),$(MISSING_SYMBOL_FLAGS))
@@ -1902,5 +1934,10 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 endif
+.PHONY: skip-scripts-copy
+scripts_%:
+	@:
+skip-scripts-copy: all
+	@:
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))

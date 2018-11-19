@@ -11,14 +11,30 @@ run_edm_checks:=
 endif
 
 ifndef SCRAM_NOEDMWRITECONFIG
+EDM_WRITE_CONFIG_DB:=edm_write_config
 define edm_write_config
-  $(CMD_rm) -rf $(<D)/edm_write_config && $(CMD_mkdir) -p $(<D)/edm_write_config &&\
+  $(CMD_rm) -rf $(<D)/$(EDM_WRITE_CONFIG_DB) && $(CMD_mkdir) -p $(<D)/$(EDM_WRITE_CONFIG_DB) &&\
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
-  ($(CMD_cd) $(<D)/edm_write_config && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
-  for file in `$(CMD_ls) $(<D)/edm_write_config`; do \
-    $(CMD_cp) -f $(<D)/edm_write_config/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package) &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_package)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
+  ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
+  $(CMD_touch) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/.$(EDM_WRITE_CONFIG_DB) &&\
+  for file in `$(CMD_ls) $(<D)/$(EDM_WRITE_CONFIG_DB)`; do \
+    $(CMD_cp) -f $(<D)/$(EDM_WRITE_CONFIG_DB)/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE) &&\
+    $(CMD_echo) "01:$(CMD_rm) -f $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE)/$$file" >> $(call AutoCleanFile,$<,edm) ;\
   done
+endef
+define check_duplicate_cfi_config
+  if [ -f $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$(1)/.$(EDM_WRITE_CONFIG_DB) ] ; then \
+    err=0 &&\
+    for cfi in $$($(CMD_find) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$(1) -mindepth 4 -maxdepth 4 -path "*/$(EDM_WRITE_CONFIG_DB)/*_cfi.py" -type f | $(CMD_sed) "s|.*/$(EDM_WRITE_CONFIG_DB)/||" | $(CMD_sort) | $(CMD_uniq) -c | $(CMD_grep) -v ' 1 ' | $(CMD_sed) 's|.* ||') ; do \
+      if [ "$$err" = "0" ] ; then $(CMD_echo) "****ERROR: Duplicate CFI files generated for Package $1" ; fi ;\
+      err=1 &&\
+      for plugin in $$($(CMD_find) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$(1) -mindepth 4 -maxdepth 4 -path "*/$(EDM_WRITE_CONFIG_DB)/$$cfi" -type f | $(CMD_sed) "s|/$(EDM_WRITE_CONFIG_DB)/.*||;s|.*/||") ; do\
+        $(CMD_echo) "gmake: *** [$1/$$plugin/$$cfi] Error 1" ;\
+      done;\
+    done;\
+    if [ $$err = 1 ] ; then exit 1 ; fi ;\
+    $(CMD_rm) -f $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$(1)/.$(EDM_WRITE_CONFIG_DB) ;\
+  fi
 endef
 else
 define edm_write_config
@@ -48,11 +64,11 @@ define edm_plugin_clean
   $(call clean_prod,$($(1)_plugindir)/plugin$(1).$(SHAREDSUFFIX))
   $(call clean_prod,$($(1)_pluginprod))
 endef
-
 define edmPlugin
 ifneq ($(strip $($(1)_objs)$(filter $1,${2}Capabilities)),)
 $$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1,$4))
 $(1)_BUILDRULES := _edm
+$(call add_postprocessing,$($(1)_PROD_PACKAGE),50,check_duplicate_cfi_config)
 else
 ifeq ($(strip $($(1)_SKIP_FILES)),)
 $$(info gmake: *** [$4 contains only $(SCRAM_BUILDFILE).xml without any sources. Better to remove $(SCRAM_BUILDFILE).xml too or do not tag this directory] Error 1)
@@ -220,7 +236,7 @@ $(PUB_DIRCACHE_MKDIR)/edmplugins:
 	@$(CMD_echo) "#Auto generated EDM Plugins information" > $@
 	@for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_edm_plugins:=" >> $@; done
 	@$(if $(strip $(IS_PATCH)),for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_inpatch:=1" >> $@; done, true)
-	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_package)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
+	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
 	@$(CMD_echo) ">> Generated $@"
 
 $(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
