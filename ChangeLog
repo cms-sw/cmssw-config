@@ -1,3 +1,8 @@
+2018-11-19 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-37: check for dupilcate generated cfi files per package.
+	Disable running of copying scripts when skip-scripts-copy build rules
+	is run.
+
 2018-10-22 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-36: Bug fix for finding out removed packages when '*' is used to
 	git-cms-addpkg.
