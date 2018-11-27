@@ -1,3 +1,7 @@
+2018-11-27 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-38: Add ignore-deleted target to avoid checking for deleted packages
+	Added help message for many new rules.
+
 2018-11-19 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-37: check for dupilcate generated cfi files per package.
 	Disable running of copying scripts when skip-scripts-copy build rules

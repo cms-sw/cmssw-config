@@ -29,6 +29,7 @@ ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_PRODS          :=
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
+IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
 FAST:=
 XFAST:=
 UFAST:=
@@ -1508,14 +1509,32 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "python"
 	@$(CMD_echo) "  To just build python i.e. creating sym-links and compiling python modules."
 	@$(CMD_echo) ""
+	@$(CMD_echo) "scripts"
+	@$(CMD_echo) "  To just build/copy scripts"
+	@$(CMD_echo) ""
+	@$(CMD_echo) "skip-scripts-copy"
+	@$(CMD_echo) "  To skip copying of scripts during the normal build/link process"
+	@$(CMD_echo) ""
 	@$(CMD_echo) "runtests"
 	@$(CMD_echo) "  Build and run all tests for the project, or package-level tests only"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "unittests"
 	@$(CMD_echo) "  Same as runtests but does not try to build the test first."
 	@$(CMD_echo) ""
+	@$(CMD_echo) "skiptest_<testname>"
+	@$(CMD_echo) "  To skip running <testname> unit test during the unittests or runtests"
+	@$(CMD_echo) ""
+	@$(CMD_echo) "ignore-deleted"
+	@$(CMD_echo) "  Skip checking for deleted packages."
+	@$(CMD_echo) ""
 	@$(CMD_echo) "checker"
 	@$(CMD_echo) "  Run LLVM static checkers"
+	@$(CMD_echo) ""
+	@$(CMD_echo) "edm_checks"
+	@$(CMD_echo) "  To run only the EDM Checks"
+	@$(CMD_echo) ""
+	@$(CMD_echo) "compile precomple"
+	@$(CMD_echo) "  To run only the compile or precompile part"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "code-checks-all(combination of code-checks-run and code-checks-apply)"
 	@$(CMD_echo) "  Run clang-tidy. Following extra env can use set"
@@ -1545,6 +1564,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "code-format-dump-config"
 	@$(CMD_echo) "  Dump the clang-format config"
 	@$(CMD_echo) ""
+	@$(CMD_echo) "check-headers"
+	@$(CMD_echo) "  To run header consistency checks"
+	@$(CMD_echo) ""
 	@$(CMD_echo) "dxr"
 	@$(CMD_echo) "  Generate DXR indexes for the release."
 	@$(CMD_echo) ""
@@ -1556,6 +1578,12 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) ""
 	@$(CMD_echo) "deps-tree <package1> <package2>"
 	@$(CMD_echo) "  To find the dependencies paths from <package1> to <package2>"
+	@$(CMD_echo) ""
+	@$(CMD_echo) "productmap"
+	@$(CMD_echo) "  To dump the product package map information."
+	@$(CMD_echo) ""
+	@$(CMD_echo) "checkdeps"
+	@$(CMD_echo) "  To run git-cms-checkdeps based on changes CMSSW and externals"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "updateclassversion"
 	@$(CMD_echo) "  Run the edmCheckClassVersion and generate new src/<package>/classes_def.xml.generated file."
@@ -1617,10 +1645,12 @@ release-freeze: release-check
 ###############################################################################
 PLUGIN_REFRESH_CMDS :=
 CHECK_DELETED_PACKS:=
+ifeq ($(strip $(IGNORE_DELETED)),)
 ifneq ($(strip $(CMSSW_GIT_HASH)),)
 ifneq ($(strip $(wildcard $(SCRAM_SOURCEDIR)/.git/info/sparse-checkout)),)
 ALL_DELETED_PACKAGES:=$(strip $(shell $(CMD_cd) $(SCRAM_SOURCEDIR) && $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find_deleted_packages.py $(CMSSW_GIT_HASH) .git/info/sparse-checkout))
 CHECK_DELETED_PACKS:=$(if $(strip $(ALL_DELETED_PACKAGES)),YES)
+endif
 endif
 endif
 ###############################################################################
@@ -1934,7 +1964,9 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 endif
-.PHONY: skip-scripts-copy
+.PHONY: skip-scripts-copy ignore-deleted
+ignore-deleted:
+	@:
 scripts_%:
 	@:
 skip-scripts-copy: all
