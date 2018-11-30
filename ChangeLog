@@ -1,3 +1,6 @@
+2018-11-30 Shahzad Muzaffar  <@smuzaffar>
+	v05-07-39: bug fix: In dev area add poison plugins only once.
+
 2018-11-27 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-38: Add ignore-deleted target to avoid checking for deleted packages
 	Added help message for many new rules.

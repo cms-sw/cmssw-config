@@ -173,7 +173,7 @@ define GetPackagePluginCache
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(CMD_touch) $@ &&\
   cache=$(call getPluginCacheForPackage,$*) &&\
-  for p in $($*_edm_plugins); do \
+  for p in $(sort $($*_edm_plugins)); do \
     $(CMD_grep) "^plugin$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^plugin|plugin-poisoned-|' >> $@ || true;\
   done
 endef
