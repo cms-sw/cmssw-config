@@ -1,5 +1,8 @@
+2019-01-08 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-40: Do not create cmake symlinks under external/lib 
+
 2018-11-30 Shahzad Muzaffar  <@smuzaffar>
-	v05-07-39: bug fix: In dev area add poison plugins only once.
+	V05-07-39: bug fix: In dev area add poison plugins only once.
 
 2018-11-27 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-38: Add ignore-deleted target to avoid checking for deleted packages
