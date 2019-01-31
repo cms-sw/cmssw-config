@@ -54,6 +54,7 @@ define generate_cuda_nv_a
               ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(CMD_ar) crs $@ $^) $(endlog_$(1))
 endef
 
+#safename, plugin_type
 define SetCudaRules
 ifeq ($(strip $($(1)_CLASS)),LIBRARY)
 $(1)_EX_CUDA_DLINK_LIB := $(1)_nv
@@ -63,7 +64,7 @@ $($(1)_objdir)/lib$(1)_nv.$(AREXT): $(addprefix $($(1)_objdir)/, $(addsuffix _nv
 	$$(call generate_cuda_nv_a,$1) && $$(call copy_build_product,$(SCRAMSTORENAME_STATIC))
 $($(1)_objdir)/%_nv.$(OBJEXT): $($(1)_objdir)/%.$(OBJEXT)
 	$$(call generate_cuda_nv_objs,$1)
-ifeq ($(strip $($1_plugintype))),)
+ifeq ($(strip $(2))),)
 all_$(1)+=$(PUB_DIRCACHE_MKDIR)/cuda_dlink/$(1).mk
 $(PUB_DIRCACHE_MKDIR)/cuda_dlink/$(1).mk: $(PUB_DIRCACHE_MKDIR)/cuda_dlink/scram.mk
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
@@ -78,6 +79,7 @@ $($(1)_cudadlink): $$($(1)_cudaobjs) $(WORKINGDIR)/cache/cuda_dlink/$(1)
 	$$(call link_cuda_objs,$1,$$($(1)_cudaobjs))
 endef
 
+#safename, plugin_type
 define AddCudaRules
 $(1)_cudafiles    := $(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES),%.$e),$($(1)_files))
 $(1)_cuda_dlink_deps := $$(call cuda_dlink_deps,$1)
@@ -86,7 +88,7 @@ $(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES),$($(1)_files_exts)),$$(eval $$(
 ifeq ($(strip $(SYNTAX_ONLY)),)
 $(1)_cudadlink    := $($(1)_objdir)/$(1)_cudadlink.$(OBJEXT)
 $(1)_objs         += $$($(1)_cudadlink)
-$(1)_PRE_INIT_FUNC:=$$($(1)_PRE_INIT_FUNC) $$(eval $$(call SetCudaRules,$1))
+$(1)_PRE_INIT_FUNC:=$$($(1)_PRE_INIT_FUNC) $$(eval $$(call SetCudaRules,$1,$2))
 endif
 $(1)_LOC_USE      += $(CUDA_TYPE_COMPILER)
 else

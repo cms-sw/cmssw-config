@@ -995,7 +995,7 @@ redirectlog_$(1) :=
 endif
 endef
 
-#safename,path,safepath,scriptstore,scripts,binstore
+#safename,path,safepath,scriptstore,scripts,plugintype
 define CommonBinaryHead
 $(1)_PROD_PACKAGE  := $(patsubst $(SCRAM_SOURCEDIR)/%/,%,$(dir $2))
 $(1)_PROD_SUBSYSTEM:=$$(patsubst %/,%,$$(dir $$($(1)_PROD_PACKAGE)))
@@ -1009,7 +1009,7 @@ $(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2/),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
-$$(eval $$(call AddCudaRules,$1))
+$$(eval $$(call AddCudaRules,$1,$6))
 $(1)_libdeps      := $$(call libdeps,$1)
 ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 ifneq ($(strip $(5)),)
@@ -1153,19 +1153,19 @@ $$(eval $$(call CommonBinaryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
 $$(eval $$(call CompileRules,$(1)))
 endef
 
-#safename,path,safepath,scriptstore,scripts,libstore,logprodstore
+#safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
-$(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5)))
-$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(3)))
+$(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
+$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
 endef
 
-#safename,path,safepath,scriptstore,scripts
+#safename,path,safepath,scriptstore,scripts,plugintype
 define LibraryHead
-$(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
+$(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5),$(6)))
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 endef
 
-#safename,path,libstore,logprodstore,safepath
+#safename,path,libstore,logprodstore,safepath,plugintype
 define LibraryTail
 $(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(4),$(5)))
 ifneq ($$(strip $$($(1)_objs)),)

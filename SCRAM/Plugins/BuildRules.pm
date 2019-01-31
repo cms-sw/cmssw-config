@@ -2188,7 +2188,8 @@ sub dumpBuildFileData ()
     my $store3= $self->getProductStore("lib");
     my $parent=$self->get("parent");
     if (($class eq "PLUGINS") || ($class eq "LIBRARY")){print $fh "${parent}_forbigobj+=${safename}\n";}
-    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store3),\$($store2)))\n";
+    my $ptype = $self->get("plugin_type");
+    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call Library,$safename,$path,$safepath,\$($store1),$ins_script,\$($store3),\$($store2),$ptype))\n";
   }
   elsif ($class ne "PYTHON")
   {
