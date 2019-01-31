@@ -56,7 +56,7 @@ endef
 
 #safename, plugin_type
 define SetCudaRules
-ifeq ($(strip $($(1)_CLASS)$(2)),LIBRARY)
+ifeq ($(strip $(filter %LIBRARY,$($(1)_CLASS))$(2)),$($(1)_CLASS))
 $(1)_EX_CUDA_DLINK_LIB := $(1)_nv
 $(WORKINGDIR)/cache/cuda_dlink/$(1): $($(1)_objdir)/lib$(1)_nv.$(AREXT) $($(1)_cuda_dlink_deps)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
