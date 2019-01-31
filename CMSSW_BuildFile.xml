@@ -56,9 +56,15 @@
 </architecture>
 <release name="_ASAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address"/>
+  <architecture name="_gcc8">
+    <flags CXXFLAGS="-fsanitize=pointer-compare -fsanitize=pointer-subtract"/>
+  </architecture>
 </release>
 <release name="_UBSAN_">
-  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
+  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined -fsanitize=builtin -fsanitize=pointer-overflow"/>
+  <architecture name="_gcc8">
+    <flags CXXFLAGS="-fsanitize=builtin -fsanitize=pointer-overflow"/>
+  </architecture>
 </release>
 <release name="_TSAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=thread"/>
