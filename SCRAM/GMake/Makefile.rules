@@ -277,7 +277,7 @@ $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
 Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
-Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB) $(call TOOLS_LIB_FUNC,$1,LIB))
+Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
@@ -1155,6 +1155,7 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
+$(1)_plugintype:=$(8)
 $(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
 $(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
 endef
