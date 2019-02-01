@@ -10,17 +10,17 @@ define GenerateReleaseCudaDlink
 ifneq ($(strip $(1)),)
 ifeq ($(strip $(wildcard $(PUB_DIRCACHE_MKDIR)/cuda_dlink_$(2)_release.mk)),)
 ifneq ($(strip $(wildcard $(1)/$(PUB_DIRCACHE_MKDIR)/dlink/scram.mk)),)
-$$(shell $(CMD_cat) $(1)/$(PUB_DIRCACHE_MKDIR)/dlink/*.mk )
--include $(PUB_DIRCACHE_MKDIR)/cuda_dlink_$(2)_release.mk
+$$(shell $(CMD_cat) $(1)/$(PUB_DIRCACHE_MKDIR)/dlink/*.mk > $(PUB_DIRCACHE_MKDIR)/cuda_dlink_$(2)_release.mk)
 else
 $$(shell $(CMD_touch) $(PUB_DIRCACHE_MKDIR)/cuda_dlink_$(2)_release.mk)
 endif
 endif
+-include $(PUB_DIRCACHE_MKDIR)/cuda_dlink_$(2)_release.mk
 endif
 endef
 
-$(eval $(call GenerateReleaseDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
-$(eval $(call GenerateReleaseDlink,$(RELEASETOP),base))
+$(eval $(call GenerateReleaseCudaDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
+$(eval $(call GenerateReleaseCudaDlink,$(RELEASETOP),base))
 
 define compile_cuda
   $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CUDA_FLAGS))
