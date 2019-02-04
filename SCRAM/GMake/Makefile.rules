@@ -1094,10 +1094,8 @@ endif
 endif
 $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
 	@$$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1) $$(endlog_$(1))
-precompile_$(6):: $($(1)_objdir)/precompile $($(1)_extra_files)
-	@:
-compile_$(6):: $($(1)_objdir)/compile
-	@:
+precompile_$(6): $($(1)_objdir)/precompile $($(1)_extra_files)
+compile_$(6): $($(1)_objdir)/compile
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 	@$(CMD_touch) $$@
 ifeq ($(strip $(4)),lib)
@@ -1111,10 +1109,8 @@ $($(1)_objdir)/link: $($(1)_objdir)/compile $($(1)_objdir)/$($(1)_product) $($(1
 all_$(1): $($(1)_objdir)/link $$(all_$(1))
 	@:
 else
-precompile_$(6)::
-	@:
-compile_$(6)::
-	@:
+precompile_$(6):
+compile_$(6):
 endif
 endif
 endef
