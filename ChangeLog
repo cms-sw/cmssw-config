@@ -1,3 +1,6 @@
+2019-02-08 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-51: Do not override CMD_python.
+
 2019-02-04 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-50:
 	- Generate pcm and rootmap files directly in to lib directory

@@ -182,13 +182,6 @@ ifeq ($(strip $(SCRAM_SOURCEDIR)),)
 SCRAM_SOURCEDIR:=src
 endif
 
-ifneq ($(strip $(PYTHON_BASE)),)
-CMD_python := $(PYTHON_BASE)/bin/python
-endif
-ifeq ($(IS_MIC),yes)
-CMD_python := $(PYTHONHOST_BASE)/bin/python
-endif
-
 ifneq ($(wildcard $(WORKINGDIR)/cache/bf/$(SCRAM_CONFIGDIR)/$(SCRAM_BUILDFILE)),)
 CONFIGDEPS += $(WORKINGDIR)/cache/bf/$(SCRAM_CONFIGDIR)/$(SCRAM_BUILDFILE)
 endif
