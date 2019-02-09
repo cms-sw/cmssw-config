@@ -109,7 +109,7 @@ $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$3)
 $(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2)))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
-ifneq ($(strip $(filter --cxxmodule,$(GENREFLEX_CPPFLAGS) $(GENREFLEX_ARGS))),)
+ifneq ($(strip $(filter --cxxmodule,$(GENREFLEX_CPPFLAGS) $($(6)_GENREFLEX_ARGS) $(GENREFLEX_ARGS))),)
 all_$(1)  += $(7)/$(2)r.pcm
 endif
 all_$(1)  += $(7)/$(2)r_rdict.pcm

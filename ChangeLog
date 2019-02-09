@@ -1,3 +1,7 @@
+2019-02-09 Shahzad Muzaffar  <@smuzaffar>
+        V05-07-52: Enable cxxmodule rules if GENREFLEX_ARGS in BuildFile.xml
+	also contains --cxxmodules flag
+
 2019-02-08 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-51: Do not override CMD_python.
 
