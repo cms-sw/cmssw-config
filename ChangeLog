@@ -1,3 +1,6 @@
+2019-02-18 Shahzad Muzaffar  <@smuzaffar>
+        V05-07-53: Updated cuda build rules
+
 2019-02-09 Shahzad Muzaffar  <@smuzaffar>
         V05-07-52: Enable cxxmodule rules if GENREFLEX_ARGS in BuildFile.xml
 	also contains --cxxmodules flag
