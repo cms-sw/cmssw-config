@@ -61,7 +61,7 @@
   </architecture>
 </release>
 <release name="_UBSAN_">
-  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined -fsanitize=builtin -fsanitize=pointer-overflow"/>
+  <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
   <architecture name="_gcc8">
     <flags CXXFLAGS="-fsanitize=builtin -fsanitize=pointer-overflow"/>
   </architecture>
