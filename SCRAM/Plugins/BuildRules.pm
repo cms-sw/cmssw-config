@@ -2071,7 +2071,7 @@ sub dumpBuildFileLOC ()
     foreach my $k ('ADD_SUBDIR', 'DD4HEP_PLUGIN', 'EDM_PLUGIN', 'EDM_PLUGIN',
                    'GENREFLEX_ARGS', 'LCG_DICT_HEADER', 'LCG_DICT_XML',
                    'NO_LIB_CHECKING', 'RIVET_PLUGIN', 'SKIP_FILE')
-    {$flags_added{${k}=1;}
+    {$flags_added{$k}=1;}
     foreach my $xpre ("","REM_")
     {
       foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
