@@ -2067,6 +2067,7 @@ sub dumpBuildFileLOC ()
   if ($localbf ne "")
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
+    my %flags_added=();
     foreach my $xpre ("","REM_")
     {
       foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
@@ -2074,6 +2075,7 @@ sub dumpBuildFileLOC ()
         my $flag="${xpre}${xflag}";
         my $v=$core->flags($flag);
         if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
+        $flags_added{${flag}}=1;
       }
     }
     foreach my $k (keys %{$core->allflags()})
@@ -2084,7 +2086,17 @@ sub dumpBuildFileLOC ()
         {
           my $v = $core->flags($k);
           if($v ne ""){print $fh "${safename}_$1_LOC_FLAGS_$2   := $v\n";}
+          $flags_added{${flag}}=1;
         }
+      }
+    }
+    foreach my $k (keys %{$core->allflags()})
+    {
+      my $v = $core->flags($k);
+      if (! exists $flags_added{$k})
+      {
+         my $v = $core->flags($k);
+         print $fh "${safename}_EXTRA_LOC_FLAGS_$k   := $v\n";
       }
     }
     foreach my $data ("INCLUDE")
