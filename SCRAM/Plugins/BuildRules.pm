@@ -2070,7 +2070,8 @@ sub dumpBuildFileLOC ()
     my %flags_added=();
     foreach my $k ('ADD_SUBDIR', 'DD4HEP_PLUGIN', 'EDM_PLUGIN', 'EDM_PLUGIN',
                    'GENREFLEX_ARGS', 'LCG_DICT_HEADER', 'LCG_DICT_XML',
-                   'NO_LIB_CHECKING', 'RIVET_PLUGIN', 'SKIP_FILE')
+                   'NO_LIB_CHECKING', 'RIVET_PLUGIN', 'SKIP_FILE', 'DNN_NAME',
+		   'NO_TESTRUN', 'PRE_TEST', 'SETENV','TEST_RUNNER_ARGS')
     {$flags_added{$k}=1;}
     foreach my $xpre ("","REM_")
     {
