@@ -2068,6 +2068,10 @@ sub dumpBuildFileLOC ()
   {
     print $fh "${safename}_BuildFile    := \$(WORKINGDIR)/cache/bf/${localbf}\n";
     my %flags_added=();
+    foreach my $k ('ADD_SUBDIR', 'DD4HEP_PLUGIN', 'EDM_PLUGIN', 'EDM_PLUGIN',
+                   'GENREFLEX_ARGS', 'LCG_DICT_HEADER', 'LCG_DICT_XML',
+                   'NO_LIB_CHECKING', 'RIVET_PLUGIN', 'SKIP_FILE')
+    {$flags_added{${k}=1;}
     foreach my $xpre ("","REM_")
     {
       foreach my $xflag ((@{$self->{cache}{DefaultCompilerFlags}},@{$self->{cache}{DefaultBuildFileFlagsToDump}}))
@@ -2075,7 +2079,7 @@ sub dumpBuildFileLOC ()
         my $flag="${xpre}${xflag}";
         my $v=$core->flags($flag);
         if($v ne ""){print $fh "${safename}_LOC_FLAGS_${flag}   := $v\n";}
-        $flags_added{${flag}}=1;
+        $flags_added{$flag}=1;
       }
     }
     foreach my $k (keys %{$core->allflags()})
@@ -2086,13 +2090,12 @@ sub dumpBuildFileLOC ()
         {
           my $v = $core->flags($k);
           if($v ne ""){print $fh "${safename}_$1_LOC_FLAGS_$2   := $v\n";}
-          $flags_added{${flag}}=1;
+          $flags_added{$k}=1;
         }
       }
     }
     foreach my $k (keys %{$core->allflags()})
     {
-      my $v = $core->flags($k);
       if (! exists $flags_added{$k})
       {
          my $v = $core->flags($k);
