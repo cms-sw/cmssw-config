@@ -1,8 +1,12 @@
+2019-02-26 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-54: Disable rootmap dependency rule, this shoudl avoid
+	rebuilding of packages at runtests time.
+
 2019-02-18 Shahzad Muzaffar  <@smuzaffar>
-        V05-07-53: Updated cuda build rules
+	V05-07-53: Updated cuda build rules
 
 2019-02-09 Shahzad Muzaffar  <@smuzaffar>
-        V05-07-52: Enable cxxmodule rules if GENREFLEX_ARGS in BuildFile.xml
+	V05-07-52: Enable cxxmodule rules if GENREFLEX_ARGS in BuildFile.xml
 	also contains --cxxmodules flag
 
 2019-02-08 Shahzad Muzaffar  <@smuzaffar>
