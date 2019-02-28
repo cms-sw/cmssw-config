@@ -2100,7 +2100,7 @@ sub dumpBuildFileLOC ()
       if (! exists $flags_added{$k})
       {
          my $v = $core->flags($k);
-         print $fh "${safename}_EXTRA_LOC_FLAGS_$k   := $v\n";
+         print $fh "${safename}_LOC_FLAGS_$k   := $v\n";
       }
     }
     foreach my $data ("INCLUDE")

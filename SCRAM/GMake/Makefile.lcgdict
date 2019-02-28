@@ -118,7 +118,7 @@ $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
 	$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $$< | grep '#include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' > $$@
 $($(1)_objdir)/$(6)/$(2)r.ignore: $($(1)_config)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_rm) -f $$@ && $(CMD_touch) $$@ &&\
-	$(CMD_echo) $($(1)_EXTRA_LOC_FLAGS_IGNORE_MODULE_FILE) | $(CMD_tr) ' ' '\n' | xargs -i $(CMD_echo) '.*/{}' >> $$@
+	$(CMD_echo) $($(1)_LOC_FLAGS_IGNORE_MODULE_FILE) | $(CMD_tr) ' ' '\n' | xargs -i $(CMD_echo) '.*/{}' >> $$@
 $($(1)_objdir)/$(6)/$(2)r.all: $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface $($(1)_config)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_echo) ">> Searching all header under $($(1)_PROD_PACKAGE)/interface" &&\
 	$(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $$@
