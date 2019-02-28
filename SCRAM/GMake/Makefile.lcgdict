@@ -128,7 +128,7 @@ $($(1)_objdir)/$(6)/$(2)r.h: $3 $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir
         $(CMD_xargs) -i $(CMD_echo) '#include "{}"' >> $$@
 endif
 endif
-$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE),$($l).rootmap)
+$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
 	$$(call generate_lcgdict,$(1),$(1),$(4),$$($(2)r_header),$(6)/$(2)i.cc,$(5),$7)
 $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$3)
@@ -139,9 +139,10 @@ $(7)/$(2)%.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
 all_$(1)  += $(7)/$(2)r.rootmap
 $(1)_ROOTMAP_FILES += $(7)/$(2)r.rootmap
 $(1)_libdeps += $(7)/$(2)r.rootmap
-$(1).rootmap: $$($(1)_ROOTMAP_FILES)
+$(WORKINGDIR)/rootmaps/$(1):: $(7)/$(2)r.rootmap
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
-	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$(2)r*" > $$(call AutoCleanFile,$$<,lcgdict)
+	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$(2)r* $(WORKINGDIR)/rootmaps/$(1)" > $$(call AutoCleanFile,$$<,lcgdict)
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 endif
 ifeq ($(strip $(NO_CAPABILITIES)),)
@@ -153,6 +154,5 @@ endif
 endif
 endef
 
-.PHONY: %.rootmap
-%.rootmap:
-	@:
+$(WORKINGDIR)/rootmaps/%:
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
