@@ -1,4 +1,8 @@
 2019-02-26 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-55: Fixed rootmap dependency rule to avoid rebuilts at
+	unittests time. Make use of USE_SOURCE_ONLY flag too.
+
+2019-02-26 Shahzad Muzaffar  <@smuzaffar>
 	V05-07-54: Disable rootmap dependency rule, this shoudl avoid
 	rebuilding of packages at runtests time.
 
