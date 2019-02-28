@@ -1,4 +1,5 @@
 2019-02-26 Shahzad Muzaffar  <@smuzaffar>
+	V05-07-56: Make all BuildFile flags available to gmake.
 	V05-07-55: Fixed rootmap dependency rule to avoid rebuilts at
 	unittests time. Make use of USE_SOURCE_ONLY flag too.
 
