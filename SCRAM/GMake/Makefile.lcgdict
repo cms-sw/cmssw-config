@@ -1,8 +1,28 @@
+define lcg_included_headers
+  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_echo) ">> Searching already included headers in $<" &&\
+  $(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) '^ *#include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq) > $@
+endef
+
+define lcg_ignored_headers
+  @[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
+  $(CMD_echo) $($(1)_LOC_FLAGS_IGNORE_MODULE_FILE) | $(CMD_tr) ' ' '\n' | $(CMD_xargs) -i $(CMD_echo) '.*/{}' >> $@
+endef
+
+define lcg_all_headers
+  @[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_echo) ">> Searching all header under $($(1)_PROD_PACKAGE)/interface" &&\
+  $(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $@
+endef
+
+define lcg_full_header
+  @$(CMD_cp) -P $< $@ && $(CMD_echo) ">> Adding remaining headers in $<" &&\
+  $(CMD_grep) -v -f $(@D)/$(2)r.ignore -f $(@D)/$(2)r.included $(@D)/$(2)r.all | $(CMD_xargs) -i $(CMD_echo) '#include "{}"' >> $@
+endef
+
 define compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling LCG dictionary: $<" &&\
   $(VERB_ECHO)                   $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  (($(CMD_cd) $($(1)_objdir)/..; $(CXX) $(CXX_MMD) $(CXX_MF) $(1)/$(patsubst $($(1)_objdir)/%,%,$(basename $@).d) -c -I$(LOCALTOP) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_touch) -t $(OLD_TIMESTAMP) $< && exit 1)) $(endlog_$(2))
   @$(startlog_$(2))$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@),$3)$(endlog_$(2))
 endef
 
@@ -10,7 +30,7 @@ endef
 define generate_modulemap
   $(CMD_echo) ">> Generated modulemap for $($(1)_PROD_PACKAGE)" &&\
   $(CMD_echo) "module \"$(2)r\" {" > $@ &&\
-  for inc in `$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) '#include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq)`; do \
+  for inc in `$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) '^ *# *include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq)`; do \
     hdr=`$(CMD_echo) $$inc | $(CMD_sed) 's|.*/||'` ;\
     $(CMD_echo) "  module \"$$hdr\" { header \"$$inc\" export * }" >> $@ ;\
   done ;\
@@ -141,18 +161,13 @@ $($(1)_objdir)/$(6)/$(2)r.modulemap: $($(1)_objdir)/$(6)/$(2)r.h
 	@$$(call generate_modulemap,$1,$2)
 $($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h
 $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_echo) ">> Searching already included headers in $3" &&\
-	$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $$< | $(CMD_grep) '#include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' > $$@
+	@$$(call lcg_included_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.ignore: $($(1)_config)
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_rm) -f $$@ && $(CMD_touch) $$@ &&\
-	$(CMD_echo) $($(1)_LOC_FLAGS_IGNORE_MODULE_FILE) | $(CMD_tr) ' ' '\n' | $(CMD_xargs) -i $(CMD_echo) '.*/{}' >> $$@
+	@$$(call lcg_ignored_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.all: $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface $($(1)_config)
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_echo) ">> Searching all header under $($(1)_PROD_PACKAGE)/interface" &&\
-	$(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $$@
+	@$$(call lcg_all_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.h: $3 $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir)/$(6)/$(2)r.all $($(1)_objdir)/$(6)/$(2)r.ignore
-	@$(CMD_cp) -P $$< $$@ && $(CMD_echo) ">> Adding remaining headers in $3" &&\
-	$(CMD_grep) -v -f $($(1)_objdir)/$(6)/$(2)r.ignore -f $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir)/$(6)/$(2)r.all | \
-        $(CMD_xargs) -i $(CMD_echo) '#include "{}"' >> $$@
+	@$$(call lcg_full_header,$1,$2)
 endif
 endif
 $($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l)) | $(SCRAM_SOURCEDIR)/module.modulemap
