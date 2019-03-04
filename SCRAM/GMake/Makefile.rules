@@ -28,6 +28,7 @@ ALL_PYTHON_DIRS    :=
 ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_PRODS          :=
+ALL_MODULEMAPS     :=
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
 FAST:=
@@ -1961,5 +1962,7 @@ scripts_%:
 	@:
 skip-scripts-copy: all
 	@:
+$(SCRAM_SOURCEDIR)/module.modulemap: $(ALL_MODULEMAPS)
+	@$(call generate_main_modulemap)
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
