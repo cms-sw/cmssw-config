@@ -159,7 +159,7 @@ $$(eval $(2)r_header:=$($(1)_objdir)/$(6)/$(2)r.h)
 ALL_MODULEMAPS+=$($(1)_objdir)/$(6)/$(2)r.modulemap
 $($(1)_objdir)/$(6)/$(2)r.modulemap: $($(1)_objdir)/$(6)/$(2)r.h
 	@$$(call generate_modulemap,$1,$2)
-$($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h
+$($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h | $(SCRAM_SOURCEDIR)/module.modulemap
 $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
 	@$$(call lcg_included_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.ignore: $($(1)_config)
@@ -170,7 +170,7 @@ $($(1)_objdir)/$(6)/$(2)r.h: $3 $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir
 	@$$(call lcg_full_header,$1,$2)
 endif
 endif
-$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l)) | $(SCRAM_SOURCEDIR)/module.modulemap
+$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
 	$$(call generate_lcgdict,$(1),$(1),$(4),$$($(2)r_header),$(6)/$(2)i.cc,$(5),$7)
 $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$3)
