@@ -14,6 +14,7 @@ define AddDNNRule
 $(1)_precompile += $($(1)_$($(1)_DNN_NAME)_HEADER)
 $(1)_objs   += $($(1)_objdir)/$(3)/tfcompile_metadata.o $($(1)_objdir)/$(3)/tfcompile_function.o
 $($(1)_objdir)/$(3)/tfcompile_metadata.o $($(1)_objdir)/$(3)/tfcompile_function.o: $($(1)_$($(1)_DNN_NAME)_HEADER)
+	@$(CMD_touch) $$@
 $($(1)_$($(1)_DNN_NAME)_HEADER): $($(1)_DNN_PB) $($(1)_DNN_CONFIG_PBTXT) $($(1)_objdir)/config
 	@$(CMD_echo) "01:$(CMD_rm) -rf $$(@D)" > $$(call AutoCleanFile,$($(1)_objdir)/$3,dnn)
 	$(call generate_dnn,$1,$2,$3,$($(1)_objdir)/$(3))

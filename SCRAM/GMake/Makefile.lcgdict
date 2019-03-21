@@ -63,7 +63,7 @@ define generate_lcgdict
               if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | $(CMD_grep) -v /_Builtin_intrinsics.pcm | wc -l` -gt 0 ] ; then \
                 $(CMD_echo) "*** ERROR:$1: Generated PCM for other packages" ; $(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' ; \
               fi ;\
-              $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
+              $(CMD_touch) -r $@ $(7)/$(basename $(@F)).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
@@ -170,7 +170,7 @@ $($(1)_objdir)/$(6)/$(2)r.h: $3 $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir
 	@$$(call lcg_full_header,$1,$2)
 endif
 endif
-$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
+$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(if $(strip $($($l)_INIT_FUNC)),$(foreach x,$($($l)_LCGDICTS),$(WORKINGDIR)/rootmaps/$($l)_$x)))
 	$$(call generate_lcgdict,$(1),$(1),$(4),$$($(2)r_header),$(6)/$(2)i.cc,$(5),$7)
 $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
 	$$(call compile_lcgdict,$(1),$(1),$3)
@@ -181,7 +181,7 @@ $(7)/$(2)%.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
 all_$(1)  += $(7)/$(2)r.rootmap
 $(1)_ROOTMAP_FILES += $(7)/$(2)r.rootmap
 $(1)_libdeps += $(7)/$(2)r.rootmap
-$(WORKINGDIR)/rootmaps/$(1):: $(7)/$(2)r.rootmap
+$(WORKINGDIR)/rootmaps/$(2): $(7)/$(2)r.rootmap
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
 	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$(2)r* $(WORKINGDIR)/rootmaps/$(1)" > $$(call AutoCleanFile,$$<,lcgdict)
@@ -197,4 +197,4 @@ endif
 endef
 
 $(WORKINGDIR)/rootmaps/%:
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
+	@$(CMD_echo) "Build rules errors: Some dependency is wrong. $@ should not build." && exit 1

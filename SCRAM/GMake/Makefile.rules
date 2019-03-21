@@ -669,14 +669,13 @@ endef
 # Shared library linking
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(5) $@" &&\
-  $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
   (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)) ;\
   fi &&\
   $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(call run_edm_checks,$1,$2,$3,$4) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1)
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
@@ -686,11 +685,10 @@ define link_lib_edm
 endef
 define link_pylib
   @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
-  $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1) &&\
   $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink) &&\
   (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1)
 endef  
 ##############################################################################
 # Binary/test building Rules
@@ -897,13 +895,14 @@ $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 ifeq ($(strip $(origin $2_python_parent)),undefined)
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
-	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) &&\
-	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
+	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) || $(CMD_true)
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
 	$$(call create_package_init,$1)
 else
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAM_SOURCEDIR)/$1/python/__init__.py
 	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
 	[ -e $$(@D) ] || $(CMD_ln) -s ../../$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
+	@$(CMD_touch) $$@
 endif
 $(SCRAM_SOURCEDIR)/$(1)/python/__init__.py:
 	@$$(call create_package_init,$1) &&\
@@ -1841,7 +1840,7 @@ echo_%:
 $(SCRAMSTORENAME_PYTHON)/__init__.py:
 	@$(CMD_touch) $@
 $(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links $(addsuffix __init__.py,$(addprefix python/,$(dir $(ALL_PYTHON_DIRS))))
-	@[ -f $@ ] || ($(CMD_mkdir) -p $(@D) ; $(CMD_touch) -t $(OLD_TIMESTAMP) $@)
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
 	  $(call BuildClean,$*/$$dir,0[0-9]);\

@@ -20,6 +20,7 @@ ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 all_$(1)  += $(4)/$(2)r_rdict.pcm
 $(3)/$(2)r_rdict.pcm: $(3)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
+	@$(CMD_touch) $$@
 $(4)/$(2)r_rdict.pcm: $(3)/$(2)r_rdict.pcm
 	@if [ -f $$< ] ; then \
 	  $(CMD_cp) $$< $$@ &&\
