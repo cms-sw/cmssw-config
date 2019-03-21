@@ -1,6 +1,7 @@
 2019-03-21 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-08: Fix rebuild issues. generate lcg dict cc file only after
 	all pcm of its deps.
+	V05-08-09: Fix coral build rules for python
 
 2019-03-04 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-07: For cxxmodules autot generate classes.h and module.modulemap.
