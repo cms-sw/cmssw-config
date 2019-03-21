@@ -130,6 +130,7 @@ BASECMD_which := $(CMD_which)
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetLocalCMDs,$(subst :,$(comma),$c))))
 $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
+PYTHON_RELPATH := $(shell $(CMD_echo) $(SCRAMSTORENAME_PYTHON) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
 ###################################
 UNAME                       := $(CMD_uname)
 ifndef CXX_MF
@@ -900,8 +901,8 @@ $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__i
 	$$(call create_package_init,$1)
 else
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAM_SOURCEDIR)/$1/python/__init__.py
-	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) &&\
-	[ -e $$(@D) ] || $(CMD_ln) -s ../../$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
+	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) || $(CMD_true)
+	@[ -e $$(@D) ] || $(CMD_ln) -s  ../$(PYTHON_RELPATH)/$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
 	@$(CMD_touch) $$@
 endif
 $(SCRAM_SOURCEDIR)/$(1)/python/__init__.py:
