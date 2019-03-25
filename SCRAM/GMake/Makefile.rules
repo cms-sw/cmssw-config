@@ -21,6 +21,7 @@ prebuild       :=
 postbuild      :=
 prelibdeps     :=
 prebindeps     :=
+ALL_EXTRA_PRODUCT_RULES:=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
 ALL_PACKAGES       :=
@@ -324,6 +325,7 @@ $(eval $(call AddCachedVariable,$(1)_ORDER,CalculateToolOrder:$(1):99999,))
 $(eval $(call AddCachedVariable,$(1)_EX_LIB_ALL,FindToolDepVariable:$(1):LIB:EX,1))
 $(eval $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,))
 $(eval $(call AddCachedVariable,$(1)_EX_UOLIB,FindUOLibDependency:$(1),))
+$(eval $(foreach r,$(ALL_EXTRA_PRODUCT_RULES),$(call $r_ExtraRules,$1)))
 else
 $(1)_ORDER:=99999
 endif
