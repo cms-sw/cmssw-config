@@ -1,3 +1,7 @@
+2019-03-25 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-09: Bug fix: In case of deleted packages, do not re-create
+	python/Subsystem/__init__.py file if already exists.
+
 2019-03-21 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-08: Fix rebuild issues. generate lcg dict cc file only after
 	all pcm of its deps.

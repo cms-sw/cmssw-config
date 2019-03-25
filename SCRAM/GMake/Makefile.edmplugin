@@ -222,7 +222,9 @@ $(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMM
 	  $(CMD_mkdir) -p $(SCRAMSTORENAME_PYTHON)/$$pkg &&\
 	  $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/$$pkg/__init__.py  &&\
 	  SUBSYS=$$($(CMD_dirname) $$pkg) &&\
-	  $(CMD_echo) "__path__.append('${RELEASETOP}/$(SCRAMSTORENAME_PYTHON)/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	  if [ ! -f $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ] ; then \
+	    $(CMD_echo) "__path__.append('${RELEASETOP}/$(SCRAMSTORENAME_PYTHON)/$$SUBSYS')" > $(SCRAMSTORENAME_PYTHON)/$$SUBSYS/__init__.py ;\
+	  fi;\
 	done;\
 	[ -f $(SCRAMSTORENAME_PYTHON)/__init__.py ] || $(CMD_touch) $(SCRAMSTORENAME_PYTHON)/__init__.py
 
