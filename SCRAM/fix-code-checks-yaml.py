@@ -14,7 +14,8 @@ if e:
 localtop = environ["CMSSW_BASE"]
 files = [ "/src/"+f.split(argv[1],1)[-1][:-5].strip("/") for f in o.split("\n") ]
 ignore_files=[]
-print "Changed files:",files
+track_changes = {}
+print "Changed files:  ",'\n  '.join(files)
 for f in o.split("\n"):
   print "Working on",f
   obj = yaml.load(open(f))
@@ -27,6 +28,12 @@ for f in o.split("\n"):
   for d in obj["Diagnostics"]:
     new_rep = []
     if (not "Replacements" in d) or (not d["Replacements"]): continue
+    dia_key='%s:%s:%s' % (d["DiagnosticName"], d['FilePath'], d['FileOffset'])
+    if dia_key in track_changes:
+      print "Dropping %s from %s. found in %s" % (dia_key, f, track_changes[dia_key])
+      change+=1
+      continue
+    track_changes[dia_key] = f
     for r in d["Replacements"]:
       rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
       if rf in files: new_rep.append(r)
