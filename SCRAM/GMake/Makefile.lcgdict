@@ -102,8 +102,7 @@ endef
 #safename,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
 ifeq ($(strip $(NO_CAPABILITIES)),)
 define LCGDict
-$(eval $(call LCGDictHeaders,$1,$2,$3,$5))
-$(1)$(6)_GENREFLEX_ARGS := $(5)
+$(eval $(call LCGDictHeaders,$1,$2,$3,$5,$6))
 $(eval $(call AddLCGDictRule,$(1),$($1_lcg_header),$($1_lcg_def_xml),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
 $(eval $(call AddSealCapabilitiesRule,$(1),$(1)$(6),a/))
 $(WORKINGDIR)/rootmaps/$1: $(foreach x,$($1_LCGDICTS),$(WORKINGDIR)/rootmaps/$1_$(x))
@@ -120,10 +119,9 @@ endif
 endef
 else
 define LCGDict
-$(eval $(call LCGDictHeaders,$1,$2,$3,$5))
-$(1)$(6)_GENREFLEX_ARGS := $(5)
+$(eval $(call LCGDictHeaders,$1,$2,$3,$5,$6))
 $(1)_CLASSES_DEF_XML:=$3
-$(eval $$(call AddLCGDictRule,$(1),$($1_lcg_header),$($1_lcg_def_xml),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
+$(eval $(call AddLCGDictRule,$(1),$($1_lcg_header),$($1_lcg_def_xml),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
 ALL_CLASS_VERSION_RULES += $($(1)_objdir)/updateclassversion
 $(WORKINGDIR)/rootmaps/$1: $(foreach x,$($1_LCGDICTS),$(WORKINGDIR)/rootmaps/$1_$(x))
 	@$(CMD_touch) $$@
@@ -135,9 +133,10 @@ endif
 endef
 endif
 
-##safename,hfiles,defxmlfiles,genreflexargs
+##safename,hfiles,defxmlfiles,genreflexargs,name
 define LCGDictHeaders
 $(1)_prodsrc += $(patsubst src/%,%,$2 $3)
+$(1)$(5)_GENREFLEX_ARGS := $(4)
 $1_lcg_header:=$2
 $1_lcg_def_xml:=$3
 ifneq ($(strip $(filter --cxxmodule,$(4))),)
