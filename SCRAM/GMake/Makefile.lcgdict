@@ -10,7 +10,11 @@ endef
 
 define lcg_all_headers
   @[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_echo) ">> Searching all header under $($(1)_PROD_PACKAGE)/interface" &&\
-  $(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $@
+  if [ -e $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface ] ; then \
+    $(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $@ ;\
+  else \
+    $(CMD_touch) $@ ;\
+  fi
 endef
 
 define lcg_full_header
@@ -55,6 +59,22 @@ define generate_classes_h
   $(endlog_$(2))
 endef
 
+define generate_classes_all_h
+  [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) Generating $@&&\
+  $(CMD_cat) $? > $@
+endef
+
+define generate_classes_all_def_xml
+  [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) Generating $@ &&\
+  $(CMD_echo) '<lcgdict>' > $@.tmp &&\
+  $(CMD_cat) $? | sed 's|<lcgdict>||i;s|</lcgdict>||i' >> $@.tmp &&\
+  $(CMD_echo) '</lcgdict>' >> $@.tmp &&\
+  $(CMD_mv) $@.tmp $@
+endef
+
+
 define generate_lcgdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
@@ -82,11 +102,10 @@ endef
 #safename,hfiles,defxmlfiles,prodstore,genreflexargs,Cababilities
 ifeq ($(strip $(NO_CAPABILITIES)),)
 define LCGDict
-$(eval $(1)_LCGDIT_COUNT:=$(words $3))
-$(1)_prodsrc += $(patsubst src/%,%,$2 $3)
+$(eval $(call LCGDictHeaders,$1,$2,$3,$5))
 $(1)$(6)_GENREFLEX_ARGS := $(5)
-$$(eval $$(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
-$$(eval $$(call AddSealCapabilitiesRule,$(1),$(1)$(6),a/))
+$(eval $(call AddLCGDictRule,$(1),$($1_lcg_header),$($1_lcg_def_xml),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
+$(eval $(call AddSealCapabilitiesRule,$(1),$(1)$(6),a/))
 $(WORKINGDIR)/rootmaps/$1: $(foreach x,$($1_LCGDICTS),$(WORKINGDIR)/rootmaps/$1_$(x))
 	@$(CMD_touch) $$@
 ifneq ($(strip $(6)),)
@@ -101,11 +120,10 @@ endif
 endef
 else
 define LCGDict
-$(1)_prodsrc += $(patsubst src/%,%,$2 $3)
-$(1)_LCGDIT_COUNT:=$(words $3)
+$(eval $(call LCGDictHeaders,$1,$2,$3,$5))
 $(1)$(6)_GENREFLEX_ARGS := $(5)
 $(1)_CLASSES_DEF_XML:=$3
-$$(eval $$(call AddLCGDictRule,$(1),$(2),$(3),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
+$(eval $$(call AddLCGDictRule,$(1),$($1_lcg_header),$($1_lcg_def_xml),$(1)$(6),a,$(4),$($(1)_LCGDICTS)))
 ALL_CLASS_VERSION_RULES += $($(1)_objdir)/updateclassversion
 $(WORKINGDIR)/rootmaps/$1: $(foreach x,$($1_LCGDICTS),$(WORKINGDIR)/rootmaps/$1_$(x))
 	@$(CMD_touch) $$@
@@ -116,6 +134,24 @@ $($(1)_objdir)/updateclassversion: $($(1)_objdir)/$(MODULE_PREFIX)$(1).$(SHAREDS
 endif
 endef
 endif
+
+##safename,hfiles,defxmlfiles,genreflexargs
+define LCGDictHeaders
+$(1)_prodsrc += $(patsubst src/%,%,$2 $3)
+$1_lcg_header:=$2
+$1_lcg_def_xml:=$3
+ifneq ($(strip $(filter --cxxmodule,$(4))),)
+ifneq ($(strip $(words $2)),1)
+$1_lcg_header:=$($(1)_objdir)/a/$(1)_all.h
+$1_lcg_def_xml:=$($(1)_objdir)/a/$(1)_all_def.xml
+$1_LCGDICTS:=x
+$($(1)_objdir)/a/$(1)_all.h: $2 $($(1)_config)
+	@$$(call generate_classes_all_h,$1,$2)
+$($(1)_objdir)/a/$(1)_all_def.xml: $3 $($(1)_config)
+	@$$(call generate_classes_all_def_xml,$1,$3)
+endif
+endif
+endef
 
 #safename,prodstore,Capabilities,defxmlfiles,objdir,objs,
 define LCGDictLibRule
@@ -158,13 +194,12 @@ ifneq ($(strip $(filter $(LOCALTOP)/$(WORKINGDIR)/classes/%,$3)),)
 $3: $4
 	$$(call generate_classes_h)
 endif
-$(eval $(2)r_header:=$3)
+$(2)r_header:=$3
 $(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2)))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 ifneq ($(strip $(filter --cxxmodule,$($(5)_GENREFLEX_ARGS))),)
 all_$(1)  += $(7)/$(2)r.pcm
-ifeq ($(strip $($(1)_LCGDIT_COUNT)),1)
-$$(eval $(2)r_header:=$($(1)_objdir)/$(6)/$(2)r.h)
+$(2)r_header:=$($(1)_objdir)/$(6)/$(2)r.h
 ALL_MODULEMAPS+=$($(1)_objdir)/$(6)/$(2)r.modulemap
 $($(1)_objdir)/$(6)/$(2)r.modulemap: $($(1)_objdir)/$(6)/$(2)r.h
 	@$$(call generate_modulemap,$1,$2)
@@ -173,11 +208,10 @@ $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
 	@$$(call lcg_included_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.ignore: $($(1)_config)
 	@$$(call lcg_ignored_headers,$1)
-$($(1)_objdir)/$(6)/$(2)r.all: $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface $($(1)_config)
+$($(1)_objdir)/$(6)/$(2)r.all: $(wildcard $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface) $($(1)_config)
 	@$$(call lcg_all_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.h: $3 $($(1)_objdir)/$(6)/$(2)r.included $($(1)_objdir)/$(6)/$(2)r.all $($(1)_objdir)/$(6)/$(2)r.ignore
 	@$$(call lcg_full_header,$1,$2)
-endif
 endif
 $($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
 	$$(call generate_lcgdict,$(1),$(1),$(4),$$($(2)r_header),$(6)/$(2)i.cc,$(5),$7)

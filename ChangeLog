@@ -1,3 +1,7 @@
+2019-04-01 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-13: Bug fix for CXXModules IB: Avoid Package/interface missing error;
+	Auto generte one big classes.h/xml for packages with multiple classes.h files.
+
 2019-03-29 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-12: Bug fix: This fixes the problem is two source files
 	propose same change for a header.
