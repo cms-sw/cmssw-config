@@ -1,5 +1,6 @@
 2019-04-04 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-16: Included changes from V05-08-21
+	Only include top level headers files in auto-generated classes.h
 
 2019-04-09 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-21: Fix code-fomat rule and run it for all file with extnsion
