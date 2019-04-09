@@ -1946,7 +1946,7 @@ $(LLVM_CCDB_EXT): FORCE_TARGET
 	$(SCRAM_CONFIGDIR)/SCRAM/llvm-ccdb.py $(LLVM_CCDB_EXT)
 llvm-ccdb: $(LLVM_CCDB_EXT)
 	@:
-ifneq ($(strip $(filter code-checks code-checks-% code-cormat,$(MAKECMDGOALS))),)
+ifneq ($(strip $(filter code-checks code-checks-% code-format,$(MAKECMDGOALS))),)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.coderules
 endif
 ifneq ($(strip $(RELEASETOP)),)

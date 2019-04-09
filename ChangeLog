@@ -1,3 +1,7 @@
+2019-04-09 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-21: Fix code-fomat rule and run it for all file with extnsion
+	cpp, cc, cxx, h, hpp, hh
+
 2019-04-02 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-20: Fix path for listcomponents.
 
