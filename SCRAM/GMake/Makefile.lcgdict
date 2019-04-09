@@ -11,7 +11,7 @@ endef
 define lcg_all_headers
   @[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_echo) ">> Searching all header under $($(1)_PROD_PACKAGE)/interface" &&\
   if [ -e $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface ] ; then \
-    $(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $@ ;\
+    $(CMD_find) $(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface -maxdepth 1 -name '*.h' | $(CMD_sed) 's|^$(SCRAM_SOURCEDIR)/||' > $@ ;\
   else \
     $(CMD_touch) $@ ;\
   fi
