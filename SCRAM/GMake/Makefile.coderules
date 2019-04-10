@@ -52,7 +52,7 @@ code-checks-apply:
 ifneq ($(strip $(filter code-format,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
   ifeq ($(strip $(USER_CODE_FORMAT_FILES)$(USER_CODE_FORMAT_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) -regex '.*\.\(cpp\|hpp\|cc\|cxx\|h\)'))
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) -regex '.*\.\(cpp\|cc\|cxx\|h\|hpp\|hh\)'))
   else ifneq ($(strip $(USER_CODE_FORMAT_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_FORMAT_FILE)))
   else
