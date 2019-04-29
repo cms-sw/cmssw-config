@@ -25,6 +25,7 @@ for f in o.split("\n"):
   if (not "Diagnostics" in obj) or (not obj["Diagnostics"]):
     run_cmd("rm -f %s" % f)
     continue
+  atN = False
   for d in obj["Diagnostics"]:
     new_rep = []
     if (not "Replacements" in d) or (not d["Replacements"]): continue
@@ -36,7 +37,12 @@ for f in o.split("\n"):
     track_changes[dia_key] = f
     for r in d["Replacements"]:
       rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
-      if rf in files: new_rep.append(r)
+      if rf in files:
+        if d["DiagnosticName"] in ['readability-braces-around-statements']:
+          if r['ReplacementText'] == ' }':
+            r['ReplacementText']='@N@}'
+            atN = True
+        new_rep.append(r)
       else:
         if not rf in ignore_files:
           ignore_files.append(rf)
@@ -52,5 +58,7 @@ for f in o.split("\n"):
       yaml.dump(obj,ref,default_flow_style=False, width=4096)
       ref.write("...\n")
       ref.close()
+      if atN:
+        run_cmd('sed -i -e \'s|@N@|\\n|g\' %s' % f)
   else: run_cmd("rm -f %s" % f)
 
