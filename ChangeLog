@@ -1,6 +1,7 @@
 2019-04-29 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-23: Fix fix-code-checks-yaml.py to keep the extra new line
 	for readability-braces-around-statements clang-tidy check
+	V05-08-24: Use find -iname to find files 
 
 2019-04-04 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-16: Included changes from V05-08-21
