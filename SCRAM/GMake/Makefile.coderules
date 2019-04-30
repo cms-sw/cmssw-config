@@ -1,4 +1,5 @@
 .PHONY: code-format-all code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply code-checks-internal code-checks-dump-config code-checks-all
+CODE_FORMAT_FILES_EXTS:=cpp cc cxx h hh hpp
 CODE_CHECKS_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-tidy)
 CODE_FORMAT_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-format)
 ifeq ($(strip $(CODE_CHECKS_CONFIG_FILE)),)
@@ -44,18 +45,17 @@ code-checks-all: code-checks-run
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
 code-checks-apply:
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
-	  if [ "$(USER_CODE_CHECKS_CHANGE_ONLY)" = "YES" ] ; then $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks ; fi &&\
+	  $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks &&\
 	  $(CMD_echo) clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
 	  clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
 	  $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
 	fi
 ifneq ($(strip $(filter code-format-all,$(MAKECMDGOALS))),)
-  CODE_FORMAT_FILES_EXTS:=cpp cc cxx h hh hpp
   CODE_CHECK_FILES:=
   ifeq ($(strip $(USER_CODE_FORMAT_FILES)$(USER_CODE_FORMAT_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) $(wordlist 2,999999,$(foreach e,$(CODE_FORMAT_FILES_EXTS),-o -iname '*.$e'))))
   else ifneq ($(strip $(USER_CODE_FORMAT_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_FORMAT_FILE) | $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$'))
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$' $(USER_CODE_FORMAT_FILE)))
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_echo) $(USER_CODE_FORMAT_FILES) | $(CMD_tr) ' ' '\n' | $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$'))
   endif
@@ -81,17 +81,27 @@ $(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
 	$(CMD_mkdir) -p $(@D) &&\
 	$(CMD_cd) $(LOCALTOP)/$(SCRAM_SOURCEDIR) &&\
 	$(CMD_git) diff --name-only $(CMSSW_VERSION) > $(LOCALTOP)/$@
-$(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(if $(strip $(USER_CODE_CHECKS_FILE)),$(USER_CODE_CHECKS_FILE),$(WORKINGDIR)/code-checks-logs/changed-files-all.log) llvm-ccdb
+$(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-checks-logs/changed-files-all.log
 	@$(CMD_grep) -v '/test/' $< > $@
-code-format: $(if $(strip $(USER_CODE_FORMAT_FILE)),$(USER_CODE_FORMAT_FILE),$(WORKINGDIR)/code-checks-logs/changed-files-all.log)
+ifeq ($(strip $(USER_CODE_FORMAT_FILE)$(USER_CODE_FORMAT_FILES)),)
+code-format: $(WORKINGDIR)/code-checks-logs/changed-files-all.log
 	@if [ -s $< ] ; then \
 	  $(MAKE) -f $(SCRAM_MAKEFILE) code-format-all USER_CODE_FORMAT_FILE=$< ;\
 	else \
 	  $(CMD_echo) ">> No changed files found: No running code-format" ;\
 	fi
+else
+code-format:
+	$(MAKE) -f $(SCRAM_MAKEFILE) code-format-all
+endif
+ifeq ($(strip $(USER_CODE_CHECKS_FILES)$(USER_CODE_CHECKS_FILE)),)
 code-checks: $(WORKINGDIR)/code-checks-logs/changed-files-selected.log
 	@if [ -s $< ] ; then \
-	  $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all USER_CODE_CHECKS_CHANGE_ONLY=YES USER_CODE_CHECKS_FILE=$< ;\
+	  $(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all USER_CODE_CHECKS_FILE=$< ;\
 	else \
 	  $(CMD_echo) ">> No changed files found: No running code-checks" ;\
 	fi
+else
+code-checks:
+	$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-all
+endif

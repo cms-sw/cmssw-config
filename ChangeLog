@@ -1,5 +1,8 @@
 2019-04-30 Shahzad Muzaffar  <@smuzaffar>
-	V05-08-25,26: By default run code-format on changed files only.
+	V05-08-25: By default run code-format on changed files only.
+	V05-08-26: Fix regexp for search for code-format files.
+	V05-08-27: Properly treat USER_CODE_*_FILES and USER_CODE_*_FILE
+	values.
 
 2019-04-29 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-23: Fix fix-code-checks-yaml.py to keep the extra new line
