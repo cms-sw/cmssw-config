@@ -55,9 +55,9 @@ ifneq ($(strip $(filter code-format-all,$(MAKECMDGOALS))),)
   ifeq ($(strip $(USER_CODE_FORMAT_FILES)$(USER_CODE_FORMAT_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) $(wordlist 2,999999,$(foreach e,$(CODE_FORMAT_FILES_EXTS),-o -iname '*.$e'))))
   else ifneq ($(strip $(USER_CODE_FORMAT_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_FORMAT_FILE) | $(CMD_grep) -E -i '\.$(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS))$$'))
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_FORMAT_FILE) | $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$'))
   else
-    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_echo) $(USER_CODE_FORMAT_FILES) | $(CMD_tr) ' ' '\n' | $(CMD_grep) -E -i '\.$(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS))$$'))
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_echo) $(USER_CODE_FORMAT_FILES) | $(CMD_tr) ' ' '\n' | $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$'))
   endif
   $(foreach f,$(CODE_CHECK_FILES),$(eval $(call CodeFormatRule,$f)))
 code-format-all: $(ALL_CodeFormatRules)
