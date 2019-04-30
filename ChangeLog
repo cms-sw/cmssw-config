@@ -1,3 +1,6 @@
+2019-04-30 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-25,26: By default run code-format on changed files only.
+
 2019-04-29 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-23: Fix fix-code-checks-yaml.py to keep the extra new line
 	for readability-braces-around-statements clang-tidy check
