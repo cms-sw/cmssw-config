@@ -27,9 +27,9 @@ define CodeFormatRule
 ALL_CodeFormatRules+=$(WORKINGDIR)/code-format/$1
 $(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
 	@if [ -e $$< ] ; then \
+	  [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -r $$< $$@ &&\
 	  $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-	  clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-	  [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -r $$< $$@;\
+	  clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< ;\
 	fi
 endef
 NO_CODE_CHECKS_APPLY_MSG:=
