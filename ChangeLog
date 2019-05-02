@@ -1,3 +1,6 @@
+2019-05-02 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-28: Get default source code file extension from release/uses.out file
+
 2019-04-30 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-25: By default run code-format on changed files only.
 	V05-08-26: Fix regexp for search for code-format files.
