@@ -1,5 +1,4 @@
-.PHONY: code-format-all code-format code-format-dump-config code-format/$(SCRAM_SOURCEDIR)/% code-checks-run code-checks code-checks-apply code-checks-internal code-checks-dump-config code-checks-all
-CODE_FORMAT_FILES_EXTS:=cpp cc cxx h hh hpp icc i
+.PHONY: code-format-all code-format code-format-dump-config code-checks-run code-checks code-checks-apply code-checks-internal code-checks-dump-config code-checks-all
 CODE_CHECKS_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-tidy)
 CODE_FORMAT_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-format)
 ifeq ($(strip $(CODE_CHECKS_CONFIG_FILE)),)
@@ -25,10 +24,13 @@ $(WORKINGDIR)/code-checks/$1.yaml: $(SCRAM_SOURCEDIR)/$1
 	$(CMD_touch) $$@
 endef
 define CodeFormatRule
-ALL_CodeFormatRules+=code-format/$1
-code-format/$1: $(SCRAM_SOURCEDIR)/$1
-	@$(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-	clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$<
+ALL_CodeFormatRules+=$(WORKINGDIR)/code-format/$1
+$(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
+	@if [ -e $$< ] ; then \
+	  $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
+	  clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
+	  [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -r $$< $$@;\
+	fi
 endef
 NO_CODE_CHECKS_APPLY_MSG:=
 ifeq ($(strip $(filter code-checks-all,$(MAKECMDGOALS))),code-checks-all)
@@ -51,14 +53,16 @@ code-checks-apply:
 	  $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
 	fi
 ifneq ($(strip $(filter code-format-all,$(MAKECMDGOALS))),)
-  CODE_CHECK_FILES:=
-  CODE_FORMAT_FILES_EXTS:=$(shell $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-extensions.sh $(WORKINGDIR) | $(CMD_grep) -vi '^f')
+  CODE_FORMAT_FILES_EXTS:=$(shell $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-extensions.sh -t $(WORKINGDIR) | $(CMD_grep) '^SELECTED_FILES_EXT=' | $(CMD_sed) 's|^SELECTED_FILES_EXT=||')
   ifeq ($(strip $(USER_CODE_FORMAT_FILES)$(USER_CODE_FORMAT_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell find $(SCRAM_SOURCEDIR) $(wordlist 2,999999,$(foreach e,$(CODE_FORMAT_FILES_EXTS),-o -iname '*.$e'))))
+    CODE_CHECK_FILES:=$(shell $(CMD_cat) $(WORKINGDIR)/selected-source-files.txt)
   else ifneq ($(strip $(USER_CODE_FORMAT_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$' $(USER_CODE_FORMAT_FILE)))
   else
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_echo) $(USER_CODE_FORMAT_FILES) | $(CMD_tr) ' ' '\n' | $(CMD_grep) -E -i '\.($(subst $(empty) $(empty),|,$(CODE_FORMAT_FILES_EXTS)))$$'))
+  endif
+  ifneq ($(strip $(USER_CODE_FORMAT_IGNORE_FILTER)),)
+    CODE_CHECK_FILES:=$(strip $(filter-out $(USER_CODE_FORMAT_IGNORE_FILTER),$(CODE_CHECK_FILES)))
   endif
   $(foreach f,$(CODE_CHECK_FILES),$(eval $(call CodeFormatRule,$f)))
 code-format-all: $(ALL_CodeFormatRules)
