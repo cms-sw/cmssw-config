@@ -1,4 +1,5 @@
 .PHONY: code-format-all code-format code-format-dump-config code-checks-run code-checks code-checks-apply code-checks-internal code-checks-dump-config code-checks-all
+CODE_CHECKS_ITERATIONS:=6
 CODE_CHECKS_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-tidy)
 CODE_FORMAT_CONFIG_FILE:=$(wildcard $(LOCALTOP)/$(SCRAM_SOURCEDIR)/.clang-format)
 ifeq ($(strip $(CODE_CHECKS_CONFIG_FILE)),)
@@ -27,10 +28,32 @@ define CodeFormatRule
 ALL_CodeFormatRules+=$(WORKINGDIR)/code-format/$1
 $(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
 	@if [ -e $$< ] ; then \
-	  [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -r $$< $$@ &&\
-	  $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-	  clang-format              $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< ;\
-	fi
+          [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
+          $(CMD_cp) $$< $$@.orig &&\
+          $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
+          clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$@.orig  &&\
+          if [ $$$$(diff $$< $$@.orig | wc -l) -gt 0 ] ; then \
+            let cnt=1 &&\
+            while [ $$$$cnt -lt $(CODE_CHECKS_ITERATIONS) ] ; do \
+              $(CMD_cp) $$@.orig $$@.backup &&\
+              clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$@.orig &&\
+              if [ $$$$(diff $$@.orig $$@.backup | wc -l) -eq 0 ] ; then break ; fi &&\
+              let cnt=$$$$cnt+1 ;\
+            done &&\
+            $(CMD_echo) ">> Code format:$$$$cnt: $1" &&\
+            if [ $$$$cnt -eq $(CODE_CHECKS_ITERATIONS) ] ; then \
+              echo "ERROR: Please fix $1 by hand to avoid recursive code-formating" &&\
+              $(CMD_diff) -u $$@.backup $$@.orig | $(CMD_sed) 's|$(WORKINGDIR)/code-format/||' &&\
+              $(CMD_rm) -f $$@.Xorig $$@.Xbackup &&\
+              false ;\
+            fi &&\
+            $(CMD_rm) -f $$@.backup &&\
+            $(CMD_mv) $$@.orig $$< ;\
+          else \
+            $(CMD_rm) -f $$@.orig ;\
+          fi &&\
+          $(CMD_touch) $$@ ;\
+        fi
 endef
 NO_CODE_CHECKS_APPLY_MSG:=
 ifeq ($(strip $(filter code-checks-all,$(MAKECMDGOALS))),code-checks-all)
