@@ -21,7 +21,7 @@ fi
 PKG_REGEX_FILE=$TMPDIR/package_match.regex
 rm -f ${PKG_REGEX_FILE}
 if [ "X$@" = "X" ] ; then
-  for pkg in $(find src -mindepth 2 -maxdepth 2 -type d | grep -v '/.git/' | sed 's|^src/||') ; do
+  for pkg in $(find src -mindepth 2 -maxdepth 2 -type d -follow | grep -v '/.git/' | sed 's|^src/||') ; do
     echo "^${pkg}/" >> ${PKG_REGEX_FILE}
   done
 else
