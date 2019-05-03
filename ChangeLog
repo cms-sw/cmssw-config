@@ -1,3 +1,7 @@
+2019-05-03 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-30: Run clang-format multiple times to get the final format
+	(default is 6 iterations).
+
 2019-05-02 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-28: Get default source code file extension from release/uses.out file
 	V05-08-29: Allow to re-run code-format after the change.
