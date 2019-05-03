@@ -40,7 +40,6 @@ $(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
               if [ $$$$(diff $$@.orig $$@.backup | wc -l) -eq 0 ] ; then break ; fi &&\
               let cnt=$$$$cnt+1 ;\
             done &&\
-            $(CMD_echo) ">> Code format:$$$$cnt: $1" &&\
             if [ $$$$cnt -eq $(CODE_CHECKS_ITERATIONS) ] ; then \
               echo "ERROR: Please fix $1 by hand to avoid recursive code-formating" &&\
               $(CMD_diff) -u $$@.backup $$@.orig | $(CMD_sed) 's|$(WORKINGDIR)/code-format/||' &&\
