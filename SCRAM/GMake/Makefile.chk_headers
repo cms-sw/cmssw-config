@@ -1,74 +1,34 @@
 .PHONY: check-headers
 
-define SetProductCommonVarsExternalCheckHeaders
-$(if $(subst undefined,,$(origin $1_LOC_USE)),,$(eval $1_LOC_USE:=$($1_EX_USE)))
-$(eval $(call SetProductCommonVars,$1))
+CHECK_HEADERS_FILES         := yes
+HEADER_FILES_SUFFIXES       := h hh hpp
+CHECK_HEADERS_ALL:=
+
+#safename
+define HeaderChecks
+ifeq ($(strip $($(1)_CLASS)$($(1)_EX_LIB)),LIBRARY$(1))
+$(eval $(1)_interfacedir:=$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface)
+ifneq ($(strip $(wildcard $($(1)_interfacedir))),)
+$(eval $(1)_headers:=$(patsubst $($(1)_interfacedir)/%,%,$(wildcard $(foreach ext,$(HEADER_FILES_SUFFIXES),$($(1)_interfacedir)/*.$(ext)))))
+$(eval $(1)_headers_exts:=$(sort $(patsubst .%,%,$(suffix $($(1)_headers)))))
+ifneq ($(strip $($(1)_headers_exts)),)
+$(1)_headers_chks:=$(addprefix $($(1)_objdir)/, $(addsuffix .chk_header,$($(1)_headers)))
+CHECK_HEADERS_ALL+=$$($(1)_headers_chks)
+$$(foreach e,$$(filter $(HEADER_FILES_SUFFIXES),$$($(1)_headers_exts)),$$(eval $$(call HCompileRule,$(1),$$(e),$(1))))
+endif
+endif
+endif
 endef
 
-define CheckHeaderRule
-ALL_CHECK_HEADERS+=$(WORKINGDIR)/check_header/$1
-$(WORKINGDIR)/check_header/$1: $(SCRAM_SOURCEDIR)/$1 $(WORKINGDIR)/check_header/.prods/$1
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	if [ "$$($$(shell $(CMD_cat) $(WORKINGDIR)/check_header/.prods/$1)_CLASS)" != "LIBRARY" ] ; then \
-	  if [ `$(CMD_echo) $1 | $(CMD_grep) '/interface/' | $(CMD_wc) -l` -eq 0 ] ; then $(CMD_touch) $$@ && exit 0 ; fi ;\
-	fi &&\
-	$(CMD_echo) ">> Checking header $(1)" &&\
-	$(VERB_ECHO) $(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $$(call AdjustFlags,$$(shell $(CMD_cat) $(WORKINGDIR)/check_header/.prods/$1),,CPPFLAGS CXXFLAGS) $$< &&\
-	$(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $$(call AdjustFlags,$$(shell $(CMD_cat) $(WORKINGDIR)/check_header/.prods/$1),,CPPFLAGS CXXFLAGS) $$< &&\
-	$(CMD_touch) $$@
+define HCompileRule
+$($(1)_objdir)/%.$(2).chk_header: $($(1)_interfacedir)/%.$(2) $($(1)_config)
+	$$(call compile_h,$(1),$(3))
 endef
 
-$(foreach x,$(ALL_EXTERNAL_PRODS),       $(eval $(call SetProductCommonVarsExternalCheckHeaders,$(x))))
-$(foreach x,$(ALL_EXTERNAL_PLUGIN_PRODS),$(eval $(call SetProductCommonVarsExternalCheckHeaders,$(x))))
-
-ALL_CHECK_HEADERS:=
-HEADER_CHECK_CMD:=
-PROD2SRC_FILE:=$(WORKINGDIR)/check_header/.prods/prod2src.out
-USEDBY_FILE:=$(WORKINGDIR)/check_header/.prods/usedby.out
-
-ifeq ($(strip $(wildcard $(USEDBY_FILE))),)
-XX:=$(shell $(CMD_mkdir) -p $(WORKINGDIR)/check_header/.prods && gunzip -c $(RELEASETOP)/etc/dependencies/usedby.out.gz > $(USEDBY_FILE))
-endif
-
-ifneq ($(strip $(USER_CHECK_HEADERS_FILES)),)
-  HEADER_CHECK_CMD:=$(CMD_echo) $(USER_CHECK_HEADERS_FILES)
-else ifeq ($(strip $(USER_CHECK_HEADERS_FILE)),)
-  HEADER_CHECK_CMD:=$(CMD_cat) $(USEDBY_FILE) | $(CMD_sed) 's| .*||' | $(CMD_sort) | $(CMD_uniq)
-else
-  HEADER_CHECK_CMD:=$(CMD_cat) $(USER_CHECK_HEADERS_FILE)
-endif
-PROJECT_CHECK_HEADERS:=$(strip $(shell $(HEADER_CHECK_CMD)))
-ifneq ($(strip $(USER_CHECK_HEADERS_IGNORE)),)
-PROJECT_CHECK_HEADERS:=$(strip $(filter-out $(USER_CHECK_HEADERS_IGNORE),$(PROJECT_CHECK_HEADERS)))
-endif
-$(foreach h,$(PROJECT_CHECK_HEADERS),$(if $(strip $(subst interface,,$(word 3,$(subst /,$(space),$(h))))),,$(if $(strip $(wildcard $(SCRAM_SOURCEDIR)/$h)),$(eval $(call CheckHeaderRule,$h)))))
-
-check-headers: $(ALL_CHECK_HEADERS)
-	@$(CMD_echo) ">> Done checking headers"
-
-$(PROD2SRC_FILE): $(RELEASETOP)/etc/dependencies/prod2src.out.gz
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	$(CMD_gunzip) -c $< | sed -e 's#\( [A-Z][a-zA-Z0-9_]*/[a-zA-Z][a-zA-Z0-9_]*/\(test\|plugins\|interface\|src\|bin\)\)\([^/]\)#\1/\3#g' | sed 's|/\./|/|g;s|//*|/|g' > $@
-
-$(USEDBY_FILE): $(RELEASETOP)/etc/dependencies/usedby.out.gz
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	gunzip -c $< > $@
-
-$(WORKINGDIR)/check_header/.prods/%: $(PROD2SRC_FILE) $(USEDBY_FILE)
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-	for s in $$($(CMD_grep) '^$* ' $(USEDBY_FILE) | $(CMD_sed) 's|^$* ||') ; do \
-	  p=$$($(CMD_grep) " $$s" $(PROD2SRC_FILE)  | head -1 | awk '{print $$1}') &&\
-	  if [ "$$p" = "" ] ; then continue ; fi &&\
-	  ok=no &&\
-	  if [ -e $(SCRAM_SOURCEDIR)/$$s ] ; then \
-	    ok=yes;\
-	  elif [ $$($(CMD_grep) "^$${p}_\(LOC\|EX\)_USE " .SCRAM/$(SCRAM_ARCH)/MakeData/Tools/SCRAMBased/self.mk | $(CMD_wc) -l) -gt 0 ] ; then \
-	    ok=yes;\
-	  elif [ -e .SCRAM/$(SCRAM_ARCH)/MakeData/Tools/SCRAMBased/$(LC_PROJECTNAME).mk ] ; then \
-	    if [ $$($(CMD_grep) "^$${p}_\(LOC\|EX\)_USE " .SCRAM/$(SCRAM_ARCH)/MakeData/Tools/SCRAMBased/$(LC_PROJECTNAME).mk | $(CMD_wc) -l) -gt 0 ] ; then \
-	      ok=yes;\
-	    fi ;\
-	  fi &&\
-	  if [ "$$ok" = "yes" ] ; then $(CMD_echo) $$p > $@ && exit 0 ; fi ;\
-	done ;\
-	$(CMD_echo) $* | $(CMD_tr) '/' ' ' | $(CMD_awk) '{print $$1$$2}' > $@
+define compile_h
+  @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  $(CMD_echo) ">> Compiling $< " &&\
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $<" &&\
+  $(SCRAM_PREFIX_COMPILER_COMMAND) $(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $< &&\
+  $(CMD_touch) $@
+endef

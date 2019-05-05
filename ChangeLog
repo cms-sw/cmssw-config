@@ -1,4 +1,8 @@
 2019-05-03 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-31: Fixed check-headers rules to avoid ICE. Only run header
+	check for public shared libararies interface headers.
+
+2019-05-03 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-30: Run clang-format multiple times to get the final format
 	(default is 6 iterations).
 

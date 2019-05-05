@@ -1737,6 +1737,9 @@ endif
 $(foreach bf,$(ALL_BUILDFILES),$(foreach err,$(sort $($(bf)_USE_ERR)),$(eval $(call UseError,$(err),$(bf)))))
 $(foreach x,$(ALL_COMMONRULES),$(eval $($(x)_INIT_FUNC)))
 endif
+ifeq ($(strip $(CHECK_HEADERS_FILES)),yes)
+$(foreach x,$(ALL_PRODS),$(eval $(call HeaderChecks,$x)))
+endif
 ####### Update Subsystems and Packages rules ##############
 $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),$(SCRAM_SOURCEDIR)_$(subst /,_,$(dir)))))
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),$(SCRAM_SOURCEDIR)_$(subst /,_,$(dir)))))
@@ -1970,5 +1973,7 @@ skip-scripts-copy: all
 	@:
 $(SCRAM_SOURCEDIR)/module.modulemap: $(ALL_MODULEMAPS)
 	@$(call generate_main_modulemap)
+check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
+        @:
 %:
 	@$(if $(strip $(wildcard $@ $(RELEASETOP)/$@)),true,$(CMD_echo) $(if $(subst undefined,,$(origin $@)),$@ = $($@),Unknow target $@))
