@@ -1008,7 +1008,7 @@ $(eval $(call LogFile,$(1),$(2)))
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
-$(1)_prodsrc      := $$(addprefix $(patsubst src/%,%,$2/),$$($(1)_files))
+$(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
@@ -1053,7 +1053,7 @@ $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
 	@$$(startlog_$(1)) $(if $(HOOK_PRODUCT),$(HOOK_PRODUCT) -e -p $1,$(CMD_true)) $$(endlog_$(1))
-	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst src/%/src,%,$(2))" $$(endlog_$(1))
+	@$$(startlog_$(1))$(CMD_echo) "Leaving library rule at $(patsubst $(SCRAM_SOURCEDIR)/%/src,%,$(2))" $$(endlog_$(1))
 endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
@@ -1095,7 +1095,7 @@ compile_$(6): $($(1)_objdir)/compile
 $($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
 	@$(CMD_touch) $$@
 ifeq ($(strip $(4)),lib)
-	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst src/%/src,%,$(2))" $(endlog_$(1))
+	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst $(SCRAM_SOURCEDIR)/%/src,%,$(2))" $(endlog_$(1))
 endif
 $($(1)_objdir)/compile: $($(1)_objdir)/precompile $($(1)_objs) $($(1)_compile)
 	@$(CMD_touch) $$@
@@ -1583,16 +1583,16 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "  To run git-cms-checkdeps based on changes CMSSW and externals"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "updateclassversion"
-	@$(CMD_echo) "  Run the edmCheckClassVersion and generate new src/<package>/classes_def.xml.generated file."
+	@$(CMD_echo) "  Run the edmCheckClassVersion and generate new $(SCRAM_SOURCEDIR)/<package>/classes_def.xml.generated file."
 	@$(CMD_echo) ""
 	@$(CMD_echo) "prebuild postbuild"
 	@$(CMD_echo) "  Execute any pre/post-build target for the project e.g. generating various source file for root/lcg dictionaries etc."
 	@$(CMD_echo) ""
-	@$(CMD_echo) "src release release-build all all_src project project_all"
+	@$(CMD_echo) "$(SCRAM_SOURCEDIR) release release-build all all_$(SCRAM_SOURCEDIR) project project_all"
 	@$(CMD_echo) "  Build  all  products  (shared  libs,  plugins,  binaries) for the project"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "<subsystem> <subsystem>/<Package>"
-	@$(CMD_echo) "  Build all products (shared libs, plugins, binaries) and their dependencies for src/<path>"
+	@$(CMD_echo) "  Build all products (shared libs, plugins, binaries) and their dependencies for $(SCRAM_SOURCEDIR)/<path>"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "runtime"
 	@$(CMD_echo) "  Dump the runtime environment used at build time."
@@ -1654,7 +1654,7 @@ endif
 -include $(TOOLS_MKDIR)/SCRAMBased/self_libs_def.mk
 $(foreach x,$(ALL_TOOLS),$(eval $x := $x))
 $(foreach x,$(ALL_TOOLS),$(eval $(call ProductCommonVarsTools,$x,,,$x)))
--include $(PUB_DIRCACHE_MKDIR)/src.mk
+-include $(PUB_DIRCACHE_MKDIR)/$(SCRAM_SOURCEDIR).mk
 $(foreach f,MISSING_SYMBOL_FLAGS,$(eval $f:=$(self_EX_FLAGS_$f)))
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
@@ -1717,6 +1717,9 @@ $(foreach d,$(REMOVED_DIRS),$(if $(wildcard $(WORKINGDIR)/cache/bf/$(d)/$(SCRAM_
 xx:=$(shell $(CMD_sh) $(WORKINGDIR)/.AUTOCLEAN; $(CMD_rm) -rf $(DIRCACHE_MKDIR)/RmvDirCache.mk $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_mkdir) -p $(DIRCACHE_MKDIR)/RmvDirCache; $(CMD_touch) $(DIRCACHE_MKDIR)/RmvDirCache.mk)
 endif
 ####### Update Tools and Prods rules ##############
+ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
+-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
+endif
 ifeq ($(strip $(UFAST)),)
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
@@ -1956,9 +1959,6 @@ endif
 ifneq ($(strip $(RELEASETOP)),)
 ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
-endif
-ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
--include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 endif
 .PHONY: skip-scripts-copy ignore-deleted
