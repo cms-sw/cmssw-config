@@ -18,7 +18,7 @@ track_changes = {}
 print "Changed files:  ",'\n  '.join(files)
 for f in o.split("\n"):
   print "Working on",f
-  obj = yaml.load(open(f))
+  obj = yaml.load(open(f), Loader=yaml.SafeLoader)
   if not obj: obj={"Diagnostics":[]}
   change = 0
   new_dia = []

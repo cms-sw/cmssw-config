@@ -1,5 +1,7 @@
 2019-05-06 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-32: Do not fail code-checks if no non-test file is changed.
+	V05-08-33: "YAMLLoadWarning: calling yaml.load() without Loader=...
+	is deprecated" fixed
 
 2019-05-03 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-31: Fixed check-headers rules to avoid ICE. Only run header
