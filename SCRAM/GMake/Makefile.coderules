@@ -109,7 +109,7 @@ $(WORKINGDIR)/code-checks-logs/changed-files-all.log: FORCE_TARGET
 	$(CMD_cd) $(LOCALTOP)/$(SCRAM_SOURCEDIR) &&\
 	$(CMD_git) diff --name-only $(CMSSW_VERSION) > $(LOCALTOP)/$@
 $(WORKINGDIR)/code-checks-logs/changed-files-selected.log: $(WORKINGDIR)/code-checks-logs/changed-files-all.log
-	@$(CMD_grep) -v '/test/' $< > $@
+	@$(CMD_grep) -v '/test/' $< > $@ || true
 ifeq ($(strip $(USER_CODE_FORMAT_FILE)$(USER_CODE_FORMAT_FILES)),)
 code-format: $(WORKINGDIR)/code-checks-logs/changed-files-all.log
 	@if [ -s $< ] ; then \
