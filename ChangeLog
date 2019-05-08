@@ -1,3 +1,7 @@
+2019-05-08 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-34: Bug fix: Run clang-format directly on the source file
+	instead of tmp (to allow clang-format to pick src/.clang-format file)
+
 2019-05-06 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-32: Do not fail code-checks if no non-test file is changed.
 	V05-08-33: "YAMLLoadWarning: calling yaml.load() without Loader=...

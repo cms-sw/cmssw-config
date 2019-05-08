@@ -29,27 +29,20 @@ ALL_CodeFormatRules+=$(WORKINGDIR)/code-format/$1
 $(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
 	@if [ -e $$< ] ; then \
           [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-          $(CMD_cp) $$< $$@.orig &&\
           $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-          clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$@.orig  &&\
-          if [ $$$$(diff $$< $$@.orig | wc -l) -gt 0 ] ; then \
-            let cnt=1 &&\
-            while [ $$$$cnt -lt $(CODE_CHECKS_ITERATIONS) ] ; do \
-              $(CMD_cp) $$@.orig $$@.backup &&\
-              clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$@.orig &&\
-              if [ $$$$(diff $$@.orig $$@.backup | wc -l) -eq 0 ] ; then break ; fi &&\
-              let cnt=$$$$cnt+1 ;\
-            done &&\
-            if [ $$$$cnt -eq $(CODE_CHECKS_ITERATIONS) ] ; then \
-              echo "ERROR: Please fix $1 by hand to avoid recursive code-formating" &&\
-              $(CMD_diff) -u $$@.backup $$@.orig | $(CMD_sed) 's|$(WORKINGDIR)/code-format/||' &&\
-              $(CMD_rm) -f $$@.Xorig $$@.Xbackup &&\
-              false ;\
-            fi &&\
-            $(CMD_rm) -f $$@.backup &&\
-            $(CMD_mv) $$@.orig $$< ;\
+          let cnt=1 &&\
+          while [ $$$$cnt -le $(CODE_CHECKS_ITERATIONS) ] ; do \
+            $(CMD_cp) $$< $$@.backup &&\
+            clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$<  &&\
+            if [ $$$$(diff $$< $$@.backup | wc -l) -eq 0 ] ; then break ; fi &&\
+            let cnt=$$$$cnt+1 ;\
+          done &&\
+          if [ $$$$cnt -gt $(CODE_CHECKS_ITERATIONS) ] ; then \
+            echo "ERROR: Please fix $1 by hand to avoid recursive code-formatting" &&\
+            $(CMD_diff) -u $$@.backup $$< | $(CMD_sed) 's|$(WORKINGDIR)/code-format/||' &&\
+            false ;\
           else \
-            $(CMD_rm) -f $$@.orig ;\
+            $(CMD_rm) -f $$@.backup ;\
           fi &&\
           $(CMD_touch) $$@ ;\
         fi
