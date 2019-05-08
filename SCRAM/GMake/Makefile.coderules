@@ -30,8 +30,8 @@ $(WORKINGDIR)/code-format/$1: $(SCRAM_SOURCEDIR)/$1
 	@if [ -e $$< ] ; then \
           [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
           $(CMD_echo) clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$< &&\
-          let cnt=1 &&\
-          while [ $$$$cnt -le $(CODE_CHECKS_ITERATIONS) ] ; do \
+          cnt=0 &&\
+          while [ $$$$cnt -lt $(CODE_CHECKS_ITERATIONS) ] ; do \
             $(CMD_cp) $$< $$@.backup &&\
             clang-format $(USER_CODE_FORMAT_ARGS) $(CODE_FORMAT_ARG) -i $$<  &&\
             if [ $$$$(diff $$< $$@.backup | wc -l) -eq 0 ] ; then break ; fi &&\
