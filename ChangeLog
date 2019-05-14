@@ -1,3 +1,7 @@
+2019-05-14 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-37: Fixes for CXXModules, Optionally include CXXModules.mk to
+	build cxxmodules for selected packages.
+
 2019-05-10 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-36: Properly filter the selected files for code-format.
 

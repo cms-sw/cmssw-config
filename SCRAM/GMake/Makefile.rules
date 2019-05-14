@@ -1973,6 +1973,8 @@ skip-scripts-copy: all
 	@:
 $(SCRAM_SOURCEDIR)/module.modulemap: $(ALL_MODULEMAPS)
 	@$(call generate_main_modulemap)
+cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
+	@:
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
 %:
