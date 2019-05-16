@@ -532,9 +532,9 @@ JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
   @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
-  $(CMD_echo) '{"directory":"$(call JsonStr,$(LOCALTOP))",\
-                "file":"$(call JsonStr,$<)",\
-                "command":"$(call JsonStr,$(notdir $(firstword $4)) $(wordlist 2,999999,$4) $< -o $(subst .$(LLVM_CCDB_EXT),,$@))"}' > $@
+  $(CMD_echo) "{\"directory\":\"$(call JsonStr,$(LOCALTOP))\",\
+                \"file\":\"$(call JsonStr,$<)\",\
+                \"command\":\"$(call JsonStr,$(notdir $(firstword $4)) $(wordlist 2,999999,$4) $< -o $(subst .$(LLVM_CCDB_EXT),,$@))\"}" > $@
 endef
 else
 define run_compile_command

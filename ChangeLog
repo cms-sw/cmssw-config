@@ -1,3 +1,13 @@
+2019-05-16 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-38: Fixed qoutation for compile_commands.json e.g. now it dumps
+	  -DPROJECT_NAME='\"CMSSW\"'
+	instead of
+	  -DPROJECT_NAME=\"CMSSW\"
+	to avoid compilation errors during code-checks
+	L1MuGMTParametersOnlineProducer.cc:118:65: error: expected ')' [clang-diagnostic-error]
+		edm::LogInfo("No CMSSW version set in database, accepting " PROJECT_VERSION);                                                                ^
+	note: expanded from here
+
 2019-05-14 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-37: Fixes for CXXModules, Optionally include CXXModules.mk to
 	build cxxmodules for selected packages.
