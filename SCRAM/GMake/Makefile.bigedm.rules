@@ -122,6 +122,10 @@ endif
 endef
 define AddBigObjLCGDICTRule
 ifneq ($(strip $($(1)_bigobj)),)
+all_$(1)  += $(SCRAMSTORENAME_BIGLIB)/$(4)
+$(SCRAMSTORENAME_BIGLIB)/$(4): $(3)/$(4)
+	@$(CMD_ln) -sf $$$$($(CMD_echo) $(SCRAMSTORENAME_BIGLIB)/ | $(CMD_sed) 's|[^/]*/|../|g')$(3)/$(4) $$@
+	@$(CMD_echo) "01:$(CMD_rm) -f $$@" > $$(call AutoCleanFile,$($(1)_objdir)/$(1),biglib_lcgdict)
 $($(1)_objdir)/bigobj/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(2)r.cc
 	$$(call bigobj_compile_lcgdict,$(1),$(1))
 endif

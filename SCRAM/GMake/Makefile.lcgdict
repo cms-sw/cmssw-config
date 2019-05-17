@@ -198,7 +198,7 @@ $3: $4
 	@$$(call generate_classes_h)
 endif
 $(2)r_header:=$3
-$(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2)))
+$(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2),$(7),$(2)r_rdict.pcm))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 ifeq ($(strip $($(1)_CXXMODULES)),1)
 all_$(1)  += $(7)/$(2)r.pcm
