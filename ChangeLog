@@ -1,3 +1,7 @@
+2019-05-18 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-50: Added symlinks under biglib directory for PCMs which are part of
+	biglib plugins
+
 2019-05-16 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-38: Fixed qoutation for compile_commands.json e.g. now it dumps
 	  -DPROJECT_NAME='\"CMSSW\"'
