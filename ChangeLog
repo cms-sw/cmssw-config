@@ -1,3 +1,7 @@
+2019-05-24 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-51: Allow to drop GENREFLEX_ARGS via BuildFile.
+	Fixed buildrules to fail if genreflex fails.
+
 2019-05-18 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-50: Added symlinks under biglib directory for PCMs which are part of
 	biglib plugins

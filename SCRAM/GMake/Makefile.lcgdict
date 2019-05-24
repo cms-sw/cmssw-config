@@ -82,11 +82,11 @@ define generate_lcgdict
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
   $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  (           ($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) && \
-              if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | $(CMD_grep) -v /_Builtin_intrinsics.pcm | wc -l` -gt 0 ] ; then \
-                $(CMD_echo) "*** ERROR:$1: Generated PCM for other packages" ; $(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' ; \
-              fi ;\
-              $(CMD_touch) -r $@ $(7)/$(basename $(@F)).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
+  (($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+    if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | $(CMD_grep) -v /_Builtin_intrinsics.pcm | wc -l` -gt 0 ] ; then \
+      $(CMD_echo) "*** ERROR:$1: Generated PCM for other packages" ; $(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' ; \
+    fi &&\
+    $(CMD_touch) -r $@ $(7)/$(basename $(@F)).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
@@ -139,11 +139,11 @@ endif
 ##safename,hfiles,defxmlfiles,genreflexargs,name
 define LCGDictHeaders
 $(1)_prodsrc += $(patsubst src/%,%,$2 $3)
-$(1)$(5)_GENREFLEX_ARGS := $(4)
+$(1)$(5)_GENREFLEX_ARGS := $(filter-out $($(1)_LOC_FLAGS_REM_GENREFLEX_ARGS),$(4))
 $1_lcg_header:=$2
 $1_lcg_def_xml:=$3
 ifeq ($(strip $($(1)_CXXMODULES)),1)
-$(1)$(5)_GENREFLEX_ARGS := --cxxmodule $(4)
+$(1)$(5)_GENREFLEX_ARGS := --cxxmodule $$($(1)$(5)_GENREFLEX_ARGS)
 ifneq ($(strip $(words $2)),1)
 $1_lcg_header:=$($(1)_objdir)/a/$(1)_all.h
 $1_lcg_def_xml:=$($(1)_objdir)/a/$(1)_all_def.xml
