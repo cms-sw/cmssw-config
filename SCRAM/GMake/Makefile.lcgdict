@@ -33,6 +33,11 @@ define compile_lcgdict
   @$(startlog_$(2))$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@),$3)$(endlog_$(2))
 endef
 
+define SetRootmapsRules
+$(WORKINGDIR)/rootmaps/$1: $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
+endef
+
 #LCG Module map
 define generate_modulemap
   $(CMD_echo) ">> Generated modulemap for $($(1)_PROD_PACKAGE)" &&\

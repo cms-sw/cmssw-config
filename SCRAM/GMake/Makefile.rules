@@ -1732,6 +1732,7 @@ ifeq ($(strip $(FAST)),)
 $(info >> Local Products Rules ..... started)
 $(foreach x,$(ALL_PRODS),$(eval $($(x)_INIT_FUNC)))
 $(foreach x,$(ALL_BIGPRODS),$(eval $($(x)_INIT_FUNC)))
+$(foreach x,$(ALL_PRODS),$(if $(strip $($(x)_ROOTMAP_FILES)),,$(eval $(call SetRootmapsRules,$x))))
 $(info >> Local Products Rules ..... done)
 endif
 $(foreach bf,$(ALL_BUILDFILES),$(foreach err,$(sort $($(bf)_USE_ERR)),$(eval $(call UseError,$(err),$(bf)))))
