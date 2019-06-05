@@ -1,0 +1,10 @@
+#!/bin/bash
+#Create local module.modulemap is exists in RELEASETOP
+
+CXXMODULE_DIR="cxxmodules/${SCRAM_ARCH}"
+if [ -f "${RELEASETOP}/${CXXMODULE_DIR}/module.modulemap" ] ; then
+  rm -rf "${LOCALTOP}/${CXXMODULE_DIR}"
+  mkdir -p "${LOCALTOP}/${CXXMODULE_DIR}"
+  cp -f "${RELEASETOP}/${CXXMODULE_DIR}/module.modulemap" "${LOCALTOP}/${CXXMODULE_DIR}/"
+  sed -i -e "s|../../src/|${RELEASETOP}/src/|" "${LOCALTOP}/${CXXMODULE_DIR}/module.modulemap"
+fi

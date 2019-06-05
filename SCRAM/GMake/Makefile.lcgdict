@@ -1,3 +1,39 @@
+#Both CXXMODULES_DIR and RELEASE_CXXMODULES_DIR should have same number of dirs
+CXXMODULES_DIR:=tmp/$(SCRAM_ARCH)/cxxmodules
+RELEASE_CXXMODULES_DIR:=include/$(SCRAM_ARCH)/cxxmodules
+CXXMODULES_DIR_RELPAH:=$(shell $(CMD_echo) $(CXXMODULES_DIR) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
+MODULEMAP_FILE:=module.modulemap
+DEPENDENCY_ORDER_FUNCTION_ROOTMAP_FILES:=SetRootmapsRules
+EXTRA_TOP_LEVEL_BUILD_RULES+=ExtraPCMsRules
+
+define generate_full_modulemap
+ $(CMD_rm) -f $@ &&\
+ $(CMD_touch) $@ &&\
+ for m in $$($(CMD_find) $(@D) -maxdepth 2 -name cxxmodule -type f) ; do\
+   $(CMD_cat) $$m >> $@;\
+ done
+endef
+
+define ExtraPCMsRules
+ifneq ($(strip $(ALL_PCMS)),)
+$(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
+	@$(call generate_full_modulemap)
+cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
+	@:
+else
+.PHONY: $(CXXMODULES_DIR)/$(MODULEMAP_FILE) cxxmodules
+$(CXXMODULES_DIR)/$(MODULEMAP_FILE):
+	@:
+cxxmodules:
+	@:
+endif
+endef
+
+define SetRootmapsRules
+$(WORKINGDIR)/rootmaps/$1: $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
+endef
+
 ifneq ($(strip $(wildcard $(SCRAM_CONFIGDIR)/SCRAM/GMake/CXXModules.mk)),)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/CXXModules.mk
 endif
@@ -33,29 +69,17 @@ define compile_lcgdict
   @$(startlog_$(2))$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@),$3)$(endlog_$(2))
 endef
 
-define SetRootmapsRules
-$(WORKINGDIR)/rootmaps/$1: $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootmaps/$($l))
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-endef
-
 #LCG Module map
 define generate_modulemap
   $(CMD_echo) ">> Generated modulemap for $($(1)_PROD_PACKAGE)" &&\
+  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) "module \"$(2)r\" {" > $@ &&\
-  for inc in `$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) -v -f $(@D)/$(2)r.ignore | $(CMD_grep) '^ *# *include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq)`; do \
+  for inc in `$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) -v -f $(3)/$(2)r.ignore | $(CMD_grep) '^ *# *include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq)`; do \
     hdr=`$(CMD_echo) $$inc | $(CMD_sed) 's|.*/||'` ;\
-    $(CMD_echo) "  module \"$$hdr\" { header \"$$inc\" export * }" >> $@ ;\
-  done ;\
-  $(CMD_echo) "  export *" >> $@ ;\
+    $(CMD_echo) "  module \"$$hdr\" { header \"$(CXXMODULES_DIR_RELPAH)/$(SCRAM_SOURCEDIR)/$$inc\" export * }" >> $@ ;\
+  done &&\
+  $(CMD_echo) "  export *" >> $@ &&\
   $(CMD_echo) "}" >> $@
-endef
-
-define generate_main_modulemap
-  $(CMD_echo) ">> Generated $@" &&\
-  $(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
-  for mm in $(ALL_MODULEMAPS) ; do\
-    $(CMD_cat) $$mm >> $@;\
-  done
 endef
 
 #LCG dictionary generation
@@ -86,9 +110,12 @@ endef
 define generate_lcgdict
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  (($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-    if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | $(CMD_grep) -v /_Builtin_intrinsics.pcm | wc -l` -gt 0 ] ; then \
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  (($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) $(if $(strip $(GENERATE_ROOT_PCMS)),--rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1),$(GENREFLEX_GCCXMLOPT) --gccxmlpath=$(GCCXML_BASE)/bin) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+    if [ -f $(@D)/_Builtin_intrinsics.pcm ] ; then \
+      mv $(@D)/_Builtin_intrinsics.pcm $(7)/;\
+    fi &&\
+    if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | wc -l` -gt 0 ] ; then \
       $(CMD_echo) "*** ERROR:$1: Generated PCM for other packages" ; $(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' ; \
     fi &&\
     $(CMD_touch) -r $@ $(7)/$(basename $(@F)).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
@@ -206,13 +233,14 @@ $(2)r_header:=$3
 $(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2),$(7),$(2)r_rdict.pcm))
 ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 ifeq ($(strip $($(1)_CXXMODULES)),1)
+DEPENDENCY_ORDER_VARIABLES+=ROOTMAP_FILES
 all_$(1)  += $(7)/$(2)r.pcm
 ALL_PCMS+=$(7)/$(2)r.pcm
 $(2)r_header:=$($(1)_objdir)/$(6)/$(2)r.h
-ALL_MODULEMAPS+=$($(1)_objdir)/$(6)/$(2)r.modulemap
-$($(1)_objdir)/$(6)/$(2)r.modulemap: $($(1)_objdir)/$(6)/$(2)r.h
-	@$$(call generate_modulemap,$1,$2)
-$($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h | $(SCRAM_SOURCEDIR)/module.modulemap
+ALL_MODULEMAPS+=$(CXXMODULES_DIR)/$(1)/cxxmodule
+$(CXXMODULES_DIR)/$(1)/cxxmodule: $($(1)_objdir)/$(6)/$(2)r.h | $(WORKINGDIR)/release.cxxmodule
+	@$$(call generate_modulemap,$1,$2,$($(1)_objdir)/$(6))
+$($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h | $(CXXMODULES_DIR)/$(MODULEMAP_FILE)
 $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
 	@$$(call lcg_included_headers,$1)
 $($(1)_objdir)/$(6)/$(2)r.ignore: $($(1)_config)
@@ -247,6 +275,26 @@ $($(1)_objdir)/$(6)/$(2)i.cc: $($(1)_objdir)/$(6)/$(2)r.cc
 endif
 endif
 endef
+
+ifneq ($(strip $(wildcard $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR))),)
+$(WORKINGDIR)/release.cxxmodule:
+	$(CMD_mkdir) -p $(CXXMODULES_DIR) &&\
+	$(CMD_rm) -rf $(CXXMODULES_DIR) &&\
+	$(CMD_cp) -rf $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR) $(LOCALTOP)/$(CXXMODULES_DIR) &&\
+	$(CMD_find) $(LOCALTOP)/$(CXXMODULES_DIR) -name cxxmodule -type f | $(CMD_xargs) $(CMD_sed) -i -e 's|"$(CXXMODULES_DIR_RELPAH)/|"$(RELEASETOP)/|' &&\
+	$(CMD_touch) $@
+else
+$(WORKINGDIR)/release.cxxmodule:
+	@$(CMD_touch) $@
+endif
+
+post_release_build+=00-copy-modulemap
+00-copy-modulemap: $(WORKINGDIR)/release.cxxmodule
+	@if [ -d $(CXXMODULES_DIR) ] ; then \
+	  $(CMD_rm) -rf $(RELEASE_CXXMODULES_DIR) &&\
+	  $(CMD_mkdir) -p $$(basename $(RELEASE_CXXMODULES_DIR)) &&\
+	  $(CMD_mv) $(CXXMODULES_DIR) $(RELEASE_CXXMODULES_DIR);\
+	fi
 
 $(WORKINGDIR)/rootmaps/%:
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@

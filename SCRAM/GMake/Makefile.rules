@@ -60,6 +60,8 @@ HOOK_PROJECT                :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
+DEPENDENCY_ORDER_VARIABLES  :=
+EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 NO_CAPABILITIES             := $(if $(strip $(filter yes YES Yes 1,$(root_EX_FLAGS_NO_CAPABILITIES))),yes)
@@ -1626,6 +1628,9 @@ release: release-reset release-build postbuild
 
 release-build: project_all
 	@$(if $(HOOK_PROJECT),$(HOOK_PROJECT) -e $(if $(KEEP_ON_BUILDING), || $(CMD_true)),$(CMD_echo) ">> Project Build done")
+	@for target in $(sort $(post_release_build)) ; do\
+	  $(MAKE) -f $(SCRAM_MAKEFILE) $$target ;\
+	done
 
 release-reset: distclean
 
@@ -1732,7 +1737,7 @@ ifeq ($(strip $(FAST)),)
 $(info >> Local Products Rules ..... started)
 $(foreach x,$(ALL_PRODS),$(eval $($(x)_INIT_FUNC)))
 $(foreach x,$(ALL_BIGPRODS),$(eval $($(x)_INIT_FUNC)))
-$(foreach x,$(ALL_PRODS),$(if $(strip $($(x)_ROOTMAP_FILES)),,$(eval $(call SetRootmapsRules,$x))))
+$(foreach v,$(sort $(DEPENDENCY_ORDER_VARIABLES)),$(foreach x,$(ALL_PRODS),$(if $(strip $($(x)_$(v))),,$(eval $(call $(DEPENDENCY_ORDER_FUNCTION_$(v)),$x)))))
 $(info >> Local Products Rules ..... done)
 endif
 $(foreach bf,$(ALL_BUILDFILES),$(foreach err,$(sort $($(bf)_USE_ERR)),$(eval $(call UseError,$(err),$(bf)))))
@@ -1746,6 +1751,7 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),$(SCRAM_SOURCEDIR
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),$(SCRAM_SOURCEDIR)_$(subst /,_,$(dir)))))
 endif
 ###########################################################
+$(foreach r,$(strip $(sort $(EXTRA_TOP_LEVEL_BUILD_RULES))),$(eval $(call $r)))
 LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
@@ -1971,10 +1977,6 @@ ignore-deleted:
 scripts_%:
 	@:
 skip-scripts-copy: all
-	@:
-$(SCRAM_SOURCEDIR)/module.modulemap: $(ALL_MODULEMAPS)
-	@$(call generate_main_modulemap)
-cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
 	@:
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
