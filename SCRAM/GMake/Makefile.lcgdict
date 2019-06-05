@@ -17,7 +17,7 @@ endef
 define ExtraPCMsRules
 ifneq ($(strip $(ALL_PCMS)),)
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
-	@$(call generate_full_modulemap)
+	@$$(call generate_full_modulemap)
 cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
 	@:
 else
