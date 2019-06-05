@@ -1,7 +1,7 @@
 #!/bin/bash
 for mdir in tmp/${SCRAM_ARCH}/cxxmodules include/${SCRAM_ARCH}/cxxmodules ; do
   if [ -f "${LOCALTOP}/${mdir}/module.modulemap" ] ; then
-    echo "RUNTIME:path:prepend:ROOT_INCLUDE_PATH=${basedir}/${mdir}"
+    echo "RUNTIME:path:prepend:ROOT_INCLUDE_PATH=${LOCALTOP}/${mdir}"
     break
   fi
 done
