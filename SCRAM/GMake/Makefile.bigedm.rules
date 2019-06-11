@@ -175,6 +175,8 @@ endif
 check_dependents_%:
 	@$(if $(strip $(filter $*,$(ALL_BIGPRODS))),$(call CheckBigProductsDeps,$*),$(CMD_echo) ****ERROR: Unknown biglib $* && exit 1)
 $(SCRAMSTORENAME_BIGLIB)/%_xr_rdict.pcm:
-	if [ -e $(RELEASETOP)/$@ ] ; then \
+	@if [ -e $(RELEASETOP)/$@ ] ; then \
 	  $(CMD_ln) -sf $(RELEASETOP)/$@  $@ ;\
+	elif [ -e $(FULL_RELEASE_FOR_A_PATCH)/$@ ] ; then \
+	  $(CMD_ln) -sf $(FULL_RELEASE_FOR_A_PATCH)/$@  $@ ;\
 	fi

@@ -1,5 +1,7 @@
 2019-06-11 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-53: Create symlink for biglib PCMs during patch release build.
+	V05-08-54: Bug fix: use FULL_RELEASE_FOR_A_PATCH for full release path
+	for patch releases.
 
 2019-06-07 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-52: Create symlink for biglib PCMs.
