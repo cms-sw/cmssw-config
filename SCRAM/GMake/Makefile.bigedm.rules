@@ -150,6 +150,8 @@ $(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/
 $(1)_objs := $(call BigObjectsPaths,$1)
 ifneq ($(strip $(RELEASETOP)),)
 $(1)_extra_pcm_sylinks:=$$(foreach x,$$(basename $$(notdir %/,,$$(filter external/%,$$($(1)_objs)))),$$(if $$(strip $$(wildcard $(RELEASETOP)/$(SCRAMSTORENAME_BIGLIB)/$$(x)_xr_rdict.pcm)),$(SCRAMSTORENAME_BIGLIB)/$$(x)_xr_rdict.pcm))
+else ifeq ($(strip $(IS_PATCH)),yes)
+$(1)_extra_pcm_sylinks:=$$(foreach x,$$(basename $$(notdir %/,,$$(filter external/%,$$($(1)_objs)))),$$(if $$(strip $$(wildcard $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_BIGLIB)/$$(x)_xr_rdict.pcm)),$(SCRAMSTORENAME_BIGLIB)/$$(x)_xr_rdict.pcm))
 endif
 $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX) $$($(1)_extra_pcm_sylinks)
 	$$(call bigedm_register_plugin,$1)
@@ -173,6 +175,8 @@ endif
 check_dependents_%:
 	@$(if $(strip $(filter $*,$(ALL_BIGPRODS))),$(call CheckBigProductsDeps,$*),$(CMD_echo) ****ERROR: Unknown biglib $* && exit 1)
 $(SCRAMSTORENAME_BIGLIB)/%_xr_rdict.pcm:
-	if [ -e $(RELEASETOP)/$@ ] ; then \
+	@if [ -e $(RELEASETOP)/$@ ] ; then \
 	  $(CMD_ln) -sf $(RELEASETOP)/$@  $@ ;\
+	elif [ -e $(FULL_RELEASE_FOR_A_PATCH)/$@ ] ; then \
+	  $(CMD_ln) -sf $(FULL_RELEASE_FOR_A_PATCH)/$@  $@ ;\
 	fi
