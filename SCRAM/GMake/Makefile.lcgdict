@@ -7,7 +7,7 @@ DEPENDENCY_ORDER_FUNCTION_ROOTMAP_FILES:=SetRootmapsRules
 EXTRA_TOP_LEVEL_BUILD_RULES+=ExtraPCMsRules
 
 define generate_full_modulemap
- $(CMD_rm) -f $@ &&\
+ $(CMD_rm) -f $@ $(RELEASE_CXXMODULES_DIR)/$(MODULEMAP_FILE) &&\
  $(CMD_touch) $@ &&\
  for m in $$($(CMD_find) $(@D) -maxdepth 2 -name cxxmodule -type f) ; do\
    $(CMD_cat) $$m >> $@;\
@@ -278,7 +278,7 @@ endef
 
 ifneq ($(strip $(wildcard $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR))),)
 $(WORKINGDIR)/release.cxxmodule:
-	$(CMD_mkdir) -p $(CXXMODULES_DIR) &&\
+	@$(CMD_mkdir) -p $(CXXMODULES_DIR) &&\
 	$(CMD_rm) -rf $(CXXMODULES_DIR) &&\
 	$(CMD_cp) -rf $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR) $(LOCALTOP)/$(CXXMODULES_DIR) &&\
 	$(CMD_find) $(LOCALTOP)/$(CXXMODULES_DIR) -name cxxmodule -type f | $(CMD_xargs) $(CMD_sed) -i -e 's|"$(CXXMODULES_DIR_RELPAH)/|"$(RELEASETOP)/|' &&\
