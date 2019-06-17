@@ -45,9 +45,6 @@
 #  <flags EDM_LDFLAGS="-Wl,--version-script,$(SCRAM_CONFIGDIR)/SCRAM/EdmPluginVisibility.lds"/>
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
-<architecture name="slc5.*_gcc4[67]">
-   <flags LDFLAGS="-Wl,--icf=all"/>
-</architecture>
 <architecture name="osx">
    <flags MISSING_SYMBOL_FLAGS="-Wl,-undefined,error"/>
 </architecture>
@@ -62,8 +59,10 @@
 </release>
 <release name="_UBSAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
+  <flags REM_BOOST_SERIALIZATION_CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
   <architecture name="_gcc8">
     <flags CXXFLAGS="-fsanitize=builtin -fsanitize=pointer-overflow"/>
+    <flags REM_BOOST_SERIALIZATION_CXXFLAGS="-fsanitize=builtin -fsanitize=pointer-overflow"/>
   </architecture>
 </release>
 <release name="_TSAN_">

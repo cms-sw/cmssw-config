@@ -30,6 +30,7 @@ ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_PRODS          :=
 ALL_MODULEMAPS     :=
+TOP_LEVEL_VARIABLES:= BINARY LIBRARY TEST TEST_LIBRARY
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
 FAST:=
@@ -1659,7 +1660,7 @@ $(foreach f,MISSING_SYMBOL_FLAGS,$(eval $f:=$(self_EX_FLAGS_$f)))
 -include $(PUB_DIRCACHE_MKDIR)/DirCache.mk
 -include $(DIRCACHE_MKDIR)/ExtraBuilsRules/*.mk
 -include $(DIRCACHE_MKDIR)/DirCache.mk
-$(foreach f,CXXFLAGS CPPFLAGS,$(foreach t,LCGDICT ROOTDICT BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY,$(eval $t_$f:=$(self_EX_FLAGS_$t_$f))$(eval REM_$t_$f:=$(self_EX_FLAGS_REM_$t_$f))))
+$(foreach f,CXXFLAGS CPPFLAGS,$(foreach t,$(TOP_LEVEL_VARIABLES),$(eval $t_$f:=$(self_EX_FLAGS_$t_$f))$(eval REM_$t_$f:=$(self_EX_FLAGS_REM_$t_$f))))
 $(foreach p,$(ALL_PACKAGES) $(ALL_DELETED_PACKAGES),$(if $(strip $($p)),,$(eval $p:=$(subst /,,$p))))
 -include $(TOOLS_MKDIR)/SCRAMBased/all.mk
 -include $(DIRCACHE_MKDIR)/RmvDirCache.mk

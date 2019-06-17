@@ -1,3 +1,4 @@
+TOP_LEVEL_VARIABLES+=LCGDICT
 ifneq ($(strip $(wildcard $(SCRAM_CONFIGDIR)/SCRAM/GMake/CXXModules.mk)),)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/CXXModules.mk
 endif

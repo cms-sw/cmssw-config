@@ -1,3 +1,4 @@
+TOP_LEVEL_VARIABLES+=ROOTDICT
 # Root Dictionary compilation
 define compile_rootdict
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,ROOTDICT,CPPFLAGS CXXFLAGS),root dictionary,|| ($(CMD_rm) -f $< && exit 1))
