@@ -1,6 +1,8 @@
 2019-06-17 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-55: Pass full tmp directory path to avoid following errors
 	grep: tmp/arch/package_match.regex: No such file or directory
+	V05-08-56: Disable UBSAN flags for Boost Serialization source files.
+	https://github.com/cms-sw/cmssw/issues/26669
 
 2019-06-11 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-53: Create symlink for biglib PCMs during patch release build.
