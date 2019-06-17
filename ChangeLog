@@ -1,3 +1,7 @@
+2019-06-17 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-55: Pass full tmp directory path to avoid following errors
+	grep: tmp/arch/package_match.regex: No such file or directory
+
 2019-06-11 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-53: Create symlink for biglib PCMs during patch release build.
 	V05-08-54: Bug fix: use FULL_RELEASE_FOR_A_PATCH for full release path
