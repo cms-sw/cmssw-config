@@ -1,3 +1,6 @@
+2019-06-18 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-57: Set BIGOBJ flags from top-level makefile.
+
 2019-06-17 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-55: Pass full tmp directory path to avoid following errors
 	grep: tmp/arch/package_match.regex: No such file or directory

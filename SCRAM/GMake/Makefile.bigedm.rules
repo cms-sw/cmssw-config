@@ -1,4 +1,3 @@
-TOP_LEVEL_VARIABLES+=BIGOBJ
 define CheckBigProductsDeps
 $(info >> Checking Big Products dependency)\
 $(eval ALL_$(1)_LIBS:=$(foreach s,$($(1)_PACKAGES),$(if $(strip $(filter $($(s)),$($($(s))_EX_LIB_ALL))),$s)))\
