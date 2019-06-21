@@ -1,3 +1,6 @@
+2019-06-21 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-58: Add rootrflx dependency for packages with lcgdicts.
+
 2019-06-18 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-57: Set BIGOBJ flags from top-level makefile.
 
