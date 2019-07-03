@@ -68,7 +68,7 @@ code-checks-apply:
 	  $(CMD_rm) -rf $(WORKINGDIR)/code-checks ;\
 	fi
 ifneq ($(strip $(filter code-format-all,$(MAKECMDGOALS))),)
-  CODE_FORMAT_FILES_EXTS:=$(shell $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-extensions.sh -t $(WORKINGDIR) | $(CMD_grep) '^SELECTED_FILES_EXT=' | $(CMD_sed) 's|^SELECTED_FILES_EXT=||')
+  CODE_FORMAT_FILES_EXTS:=$(shell $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-extensions.sh -t $(LOCALTOP)/$(WORKINGDIR) | $(CMD_grep) '^SELECTED_FILES_EXT=' | $(CMD_sed) 's|^SELECTED_FILES_EXT=||')
   ifeq ($(strip $(USER_CODE_FORMAT_FILES)$(USER_CODE_FORMAT_FILE)),)
     CODE_CHECK_FILES:=$(shell $(CMD_cat) $(WORKINGDIR)/selected-source-files.txt)
   else ifneq ($(strip $(USER_CODE_FORMAT_FILE)),)

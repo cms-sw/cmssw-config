@@ -1,3 +1,4 @@
+TOP_LEVEL_VARIABLES+=LCGDICT
 #Both CXXMODULES_DIR and RELEASE_CXXMODULES_DIR should have same number of dirs
 CXXMODULES_DIR:=tmp/$(SCRAM_ARCH)/cxxmodules
 RELEASE_CXXMODULES_DIR:=include/$(SCRAM_ARCH)/cxxmodules
@@ -222,6 +223,7 @@ $(WORKINGDIR)/rootmaps/$(1): $(foreach l, $($(1)_EX_USE) $($(1)_EX_FLAGS_USE_SOU
 endef
 
 define LCGDictRule
+$(1)_LOC_USE += $(LCGDICT_DEPS)
 $(1)_files  := $($(1)_objdir)/$(6)/$(2)r.cc        $($(1)_files)
 $(1)_objs   := $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT) $($(1)_objs)
 $(1)_extra_files += $($(1)_objdir)/$(6)/$(2)r.cc
