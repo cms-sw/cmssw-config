@@ -1,0 +1,10 @@
+#!/bin/bash
+for bdir in ${LOCALTOP} ${RELEASETOP} ; do
+  for mdir in tmp/${SCRAM_ARCH}/cxxmodules include/${SCRAM_ARCH}/cxxmodules ; do
+    if [ -f "${bdir}/${mdir}/module.modulemap" ] ; then
+      echo "RUNTIME:path:prepend:ROOT_INCLUDE_PATH=${bdir}/${mdir}"
+      exit 0
+    fi
+  done
+done
+
