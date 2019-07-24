@@ -1,5 +1,5 @@
 2019-07-24 Shahzad Muzaffar  <@smuzaffar>
-	V05-08-59: Added emit-llvm build rule
+	V05-08-60: Added emit-llvm build rule
 
 2019-07-03 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-59: Added project level hooks
