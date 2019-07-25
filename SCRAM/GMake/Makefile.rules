@@ -37,7 +37,8 @@ FAST:=
 XFAST:=
 UFAST:=
 ONLYECHOTARGETS:=
-OBJEXT:=o
+COMPILE_OPTIONS:=$(if $(strip $(SCRAM_COMPILE_OPTIONS)),$(SCRAM_COMPILE_OPTIONS),-c)
+OBJEXT:=$(if $(strip $(SCRAM_OBJEXT)),$(SCRAM_OBJEXT),o)
 AREXT:=a
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
@@ -107,7 +108,8 @@ endif
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
 CODE_ANALYSIS_RULES:=YES
 endif
-SYNTAX_ONLY:=
+
+SYNTAX_ONLY:=$(if $(strip $(SCRAM_SYNTAX_ONLY)),YES,)
 ifneq ($(strip $(filter -fsyntax-only,$(USER_CXXFLAGS))),)
 SYNTAX_ONLY:=YES
 endif
@@ -548,18 +550,18 @@ define run_compile_command
 endef
 endif
 define compile_cxx_common
-  $(call run_compile_command,$2,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
+  $(call run_compile_command,$2,$4,$5,$(CXX) $(COMPILE_OPTIONS) $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
 endef
 define compile_c_common
-  $(call run_compile_command,$2,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
+  $(call run_compile_command,$2,$4,$5,$(CC)  $(COMPILE_OPTIONS) $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
 endef
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),icc)
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
+  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
 endef
 else
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
+  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
 endef
 endif
 
@@ -1689,7 +1691,7 @@ ifeq ($(strip $(CXXSHAREDFLAGS)),)
 CXXSHAREDFLAGS := -shared
 endif
 endif
-APPLY_BIGLIB_RULES:=yes
+APPLY_BIGLIB_RULES:=$(if $(strip $(SCRAM_APPLY_BIGLIB_RULES)),$(SCRAM_APPLY_BIGLIB_RULES),yes)
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),llvm)
 APPLY_BIGLIB_RULES:=no
 endif
@@ -1972,7 +1974,14 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm
+emit-llvm:
+	SCRAM_APPLY_BIGLIB_RULES=no \
+        SCRAM_SYNTAX_ONLY=yes \
+        SCRAM_OBJEXT=ll \
+        SCRAM_COMPILE_OPTIONS="-S -emit-llvm" \
+        COMPILER=llvm \
+        $(MAKE) -f $(SCRAM_MAKEFILE) compile
 ignore-deleted:
 	@:
 scripts_%:
