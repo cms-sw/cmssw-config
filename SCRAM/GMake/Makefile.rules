@@ -66,7 +66,6 @@ DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
-NO_CAPABILITIES             := $(if $(strip $(filter yes YES Yes 1,$(root_EX_FLAGS_NO_CAPABILITIES))),yes)
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 IS_DARWIN:=no
 IS_LINUX:=yes
@@ -74,14 +73,6 @@ ifeq ($(strip $(filter-out osx%,$(SCRAM_ARCH))),)
 IS_DARWIN:=yes
 IS_LINUX:=no
 endif
-GENERATE_ROOT_PCMS:=
-ifneq ($(strip $(GENREFLEX)),)
-GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
-endif
-ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
-LCGDICT_FILE_PREFIX = $(1)_
-endif
-ROOTDICT_FILE_PREFIX = $(1)_
 ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion

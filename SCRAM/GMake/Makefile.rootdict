@@ -1,3 +1,4 @@
+ROOTDICT_FILE_PREFIX = $(1)_
 TOP_LEVEL_VARIABLES+=ROOTDICT
 # Root Dictionary compilation
 define compile_rootdict
@@ -9,15 +10,14 @@ endef
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
-  $(VERB_ECHO) $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependencyPCMS,$1)) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) &&\
-  (            $(ROOTCINT) -f $@ $(if $(strip $(GENERATE_ROOT_PCMS)),$(call Tool_DependencyPCMS,$1)) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) || ($(CMD_rm) -f $@ && exit 1)) &&\
+  $(VERB_ECHO) $(ROOTCINT) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) &&\
+  (            $(ROOTCINT) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
 endef
 
 define addPCMRule
-ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
 all_$(1)  += $(4)/$(2)r_rdict.pcm
 $(3)/$(2)r_rdict.pcm: $(3)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
@@ -29,7 +29,6 @@ $(4)/$(2)r_rdict.pcm: $(3)/$(2)r_rdict.pcm
 	else \
 	  $(CMD_rm) -f $$@;\
 	fi
-endif
 endef
 
 #safename,linkdefs,subdir,prodstore,rootdicts

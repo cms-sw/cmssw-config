@@ -1,3 +1,7 @@
+2019-07-26 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-61: Drop unused capabilities rules.
+	Always build with root PCMs.
+
 2019-07-24 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-60: Added emit-llvm build rule
 
