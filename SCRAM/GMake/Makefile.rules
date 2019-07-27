@@ -1702,7 +1702,7 @@ ifneq ($(strip $(ALL_BIGPRODS)),)
 endif
 endif
 ifeq ($(IS_MIC),yes)
-ROOTCINT:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcint/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcint/bin/rootcint
+ROOTCLING:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcling/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcling/bin/rootcling
 endif
 ifneq ($(strip $(COND_SERIALIZATION)),)
 COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))

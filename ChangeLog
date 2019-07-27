@@ -1,3 +1,6 @@
+2019-06-26 Vassil Vassilev  <@vgvassilev>
+	V05-08-58: Rename the legacy rootcint to rootcling.
+
 2019-06-21 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-58: Add rootrflx dependency for packages with lcgdicts.
 
