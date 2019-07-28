@@ -1,5 +1,6 @@
 2019-06-26 Vassil Vassilev  <@vgvassilev>
 	V05-08-62: Rename the legacy rootcint to rootcling.
+
 2019-07-26 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-61: Drop unused capabilities rules.
 	Always build with root PCMs.
