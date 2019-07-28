@@ -1234,14 +1234,14 @@ sub getGenReflexPath ()
   return $genrflx;
 }
 
-sub getRootCintPath ()
+sub getRootClingPath ()
 {
   my $self=shift;
   my $cint="";
   foreach my $t ("ROOTCORE", "ROOTRFLX")
   {
     if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
-    {$cint="\$(${t}_BASE)/bin/rootcint";last;}
+    {$cint="\$(${t}_BASE)/bin/rootcling";last;}
   }
   return $cint;
 }
@@ -1831,8 +1831,8 @@ sub Project_template()
             "ifeq (\$(strip \$(GENREFLEX_ARGS)),)\n",
             "GENREFLEX_ARGS:=--deep\n",
             "endif\n",
-            "ifeq (\$(strip \$(ROOTCINT)),)\n",
-            "ROOTCINT:=",$self->getRootCintPath(),"\n",
+            "ifeq (\$(strip \$(ROOTCLING)),)\n",
+            "ROOTCLING:=",$self->getRootClingPath(),"\n",
             "endif\n",
 	    "\n",
             "LIBDIR+=\$(self_EX_LIBDIR)\n",

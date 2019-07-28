@@ -10,8 +10,8 @@ endef
 define generate_rootdict
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Building Root dict from header file $< " &&\
-  $(VERB_ECHO) $(ROOTCINT) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) &&\
-  (            $(ROOTCINT) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) || ($(CMD_rm) -f $@ && exit 1)) &&\
+  $(VERB_ECHO) $(ROOTCLING) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) &&\
+  (            $(ROOTCLING) -f $@ $(call Tool_DependencyPCMS,$1) $(COMPILE_OPTIONS) -p -DGNU_SOURCE $(call AdjustFlags,$1,ROOTDICT,CPPFLAGS) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$<) || ($(CMD_rm) -f $@ && exit 1)) &&\
   $(CMD_mv) $@ $@.base	&&\
   $(CMD_cat) $< $@.base > $@ &&\
   $(CMD_rm) -f $@.base $(endlog_$(2))
