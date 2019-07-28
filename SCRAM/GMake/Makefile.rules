@@ -37,7 +37,8 @@ FAST:=
 XFAST:=
 UFAST:=
 ONLYECHOTARGETS:=
-OBJEXT:=o
+COMPILE_OPTIONS:=$(if $(strip $(SCRAM_COMPILE_OPTIONS)),$(SCRAM_COMPILE_OPTIONS),-c)
+OBJEXT:=$(if $(strip $(SCRAM_OBJEXT)),$(SCRAM_OBJEXT),o)
 AREXT:=a
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
@@ -61,9 +62,10 @@ HOOK_PROJECT                :=
 HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 CLASSES_H_GENERATOR         := $(LOCALTOP)/$(SCRAM_CONFIGDIR)/genClassesH
+DEPENDENCY_ORDER_VARIABLES  :=
+EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
-NO_CAPABILITIES             := $(if $(strip $(filter yes YES Yes 1,$(root_EX_FLAGS_NO_CAPABILITIES))),yes)
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 IS_DARWIN:=no
 IS_LINUX:=yes
@@ -71,14 +73,6 @@ ifeq ($(strip $(filter-out osx%,$(SCRAM_ARCH))),)
 IS_DARWIN:=yes
 IS_LINUX:=no
 endif
-GENERATE_ROOT_PCMS:=
-ifneq ($(strip $(GENREFLEX)),)
-GENERATE_ROOT_PCMS:=$(if $(strip $(shell $(GENREFLEX) --help 2>&1 | grep multiDict)),yes,)
-endif
-ifeq ($(strip $(GENERATE_ROOT_PCMS)),yes)
-LCGDICT_FILE_PREFIX = $(1)_
-endif
-ROOTDICT_FILE_PREFIX = $(1)_
 ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
@@ -105,7 +99,8 @@ endif
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)-$(RUN_LLVM_ANALYZER_ON_ALL)),yes-$(LLVM_ANALYZER)-no)  #If not llvm-analyzer else requested to run llvm-alayzer for gen code too
 CODE_ANALYSIS_RULES:=YES
 endif
-SYNTAX_ONLY:=
+
+SYNTAX_ONLY:=$(if $(strip $(SCRAM_SYNTAX_ONLY)),YES,)
 ifneq ($(strip $(filter -fsyntax-only,$(USER_CXXFLAGS))),)
 SYNTAX_ONLY:=YES
 endif
@@ -546,18 +541,18 @@ define run_compile_command
 endef
 endif
 define compile_cxx_common
-  $(call run_compile_command,$2,$4,$5,$(CXX) -c $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
+  $(call run_compile_command,$2,$4,$5,$(CXX) $(COMPILE_OPTIONS) $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
 endef
 define compile_c_common
-  $(call run_compile_command,$2,$4,$5,$(CC)  -c $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
+  $(call run_compile_command,$2,$4,$5,$(CC)  $(COMPILE_OPTIONS) $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
 endef
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),icc)
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
+  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
 endef
 else
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  -c $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
+  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
 endef
 endif
 
@@ -1627,6 +1622,9 @@ release: release-reset release-build postbuild
 
 release-build: project_all
 	@$(if $(HOOK_PROJECT),$(HOOK_PROJECT) -e $(if $(KEEP_ON_BUILDING), || $(CMD_true)),$(CMD_echo) ">> Project Build done")
+	@for target in $(sort $(post_release_build)) ; do\
+	  $(MAKE) -f $(SCRAM_MAKEFILE) $$target ;\
+	done
 
 release-reset: distclean
 
@@ -1684,7 +1682,7 @@ ifeq ($(strip $(CXXSHAREDFLAGS)),)
 CXXSHAREDFLAGS := -shared
 endif
 endif
-APPLY_BIGLIB_RULES:=yes
+APPLY_BIGLIB_RULES:=$(if $(strip $(SCRAM_APPLY_BIGLIB_RULES)),$(SCRAM_APPLY_BIGLIB_RULES),yes)
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),llvm)
 APPLY_BIGLIB_RULES:=no
 endif
@@ -1733,6 +1731,7 @@ ifeq ($(strip $(FAST)),)
 $(info >> Local Products Rules ..... started)
 $(foreach x,$(ALL_PRODS),$(eval $($(x)_INIT_FUNC)))
 $(foreach x,$(ALL_BIGPRODS),$(eval $($(x)_INIT_FUNC)))
+$(foreach v,$(sort $(DEPENDENCY_ORDER_VARIABLES)),$(foreach x,$(ALL_PRODS),$(if $(strip $($(x)_$(v))),,$(eval $(call $(DEPENDENCY_ORDER_FUNCTION_$(v)),$x)))))
 $(info >> Local Products Rules ..... done)
 endif
 $(foreach bf,$(ALL_BUILDFILES),$(foreach err,$(sort $($(bf)_USE_ERR)),$(eval $(call UseError,$(err),$(bf)))))
@@ -1746,6 +1745,7 @@ $(foreach dir,$(ALL_SUBSYSTEMS),$(eval $(call SubSystem,$(dir),$(SCRAM_SOURCEDIR
 $(foreach dir,$(ALL_PACKAGES),$(eval $(call Package,$(dir),$(SCRAM_SOURCEDIR)_$(subst /,_,$(dir)))))
 endif
 ###########################################################
+$(foreach r,$(strip $(sort $(EXTRA_TOP_LEVEL_BUILD_RULES))),$(eval $(call $r)))
 LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
@@ -1965,16 +1965,19 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm
+emit-llvm:
+	SCRAM_APPLY_BIGLIB_RULES=no \
+        SCRAM_SYNTAX_ONLY=yes \
+        SCRAM_OBJEXT=ll \
+        SCRAM_COMPILE_OPTIONS="-S -emit-llvm" \
+        COMPILER=llvm \
+        $(MAKE) -f $(SCRAM_MAKEFILE) compile
 ignore-deleted:
 	@:
 scripts_%:
 	@:
 skip-scripts-copy: all
-	@:
-$(SCRAM_SOURCEDIR)/module.modulemap: $(ALL_MODULEMAPS)
-	@$(call generate_main_modulemap)
-cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
 	@:
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
