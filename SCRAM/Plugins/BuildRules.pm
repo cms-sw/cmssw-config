@@ -1234,14 +1234,14 @@ sub getGenReflexPath ()
   return $genrflx;
 }
 
-sub getRootCintPath ()
+sub getRootClingPath ()
 {
   my $self=shift;
   my $cint="";
   foreach my $t ("ROOTCORE", "ROOTRFLX")
   {
     if(exists $self->{cache}{ToolVariables}{global}{"${t}_BASE"})
-    {$cint="\$(${t}_BASE)/bin/rootcint";last;}
+    {$cint="\$(${t}_BASE)/bin/rootcling";last;}
   }
   return $cint;
 }
@@ -1828,11 +1828,8 @@ sub Project_template()
             "ifeq (\$(strip \$(GENREFLEX_CPPFLAGS)),)\n",
             "GENREFLEX_CPPFLAGS:=-DCMS_DICT_IMPL -D_REENTRANT -DGNU_SOURCE\n",
             "endif\n",
-            "ifeq (\$(strip \$(GENREFLEX_ARGS)),)\n",
-            "GENREFLEX_ARGS:=--deep\n",
-            "endif\n",
-            "ifeq (\$(strip \$(ROOTCINT)),)\n",
-            "ROOTCINT:=",$self->getRootCintPath(),"\n",
+            "ifeq (\$(strip \$(ROOTCLING)),)\n",
+            "ROOTCLING:=",$self->getRootClingPath(),"\n",
             "endif\n",
 	    "\n",
             "LIBDIR+=\$(self_EX_LIBDIR)\n",
@@ -1991,24 +1988,6 @@ sub lcgdict_template()
   my $fh=$self->{FH};
   my $capabilities="";
   my $root=$self->getTool("root");
-  my $enable_cap=1;
-  if ((exists $root->{FLAGS}) && (exists $root->{FLAGS}{NO_CAPABILITIES}) &&
-      (scalar(@{$root->{FLAGS}{NO_CAPABILITIES}})>0) && ($root->{FLAGS}{NO_CAPABILITIES}[-1]=~/^(1|yes)$/i))
-  {$enable_cap=0;}
-  if ($enable_cap)
-  {
-    my $ptype=$self->getLCGCapabilitiesPluginType();
-    if ($ptype ne "")
-    {
-      $capabilities="Capabilities";
-      $self->set("plugin_name","${safename}${capabilities}");
-      $self->pushstash();
-      $self->set("plugin_name_force",1);
-      $self->set("plugin_type",$ptype);
-      $self->plugin_template("cap");
-      $self->popstash();
-    }
-  }
   my $xh = $self->get("classes_h");
   my $xr = "x ";
   for(my $i=1;$i<scalar(@$xh);$i++){$xr.="x${i} ";}
