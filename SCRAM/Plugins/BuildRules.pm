@@ -1178,7 +1178,7 @@ sub searchForSpecialFiles ()
     if($tmp=~/^\s*\-\-\s*$/){$genreflex_args="";}
     elsif($tmp!~/^\s*$/){$genreflex_args=$tmp;}
     $tmp = $core->flags("GENREFLEX_FAILES_ON_WARNS");
-    if($tmp!~/^\s*(no|0)\s*$/i){$genreflex_args.=" --fail_on_warnings";}
+    if($tmp!~/^\s*(no|0)\s*$/i){$genreflex_args.=" -failOnWarnings";}
     my $plugin=$stash->get('plugin_name');
     my $libname=$stash->get('safename');
     if(($plugin ne "") && ($plugin eq $libname))
