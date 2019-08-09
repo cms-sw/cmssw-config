@@ -1,5 +1,9 @@
+2019-08-08 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-65: Revert rootcling changes
+	Generate PCH using c++.
+
 2019-07-31 Shahzad Muzaffar  <@smuzaffar>
-	V05-08-64: Use rootcling instead of genreflex.
+       V05-08-64: Use rootcling instead of genreflex.
 
 2019-06-26 Vassil Vassilev  <@vgvassilev>
 	V05-08-62: Rename the legacy rootcint to rootcling.

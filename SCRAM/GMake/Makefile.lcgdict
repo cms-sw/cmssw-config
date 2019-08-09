@@ -76,10 +76,12 @@ define generate_modulemap
   $(CMD_echo) ">> Generated modulemap for $($(1)_PROD_PACKAGE)" &&\
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) "module \"$(1)\" {" > $@ &&\
+  $(CMD_echo) "  requires cplusplus" >> $@ &&\
   for inc in `$(CMD_grep) '"$($(1)_PROD_PACKAGE)/interface/' $< | $(CMD_grep) -v -f $(3)/$(2)r.ignore | $(CMD_grep) '^ *# *include *"' | $(CMD_sed) 's|.*include *"||;s|".*||' | $(CMD_sort) | $(CMD_uniq)`; do \
     hdr=`$(CMD_echo) $$inc | $(CMD_sed) 's|.*/||'` ;\
     $(CMD_echo) "  module \"$$hdr\" { header \"$(CXXMODULES_DIR_RELPAH)/$(SCRAM_SOURCEDIR)/$$inc\" export * }" >> $@ ;\
   done &&\
+  $(CMD_echo) "  link \"$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)\"" >> $@ &&\
   $(CMD_echo) "  export *" >> $@ &&\
   $(CMD_echo) "}" >> $@
 endef
@@ -213,7 +215,7 @@ endif
 $(1)_ROOTPCMS += $(7)/$$($(1)_pcm_name)
 all_$(1)  += $(7)/$$($(1)_pcm_name)
 ALL_PCMS  += $(7)/$$($(1)_pcm_name)
-$(eval $(call AddBigObjLCGDICTRule,$1,$(6)/$(2),$(7),$$($(1)_pcm_name)))
+$$(eval $$(call AddBigObjLCGDICTRule,$1,$(6)/$(2),$(7),$$($(1)_pcm_name)))
 $($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootpcms/$($l))
 	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$$($(1)_pcm_name) $(WORKINGDIR)/rootpcms/$(1)" > $$(call AutoCleanFile,$$<,lcgdict)
 ifeq ($(strip $($(1)_CXXMODULES)),1)
