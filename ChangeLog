@@ -1,4 +1,8 @@
 2019-08-08 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-66: Do not run clang-tidy for files which are not in
+	compile_commands.json.
+
+2019-08-08 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-65: Revert rootcling changes
 	Generate PCH using c++.
 

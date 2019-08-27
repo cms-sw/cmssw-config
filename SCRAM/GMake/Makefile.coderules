@@ -20,8 +20,10 @@ define CodeCheckRule
 ALL_CodeCheckRules+=$(WORKINGDIR)/code-checks/$1.yaml
 $(WORKINGDIR)/code-checks/$1.yaml: $(SCRAM_SOURCEDIR)/$1
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$(CMD_echo) clang-tidy $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter "'$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'" $$< &&\
-	clang-tidy             $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter '$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'   $$< &&\
+	if [ $$$$($(CMD_grep) '/$$<"' $(LLVM_CCDB_EXT) | $(CMD_grep) '"file":' |  wc -l) -gt 0 ] ; then \
+	  $(CMD_echo) clang-tidy $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter "'$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'" $$< &&\
+	  clang-tidy             $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter '$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'   $$< ; \
+	fi &&\
 	$(CMD_touch) $$@
 endef
 define CodeFormatRule
