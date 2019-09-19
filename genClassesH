@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 from optparse import OptionParser
 from xml.sax import parseString
 from xml.sax.handler import ContentHandler
 from sys import exit
 
 def die(msg):
-  print msg
+  print(msg)
   exit(1)
  
 class ClassesDefContentHandler(ContentHandler):
@@ -37,11 +37,11 @@ class ClassesDefContentHandler(ContentHandler):
         die("Malformed classes_def.xml")
 
   def endDocument(self):
-    print "\n".join("#include %s" % x for x in self.headers)
-    if self.headers: print ""
-    print "namespace {\n  struct dictionary {"
-    print "\n".join("    %s a%s;" % (n, i) for (i,n) in enumerate(self.classes))
-    print "};\n}"
+    print ("\n".join("#include %s" % x for x in self.headers))
+    if self.headers: print ("")
+    print ("namespace {\n  struct dictionary {")
+    print ("\n".join("    %s a%s;" % (n, i) for (i,n) in enumerate(self.classes)))
+    print ("};\n}")
 
 if __name__ == "__main__":
   parser = OptionParser(usage="%{progname}s <classes_def.xml>")
