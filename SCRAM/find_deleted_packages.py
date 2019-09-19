@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from commands import getstatusoutput as run
 from sys import argv, exit, stderr
 from os.path import exists
 import re
+try:
+  from commands import getstatusoutput as run_cmd
+except:
+  from subprocess import getstatusoutput as run_cmd
+
 
 try:    tag = argv[1]
 except:
@@ -17,7 +21,7 @@ except:
   if not exists(sparse_file): exit(0)
 
 checkout_pkgs = [ re.compile("^"+line.strip("\n").replace("/*/","/.*/").strip("/")+"/.+$") for line in open(sparse_file).readlines() if line.strip("\n")[-1]=="/" ]
-e, o = run ("git diff --name-only %s -- | cut -d/ -f1,2 | sort -u" % tag)
+e, o = run_cmd ("git diff --name-only %s -- | cut -d/ -f1,2 | sort -u" % tag)
 if e:
   print(o,file=stderr)
   exit(1)
