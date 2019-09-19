@@ -1,3 +1,6 @@
+2019-09-19 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-67: Changes needed tp support python2 and python3
+
 2019-08-08 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-66: Do not run clang-tidy for files which are not in
 	compile_commands.json.
