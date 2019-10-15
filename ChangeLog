@@ -1,4 +1,7 @@
 2019-10-15 Shahzad Muzaffar  <@smuzaffar>
+        V05-08-69: Fix coral buildfile for centos
+
+2019-10-15 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-68: Fix for DD4Hep plugins component file.
 
 2019-09-19 Shahzad Muzaffar  <@smuzaffar>
