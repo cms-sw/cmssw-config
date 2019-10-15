@@ -1,3 +1,6 @@
+2019-10-15 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-68: Fix for DD4Hep plugins component file.
+
 2019-09-19 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-67: Changes needed tp support python2 and python3
 
