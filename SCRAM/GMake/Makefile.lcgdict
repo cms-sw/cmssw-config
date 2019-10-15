@@ -113,8 +113,8 @@ endef
 define generate_lcgdict_cxxmodule
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO)                $(ROOTCLING) -f $@ -s $(@D)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(5)_GENREFLEX_ARGS) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
-  (($(SCRAM_GENREFLEX_PREFIX) $(ROOTCLING) -f $@ -s $(@D)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(5)_GENREFLEX_ARGS) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
+  $(VERB_ECHO)                $(ROOTCLING) -reflex -f $@ -s $(@D)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(5)_GENREFLEX_ARGS) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
+  (($(SCRAM_GENREFLEX_PREFIX) $(ROOTCLING) -reflex -f $@ -s $(@D)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(5)_GENREFLEX_ARGS) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) -I$(LOCALTOP)/$(CXXMODULES_DIR) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
     if [ -f $(@D)/_Builtin_intrinsics.pcm ] ; then \
       mv $(@D)/_Builtin_intrinsics.pcm $(6)/;\
     fi &&\
