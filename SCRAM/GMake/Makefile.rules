@@ -749,12 +749,8 @@ define src2store_copy
   @$(startlog_$(2)) $(CMD_echo) "------- copying files from $(1) -------" &&\
   [ -d $(LOCALTOP)/$(4) ] || $(CMD_mkdir) -p $(LOCALTOP)/$(4) &&\
   for f in $(3) ; do \
-    if [ -d $(LOCALTOP)/$(1)/$$f ] ; then \
-      $(CMD_cp) -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f ; \
-    elif [ ! -x $(LOCALTOP)/$(1)/$$f ] ; then \
-      continue ; \
-    fi &&\
-    $(CMD_cp) -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
+    if [ ! -d $(LOCALTOP)/$(1)/$$f ] && [ ! -x $(LOCALTOP)/$(1)/$$f ] ; then continue ; fi &&\
+    $(CMD_cp) -urpT $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
     $(CMD_echo) ">> copied $$f"; \
   done $(endlog_$(2))
 endef
