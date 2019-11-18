@@ -749,8 +749,10 @@ define src2store_copy
   @$(startlog_$(2)) $(CMD_echo) "------- copying files from $(1) -------" &&\
   [ -d $(LOCALTOP)/$(4) ] || $(CMD_mkdir) -p $(LOCALTOP)/$(4) &&\
   for f in $(3) ; do \
-    if [ -d $(LOCALTOP)/$(4)/$$f ] ; then \
-      $(CMD_rm) -rf $(LOCALTOP)/$(4)/$$f; \
+    if [ -d $(LOCALTOP)/$(1)/$$f ] ; then \
+      continue ; \
+    elif [ ! -x $(LOCALTOP)/$(1)/$$f ] ; then \
+      continue ; \
     fi &&\
     $(CMD_cp) -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
     $(CMD_echo) ">> copied $$f"; \
@@ -1294,16 +1296,17 @@ endef
 
 ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 define Src2StoreCopy
-.PHONY: $(1) all_$(1)
+.PHONY: $(1) all_$(1) $(1)_copy
 $(1)_files := $(filter-out CVS $(SCRAM_BUILDFILE) $(SCRAM_BUILDFILE).xml $($(1)_SKIP_FILES), $($(1)_files))
 $(1): all_$(1)
 	@:
 ifneq ($$(strip $$($(1)_files)),)
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_installdir := $(3)
-all_$(1): $(logfile_$(1))
+$(1)_copy: $(logfile_$(1))
 	@$$(call clean_files,$($(1)_SKIP_FILES),$$($(1)_installdir))
 	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir))
+all_$(1): $(1)_copy
 endif
 endef
 endif
