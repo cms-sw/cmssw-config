@@ -1,3 +1,10 @@
+2019-11-20 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-70: Copy only executable files in to PATH
+	V05-08-71: Allow to copy directories
+	V05-08-72: Copy directories only if explicitly requested via INSTALL_SCRIPTS
+	flag in the package/scripts/BuildFile.xml
+	Make sure to always create _rdict.pcm for biglib
+
 2019-10-15 Shahzad Muzaffar  <@smuzaffar>
         V05-08-69: Fix coral buildfile for centos
 
