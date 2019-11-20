@@ -351,9 +351,8 @@ define checklibs
     $(CMD_false);\
   fi
 endef
-define find_project_file
-$(strip $(eval scram_pfp:=)$(foreach d,$(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
-endef
+find_project_file=$(call find_release_file,$1,$(LOCALTOP))
+find_release_file=$(strip $(eval scram_pfp:=)$(foreach d,$(strip $2 $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 define biglib_setup
   proj_tool=`$(CMD_echo) $(SCRAM_PROJECTNAME) | tr '[A-Z]' '[a-z]'` ; \
   tool_file=$(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ;\
@@ -748,8 +747,13 @@ endef
 define src2store_copy
   @$(startlog_$(2)) $(CMD_echo) "------- copying files from $(1) -------" &&\
   [ -d $(LOCALTOP)/$(4) ] || $(CMD_mkdir) -p $(LOCALTOP)/$(4) &&\
+  for f in $(5) ; do \
+    $(CMD_cp) -urpT $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
+    $(CMD_echo) ">> copied $$f"; \
+  done ;\
   for f in $(3) ; do \
-    if [ ! -d $(LOCALTOP)/$(1)/$$f ] && [ ! -x $(LOCALTOP)/$(1)/$$f ] ; then continue ; fi &&\
+    [ -d $(LOCALTOP)/$(1)/$$f ] && continue ;\
+    [ ! -x $(LOCALTOP)/$(1)/$$f ] && continue ;\
     $(CMD_cp) -urpT $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
     $(CMD_echo) ">> copied $$f"; \
   done $(endlog_$(2))
@@ -1301,7 +1305,7 @@ $(eval $(call LogFile,$(1),$(2)))
 $(1)_installdir := $(3)
 $(1)_copy: $(logfile_$(1))
 	@$$(call clean_files,$($(1)_SKIP_FILES),$$($(1)_installdir))
-	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir))
+	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir),$($(1)_INSTALL_SCRIPTS))
 all_$(1): $(1)_copy
 endif
 endef
