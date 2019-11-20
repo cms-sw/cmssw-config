@@ -351,9 +351,8 @@ define checklibs
     $(CMD_false);\
   fi
 endef
-define find_project_file
-$(strip $(eval scram_pfp:=)$(foreach d,$(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
-endef
+find_project_file=$(call find_release_file,$1,$(LOCALTOP))
+find_release_file=$(strip $(eval scram_pfp:=)$(foreach d,$(strip $2 $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 define biglib_setup
   proj_tool=`$(CMD_echo) $(SCRAM_PROJECTNAME) | tr '[A-Z]' '[a-z]'` ; \
   tool_file=$(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ;\
@@ -440,8 +439,13 @@ define copy_py_to_main_productstore
   $(call copy_build_product,$(1))
 endef
 
-define delete_build_prod 
-  $(CMD_rm) -f $@ $(LOCALTOP)/$(1)/$(@F)
+define delete_build_prod
+  if [ "$(KEEP_ON_BUILDING)" = "yes" ] ; then \
+    [ -e $@ ] && $(CMD_touch) -t $(OLD_TIMESTAMP) $@ ; \
+  else \
+    $(CMD_rm) -f $@ ;\
+  fi; \
+  $(CMD_rm) -f $(LOCALTOP)/$(1)/$(@F)
 endef
 
 define delete_plugin_build_prod 
@@ -748,11 +752,14 @@ endef
 define src2store_copy
   @$(startlog_$(2)) $(CMD_echo) "------- copying files from $(1) -------" &&\
   [ -d $(LOCALTOP)/$(4) ] || $(CMD_mkdir) -p $(LOCALTOP)/$(4) &&\
+  for f in $(5) ; do \
+    $(CMD_cp) -urpT $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
+    $(CMD_echo) ">> copied $$f"; \
+  done ;\
   for f in $(3) ; do \
-    if [ -d $(LOCALTOP)/$(4)/$$f ] ; then \
-      $(CMD_rm) -rf $(LOCALTOP)/$(4)/$$f; \
-    fi &&\
-    $(CMD_cp) -rp $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
+    [ -d $(LOCALTOP)/$(1)/$$f ] && continue ;\
+    [ ! -x $(LOCALTOP)/$(1)/$$f ] && continue ;\
+    $(CMD_cp) -urpT $(LOCALTOP)/$(1)/$$f $(LOCALTOP)/$(4)/$$f &&\
     $(CMD_echo) ">> copied $$f"; \
   done $(endlog_$(2))
 endef
@@ -827,7 +834,7 @@ define FinalizeSubSystem
   $(CMD_echo) ">> Subsystem $(1) built"
 endef
 define FinalizePackage
-  $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" $2 &&\
+  $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" &&\
   $(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 endef
 define SubSystem
@@ -1294,16 +1301,17 @@ endef
 
 ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 define Src2StoreCopy
-.PHONY: $(1) all_$(1)
+.PHONY: $(1) all_$(1) $(1)_copy
 $(1)_files := $(filter-out CVS $(SCRAM_BUILDFILE) $(SCRAM_BUILDFILE).xml $($(1)_SKIP_FILES), $($(1)_files))
 $(1): all_$(1)
 	@:
 ifneq ($$(strip $$($(1)_files)),)
 $(eval $(call LogFile,$(1),$(2)))
 $(1)_installdir := $(3)
-all_$(1): $(logfile_$(1))
+$(1)_copy: $(logfile_$(1))
 	@$$(call clean_files,$($(1)_SKIP_FILES),$$($(1)_installdir))
-	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir))
+	$$(call src2store_copy,$(2),$(1),$$($(1)_files),$$($(1)_installdir),$($(1)_INSTALL_SCRIPTS))
+all_$(1): $(1)_copy
 endif
 endef
 endif

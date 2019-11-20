@@ -37,6 +37,9 @@ define check_duplicate_cfi_config
   fi
 endef
 else
+define  check_duplicate_cfi_config
+  $(CMD_echo) "@@@@ Skipping Duplicate CFI check for $1 due to SCRAM_NOEDMWRITECONFIG"
+endef
 define edm_write_config
   $(CMD_echo) "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
 endef
