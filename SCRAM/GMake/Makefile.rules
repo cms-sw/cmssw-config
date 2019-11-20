@@ -439,8 +439,13 @@ define copy_py_to_main_productstore
   $(call copy_build_product,$(1))
 endef
 
-define delete_build_prod 
-  $(CMD_rm) -f $@ $(LOCALTOP)/$(1)/$(@F)
+define delete_build_prod
+  if [ "$(KEEP_ON_BUILDING)" = "yes" ] ; then \
+    [ -e $@ ] && $(CMD_touch) -t $(OLD_TIMESTAMP) $@ ; \
+  else \
+    $(CMD_rm) -f $@ ;\
+  fi; \
+  $(CMD_rm) -f $(LOCALTOP)/$(1)/$(@F)
 endef
 
 define delete_plugin_build_prod 
@@ -829,7 +834,7 @@ define FinalizeSubSystem
   $(CMD_echo) ">> Subsystem $(1) built"
 endef
 define FinalizePackage
-  $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" $2 &&\
+  $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" &&\
   $(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 endef
 define SubSystem
