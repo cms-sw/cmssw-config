@@ -170,6 +170,8 @@ endif
 endif
 UC_PROJECTNAME:=$(SCRAM_PROJECTNAME)
 LC_PROJECTNAME:=$(shell $(CMD_echo) $(UC_PROJECTNAME) | $(CMD_tr) '[A-Z]' '[a-z]')
+SELF_LIBDIRS:=$(subst $(path_seperator),$(space),$($(OS_RUNTIME_LIBRARY_PATH)))
+self_EX_LIBDIR:=$(foreach d,$(self_EX_LIBDIR),$(if $(strip $(filter $d,$(SELF_LIBDIRS))),$d))
 ##############################################################################
 ifndef RUN_LLVM_ANALYZER_ON_ALL
 RUN_LLVM_ANALYZER_ON_ALL:=no
