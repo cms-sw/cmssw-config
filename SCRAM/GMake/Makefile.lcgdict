@@ -19,6 +19,7 @@ endef
 
 define ExtraPCMsRules
 ifneq ($(strip $(ALL_PCMS)),)
+export CLING_MODULEMAP_PATH:=$(LOCALTOP)/$(CXXMODULES_DIR):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_PATH),$(subst $(colon),$(space),$(CLING_MODULEMAP_PATH))))
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
 	@$$(call generate_full_modulemap)
 cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
