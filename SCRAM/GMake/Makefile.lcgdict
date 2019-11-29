@@ -18,7 +18,7 @@ define generate_full_modulemap
 endef
 
 define ExtraPCMsRules
-ifneq ($(strip $(ALL_MODULEMAP)),)
+ifneq ($(strip $(ALL_MODULEMAPS)),)
 export CLING_MODULEMAP_PATH:=$(LOCALTOP)/$(CXXMODULES_DIR):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_PATH),$(subst $(colon),$(space),$(CLING_MODULEMAP_PATH))))
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
 	@$$(call generate_full_modulemap)
