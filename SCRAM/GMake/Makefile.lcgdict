@@ -1,31 +1,57 @@
 LCGDICT_FILE_PREFIX = $(1)_
 TOP_LEVEL_VARIABLES+=LCGDICT
-#Both CXXMODULES_DIR and RELEASE_CXXMODULES_DIR should have same number of dirs
-CXXMODULES_DIR:=tmp/$(SCRAM_ARCH)/cxxmodules
-RELEASE_CXXMODULES_DIR:=include/$(SCRAM_ARCH)/cxxmodules
+CXXMODULES_DIR:=$(SCRAMSTORENAME_INCLUDE)/$(SCRAM_ARCH)/cxxmodules
 CXXMODULES_DIR_RELPAH:=$(shell $(CMD_echo) $(CXXMODULES_DIR) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
-MODULEMAP_FILE:=module.modulemap
+MODULEMAP_EXT:=modulemap
+MODULEMAP_FILE:=module.$(MODULEMAP_EXT)
 DEPENDENCY_ORDER_FUNCTION_ROOTPCMS:=SetRootPCMSRules
 EXTRA_TOP_LEVEL_BUILD_RULES+=ExtraPCMsRules
 
 define generate_full_modulemap
- $(CMD_echo) ">> Generating full $(MODULEMAP_FILE)" &&\
- $(CMD_rm) -f $@ $(RELEASE_CXXMODULES_DIR)/$(MODULEMAP_FILE) &&\
- $(CMD_touch) $@ &&\
- for m in $$($(CMD_find) $(@D) -maxdepth 2 -name cxxmodule -type f) ; do\
+ $(CMD_echo) ">> Generating ModuleMap $@" &&\
+ $(CMD_mkdir) -p  $(@D) &&\
+ $(CMD_rm) -f $@ &&\
+ for m in $$($(CMD_find) $(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
    $(CMD_cat) $$m >> $@;\
- done
+ done ;\
+ $(CMD_touch) $@ &&\
+ if [ -f $(RELEASETOP)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE) ] ; then \
+   for m in $$($(CMD_find) $(RELEASETOP)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
+     LOC_MAP=$$($(CMD_echo) $$m | $(CMD_sed) -e 's|$(RELEASETOP)/||') &&\
+     [ ! -e $$LOC_MAP ] || continue ;\
+     $(CMD_sed) -e 's|"$(CXXMODULES_DIR_RELPAH)/src/|"$(RELEASETOP)/src/|' $$m >> $@;\
+   done ;\
+ fi
+endef
+
+define generate_full_modulemap_with_extern
+ $(CMD_echo) ">> Generating ModuleMap $@" &&\
+ $(CMD_mkdir) -p  $(@D) &&\
+ $(CMD_rm) -f $@ &&\
+ for m in $$($(CMD_find) $(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)' | $(CMD_sed) -e 's|.*/||;s|.$(MODULEMAP_EXT)||') ; do \
+   $(CMD_echo) "extern module $$m \"./$$m.$(MODULEMAP_EXT)\"" >> $@;\
+ done ;\
+ $(CMD_touch) $@ &&\
+ if [ -f $(RELEASETOP)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE) ] ; then \
+   for m in $$($(CMD_find) $(RELEASETOP)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)' | $(CMD_sed) -e 's|.*/||;s|.$(MODULEMAP_EXT)||') ; do \
+     [ ! -e $(CXXMODULES_DIR)/$$m.$(MODULEMAP_EXT) ] || continue ;\
+     $(CMD_echo) "extern module $$m \"$(RELEASETOP)/$(CXXMODULES_DIR)/$$m.$(MODULEMAP_EXT)\"" >> $@;\
+   done ;\
+ fi
 endef
 
 define ExtraPCMsRules
+.PHONY: cxxmodules
 ifneq ($(strip $(ALL_MODULEMAPS)),)
+ifneq ($(strip $(CMSSW_CLING_MODULEMAP_PATH)),)
 export CLING_MODULEMAP_PATH:=$(LOCALTOP)/$(CXXMODULES_DIR):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_PATH),$(subst $(colon),$(space),$(CLING_MODULEMAP_PATH))))
+endif
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
 	@$$(call generate_full_modulemap)
 cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
 	@:
 else
-.PHONY: $(CXXMODULES_DIR)/$(MODULEMAP_FILE) cxxmodules
+.PHONY: $(CXXMODULES_DIR)/$(MODULEMAP_FILE)
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE):
 	@:
 cxxmodules:
@@ -194,8 +220,8 @@ ifeq ($(strip $($(1)_CXXMODULES)),1)
 DEPENDENCY_ORDER_VARIABLES+=ROOTPCMS
 $(1)_pcm_name:=$(1).pcm
 $(2)r_header:=$($(1)_objdir)/$(6)/$(2)r.h
-ALL_MODULEMAPS+=$(CXXMODULES_DIR)/$(1)/cxxmodule
-$(CXXMODULES_DIR)/$(1)/cxxmodule: $($(1)_objdir)/$(6)/$(2)r.h | $(WORKINGDIR)/release.cxxmodule
+ALL_MODULEMAPS+=$(CXXMODULES_DIR)/$(1).$(MODULEMAP_EXT)
+$(CXXMODULES_DIR)/$(1).$(MODULEMAP_EXT): $($(1)_objdir)/$(6)/$(2)r.h
 	@$$(call generate_modulemap,$1,$2,$($(1)_objdir)/$(6))
 $($(1)_objdir)/$(6)/$(2)r.cc: $($(1)_objdir)/$(6)/$(2)r.h | $(CXXMODULES_DIR)/$(MODULEMAP_FILE)
 $($(1)_objdir)/$(6)/$(2)r.included: $3 $($(1)_config)
@@ -232,26 +258,6 @@ $(7)/$$($(1)_pcm_name): $($(1)_objdir)/$(6)/$(2)r.cc
 $(WORKINGDIR)/rootpcms/$(2): $(7)/$$($(1)_pcm_name)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 endef
-
-ifneq ($(strip $(wildcard $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR))),)
-$(WORKINGDIR)/release.cxxmodule:
-	@$(CMD_mkdir) -p $(CXXMODULES_DIR) &&\
-	$(CMD_rm) -rf $(CXXMODULES_DIR) &&\
-	$(CMD_cp) -rf $(RELEASETOP)/$(RELEASE_CXXMODULES_DIR) $(LOCALTOP)/$(CXXMODULES_DIR) &&\
-	$(CMD_find) $(LOCALTOP)/$(CXXMODULES_DIR) -name cxxmodule -type f | $(CMD_xargs) $(CMD_sed) -i -e 's|"$(CXXMODULES_DIR_RELPAH)/|"$(RELEASETOP)/|' &&\
-	$(CMD_touch) $@
-else
-$(WORKINGDIR)/release.cxxmodule:
-	@$(CMD_touch) $@
-endif
-
-post_release_build+=00-copy-modulemap
-00-copy-modulemap: $(WORKINGDIR)/release.cxxmodule
-	@if [ -d $(CXXMODULES_DIR) ] ; then \
-	  $(CMD_rm) -rf $(RELEASE_CXXMODULES_DIR) &&\
-	  $(CMD_mkdir) -p $$(basename $(RELEASE_CXXMODULES_DIR)) &&\
-	  $(CMD_mv) $(CXXMODULES_DIR) $(RELEASE_CXXMODULES_DIR);\
-	fi
 
 $(WORKINGDIR)/rootpcms/%:
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@

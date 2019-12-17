@@ -1,11 +1,11 @@
 #!/bin/bash
+CXXMODULES_DIR="include/${SCRAM_ARCH}/cxxmodules"
+MODULEMAP_FILE="module.modulemap"
 for bdir in ${LOCALTOP} ${RELEASETOP} ; do
-  for mdir in tmp/${SCRAM_ARCH}/cxxmodules include/${SCRAM_ARCH}/cxxmodules ; do
-    if [ -f "${bdir}/${mdir}/module.modulemap" ] ; then
-      echo "RUNTIME:variable:CMSSW_CLING_MODULEMAP_PATH=${bdir}/${mdir}"
-      echo "RUNTIME:path:prepend:CLING_MODULEMAP_PATH=${bdir}/${mdir}"
-      exit 0
-    fi
-  done
+  if [ -f "${bdir}/${CXXMODULES_DIR}/${MODULEMAP_FILE}" ] ; then
+    echo "RUNTIME:variable:CMSSW_CLING_MODULEMAP_PATH=${bdir}/${CXXMODULES_DIR}"
+    echo "RUNTIME:path:prepend:CLING_MODULEMAP_PATH=${bdir}/${CXXMODULES_DIR}"
+    exit 0
+  fi
 done
 
