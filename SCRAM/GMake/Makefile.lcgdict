@@ -83,12 +83,12 @@ endef
 define generate_lcgdict
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  (($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --rootmap=$(7)/$(basename $(@F)).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  $(VERB_ECHO) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  (($(SCRAM_GENREFLEX_PREFIX) $(GENREFLEX) $(4) -s $(3) -o $@ $($(6)_GENREFLEX_ARGS) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) --capabilities=$(notdir $(5)) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
     if [ `$(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' | $(CMD_grep) -v /_Builtin_intrinsics.pcm | wc -l` -gt 0 ] ; then \
       $(CMD_echo) "*** ERROR:$1: Generated PCM for other packages" ; $(CMD_ls) $(@D)/*.pcm | $(CMD_grep) -v '/$(1)_x' ; \
     fi &&\
-    $(CMD_touch) -r $@ $(7)/$(basename $(@F)).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
+    $(CMD_touch) -r $@ $(basename $@).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(7)/) || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
@@ -172,12 +172,11 @@ all_$(1)  += $(7)/$(2)r_rdict.pcm
 $(1)_libdeps += $(7)/$(2)r_rdict.pcm
 $(7)/$(2)%.pcm: $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
-all_$(1)  += $(7)/$(2)r.rootmap
-$(1)_ROOTMAP_FILES += $(7)/$(2)r.rootmap
-$(1)_libdeps += $(7)/$(2)r.rootmap
-$(WORKINGDIR)/rootmaps/$(2): $(7)/$(2)r.rootmap
+$(1)_ROOTMAP_FILES += $($(1)_objdir)/$(6)/$(2)r.rootmap
+$(1)_libdeps += $($(1)_objdir)/$(6)/$(2)r.rootmap
+$(WORKINGDIR)/rootmaps/$(2): $($(1)_objdir)/$(6)/$(2)r.rootmap
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-$(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
+$($(1)_objdir)/$(6)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
 	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$(2)r* $(WORKINGDIR)/rootmaps/$(1)" > $$(call AutoCleanFile,$$<,lcgdict)
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 endef

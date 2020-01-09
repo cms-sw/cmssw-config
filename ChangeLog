@@ -1,3 +1,7 @@
+2020-01-09 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-74: Install rootmap files to lib directory after installing the
+	library.
+
 2019-11-27 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-73: Only add -L<path> of self tool which are in LD_LIBRARY_PATH too
 
