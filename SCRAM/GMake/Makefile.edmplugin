@@ -120,9 +120,8 @@ endif
 define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $3/$(@F) -x $$x &&\
-    $(VERB_ECHO) Using CLING_MODULEMAP_PATH=$(CLING_MODULEMAP_PATH) &&\
-    (($(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $3/$(@F) -x $$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x &&\
+    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
@@ -132,10 +131,13 @@ endef
 endif
 
 ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
+copy_rootmaps=for r in $($(1)_ROOTMAP_FILES); do $(CMD_cp) $$r $(LOCALTOP)/$2/; done
+clean_rootmaps=for r in $(notdir $($(1)_ROOTMAP_FILES)); do $(CMD_rm) -f $(LOCALTOP)/$2/$$r; done
 define check_edm_class_transients
   && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $3/$@ $(foreach r,$2,-f $r) &&\
-  (($(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $3/$(@F) $(foreach r,$2,-f $(LOCALTOP)/$r)) || ($(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
+  $(call copy_rootmaps,$1,$3) &&\
+  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$(notdir $2),-f $r) &&\
+  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$(nordir $2),-f $r)) || ($(call clean_rootmaps,$1,$3) && $(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
 endef
 else
