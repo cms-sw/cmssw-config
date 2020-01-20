@@ -109,7 +109,7 @@ define generate_modulemap
     hdr=`$(CMD_echo) $$inc | $(CMD_sed) 's|.*/||'` ;\
     $(CMD_echo) "  module \"$$hdr\" { header \"$(CXXMODULES_DIR_RELPAH)/$(SCRAM_SOURCEDIR)/$$inc\" export * }" >> $@ ;\
   done &&\
-  $(CMD_echo) "  link \"$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)\"" >> $@ &&\
+  $(CMD_echo) "  link \"$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(1)_EXTRA_LIBS)\" " >> $@ &&\
   $(CMD_echo) "  export *" >> $@ &&\
   $(CMD_echo) "}" >> $@
 endef
