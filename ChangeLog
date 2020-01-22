@@ -1,3 +1,8 @@
+2020-01-22 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-75: Do not build a shared library or default plugin is BuildFile
+	exists but there is no dependency in there e.g. contents of the BuildFile
+	are conditional.
+
 2020-01-09 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-74: Install rootmap files to lib directory after installing the
 	library.
