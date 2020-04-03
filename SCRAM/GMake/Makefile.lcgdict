@@ -88,7 +88,7 @@ endef
 
 define lcg_full_header
   $(CMD_cp) -P $< $@ && $(CMD_echo) ">> Adding remaining headers in $<" &&\
-  $(CMD_grep) -v -f $(@D)/$(2)r.ignore -f $(@D)/$(2)r.included $(@D)/$(2)r.all | $(CMD_xargs) -i $(CMD_echo) '#include "{}"' >> $@
+  $(CMD_grep) -v -f $(@D)/$(2)r.ignore -f $(@D)/$(2)r.included $(@D)/$(2)r.all | $(CMD_sort) | $(CMD_xargs) -i $(CMD_echo) '#include "{}"' >> $@
 endef
 
 define compile_lcgdict
