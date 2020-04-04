@@ -32,14 +32,16 @@ for f in o.split("\n"):
   atN = False
   for d in obj["Diagnostics"]:
     new_rep = []
-    if (not "Replacements" in d) or (not d["Replacements"]): continue
-    dia_key='%s:%s:%s' % (d["DiagnosticName"], d['FilePath'], d['FileOffset'])
+    d1 = d
+    if 'DiagnosticMessage' in d: d1 = d['DiagnosticMessage']
+    if (not "Replacements" in d1) or (not d1["Replacements"]): continue
+    dia_key='%s:%s:%s' % (d["DiagnosticName"], d1['FilePath'], d1['FileOffset'])
     if dia_key in track_changes:
       print ("Dropping %s from %s. found in %s" % (dia_key, f, track_changes[dia_key]))
       change+=1
       continue
     track_changes[dia_key] = f
-    for r in d["Replacements"]:
+    for r in d1["Replacements"]:
       rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
       if rf in files:
         if d["DiagnosticName"] in ['readability-braces-around-statements']:

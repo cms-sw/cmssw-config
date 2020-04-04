@@ -1,3 +1,6 @@
+2020-04-04 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-76: Fix fix-code-checks-yaml.py to work with LLVM 9.0.1
+
 2020-01-22 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-75: Do not build a shared library or default plugin is BuildFile
 	exists but there is no dependency in there e.g. contents of the BuildFile
