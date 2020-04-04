@@ -2011,6 +2011,10 @@ sub library_template ()
       if ($libs->[0] ne "1"){$self->set("safename",$libs->[0]);}
     }
   }
+  elsif (($self->getLocalBuildFile() ne "") && (! defined $core->data("USE")))
+  {
+    return 1;
+  }
   $self->initTemplate_LIBRARY ();
   my $types=$core->buildproducts();
   if($types)
@@ -2407,6 +2411,7 @@ sub plugins_template()
   if (($skip eq "*") || ($skip eq "%")){return 1;}
   if (($self->getLocalBuildFile() ne "") && (!$core->hasbuildproducts()))
   {
+    if (! defined $core->data("USE")){return 1;}
     my $flags = $core->allflags();
     foreach my $ptype (keys %{$self->{cache}{SupportedPlugins}})
     {
