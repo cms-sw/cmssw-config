@@ -1,5 +1,5 @@
 SET_PRODUCT_VARIABLES += CUDA_DLINK_LIB
-AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
+AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 Tool_DependencyDLINK=$(foreach x,$($(1)_LOC_CUDA_DLINK_LIB_ALL),-l$x)
 define cuda_dlink_deps
@@ -22,13 +22,13 @@ endef
 $(eval $(call GenerateReleaseCudaDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
 $(eval $(call GenerateReleaseCudaDlink,$(RELEASETOP),base))
 
-define compile_cuda
-  $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CUDA_FLAGS))
-endef
 define compile_cuda_common
   $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
   $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options \
      '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
+endef
+define compile_cuda
+  $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS,gcc) $(call AdjustFlags,$1,,CUDA_FLAGS))
 endef
 define CudeCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile

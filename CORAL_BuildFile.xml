@@ -9,7 +9,7 @@
 
 <use name="self"/>
 
-<architecture name="slc|fc">
+<architecture name="!osx">
    <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </architecture>
 <architecture name="osx">
