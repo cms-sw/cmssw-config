@@ -381,33 +381,12 @@ sub createSymLinks()
             "\t\@echo '>> Creating project symlinks';\\\n",
             "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D) &&\\\n";
   my @dirs=$self->getSymLinks();
-  if (scalar(@dirs)==0){return;}
   foreach my $cmd (@dirs)
   {print $fh "\t",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.pl $cmd &&\\\n";}
   print $fh "\tif [ ! -f \$@ ] ; then touch \$@; fi\n\n";
   return 1;
 }
 ##############################################################
-sub setLCGCapabilitiesPluginType ()
-{
-  my $self=shift;
-  my $type=lc(shift) || $self->{cache}{DefaultPluginType};
-  if($type && (!exists $self->{cache}{SupportedPlugins}{$type}))
-  {
-    print STDERR "****ERROR: LCG Capabilities Plugin type \"$type\" not supported.\n";
-    print STDERR "           Currently available plugins are:",join(",",sort keys %{$self->{cache}{SupportedPlugins}}),".\n";
-  }
-  else{$self->{cache}{LCGCapabilitiesPlugin}=$type;}
-  return;
-}
-
-sub getLCGCapabilitiesPluginType ()
-{
-  my $self=shift;
-  my $type=$self->{cache}{LCGCapabilitiesPlugin} || $self->{cache}{DefaultPluginType};
-  return $type;
-}
-
 sub addPluginSupport ()
 {
   my $self=shift;
@@ -462,7 +441,6 @@ sub removePluginSupport ()
   my $self=shift;
   my $type=lc(shift) || return;
   delete $self->{cache}{SupportedPlugins}{$type};
-  if ($self->{cache}{LCGCapabilitiesPlugin} eq $type){$self->{cache}{LCGCapabilitiesPlugin}="";}
   if ($self->{cache}{DefaultPluginType} eq $type){$self->{cache}{DefaultPluginType}="";}
   return;
 }
@@ -677,7 +655,7 @@ sub dumpCompilersFlags()
     $allFlags.="$flag ";
     foreach my $type ("","REM_")
     {
-      foreach my $var ("","LIBRARY_","TEST_","BINARY_","EDM_","CAPABILITIES_","LCGDICT_","ROOTDICT_","PRECOMPILE_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
+      foreach my $var ("","LIBRARY_","TEST_","BINARY_","EDM_","LCGDICT_","ROOTDICT_","PRECOMPILE_","DEV_", "RELEASE_"){push @$keys,"${type}${var}${flag}:=";}
     }
   }
   push @$keys,"ALL_COMPILER_FLAGS := $allFlags";
@@ -768,12 +746,16 @@ sub addVariables ()
       else{push @$keys,"$basevar:=".$self->{cache}{toolcache}{SETUP}{$t}{$basevar};}
       $self->{cache}{ToolVariables}{$type}{$basevar}=1;
     }
+    my $ctool=$t; $ctool=~s/\-[^-]+$//;
+    my $toolPrefix="";
     if (($self->isMultipleCompilerSupport()) && (!$skipCompilerCheck) && ($self->{cache}{toolcache}{SETUP}{$t}{SCRAM_COMPILER}))
     {
       $type=$t;
-      my $ctool=$t; $ctool=~s/\-[^-]+$//;
+      $toolPrefix="${ctool}_";
       push @$keys,"ifeq (\$(strip \$(SCRAM_COMPILER)),${ctool})";
     }
+    elsif ($skipCompilerCheck){$toolPrefix="${ctool}_";}
+    my @xkeys=();
     foreach my $v (@{$self->{cache}{toolcache}{SETUP}{$t}{VARIABLES}})
     {
       if ($v eq $basevar){next;}
@@ -783,12 +765,17 @@ sub addVariables ()
         {
           my $val=$self->{cache}{toolcache}{SETUP}{$t}{$v};
           if ($v=~/^BUILDENV_(.*)$/){$val="export $1:=$val";}
-          else{$val="$v:=$val";}
+          else
+          {
+            if($toolPrefix){push @xkeys,"${toolPrefix}${v}:=$val";}
+            $val="$v:=$val";
+          }
           push @$keys,$val;
         }
       }
     }
-    if ($type eq $t){push @$keys,"endif";} 
+    if ($type eq $t){push @$keys,"endif";}
+    foreach my $x (@xkeys){push @$keys,$x;}
   }
 }
 
@@ -1178,7 +1165,7 @@ sub searchForSpecialFiles ()
     if($tmp=~/^\s*\-\-\s*$/){$genreflex_args="";}
     elsif($tmp!~/^\s*$/){$genreflex_args=$tmp;}
     $tmp = $core->flags("GENREFLEX_FAILES_ON_WARNS");
-    if($tmp!~/^\s*(no|0)\s*$/i){$genreflex_args.=" --fail_on_warnings";}
+    if($tmp!~/^\s*(no|0)\s*$/i){$genreflex_args.=" \$(root_EX_FLAGS_GENREFLEX_FAILES_ON_WARNS)";}
     my $plugin=$stash->get('plugin_name');
     my $libname=$stash->get('safename');
     if(($plugin ne "") && ($plugin eq $libname))
@@ -1986,7 +1973,6 @@ sub lcgdict_template()
   my $safename=$self->get("safename");
   my $class=$self->get("class");
   my $fh=$self->{FH};
-  my $capabilities="";
   my $root=$self->getTool("root");
   my $xh = $self->get("classes_h");
   my $xr = "x ";
@@ -1994,7 +1980,7 @@ sub lcgdict_template()
   print $fh "${safename}_LCGDICTS  := $xr\n";
   print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call LCGDict,${safename},",
 	    join(" ",@$xh),",",join(" ",@{$self->get("classes_def_xml")}),",",
-	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),",$capabilities))\n";
+	    "\$(",$self->getProductStore("lib"),"),",$self->get("genreflex_args"),"))\n";
 }
 
 sub library_template ()
@@ -2198,8 +2184,7 @@ sub dumpBuildFileData ()
   }
   else
   {
-    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath},",$self->hasPythonscripts(),",",$self->isSymlinkPythonDirectory(),",",
-	      "\$(",$self->getProductStore("python"),"),\$(",$self->getProductStore("lib"),"),",join(" ",@{$self->get("xpythonfiles")}),",",join(" ",@{$self->get("xpythondirs")}),"))\n";
+    print $fh "${safename}_INIT_FUNC        += \$\$(eval \$\$(call PythonProduct,${safename},${path},${safepath}))\n";
   }
 }
 

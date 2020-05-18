@@ -1,3 +1,22 @@
+2020-05-18 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-00:
+	- Drop Capabilities support
+	- Add vectorization support, one can set SCRAM_VECTORIZE in self.xml
+	to add the supported vectorization builds. The compiler cxxcompiler
+	tool CXXFLAGS_VECTORIZE_<VEC_FLAG> to provide the extra flags to be
+	used for vectorizations.
+	- Merge cxxmodules changes from V05-09-XX tags
+	- Drop Python wrapper build rules (not used since many years)
+	- Allow to use different compiler to build a product. One can set
+	<flag COMPILER="llvm"/>
+	in the BuildFile.xml to use llvm compiler to build the product.
+2020-05-17 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-78: Don't include fortran files in llvm ccdb to avoid running
+	clang-tidy on them.
+
+2020-04-18 Shahzad Muzaffar  <@smuzaffar>
+	V05-08-77: Use gcc compiler's flags for CUDA host.
+
 2020-04-04 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-76: Fix fix-code-checks-yaml.py to work with LLVM 9.0.1
 
@@ -21,7 +40,7 @@
 	Make sure to always create _rdict.pcm for biglib
 
 2019-10-15 Shahzad Muzaffar  <@smuzaffar>
-        V05-08-69: Fix coral buildfile for centos
+	V05-08-69: Fix coral buildfile for centos
 
 2019-10-15 Shahzad Muzaffar  <@smuzaffar>
 	V05-08-68: Fix for DD4Hep plugins component file.

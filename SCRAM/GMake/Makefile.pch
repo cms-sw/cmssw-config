@@ -1,7 +1,7 @@
 # Pre-Compile Header generation
 define generate_PreCompileHeader
-  $(call run_compile_command,$2,precompile header,,$(CMD_c++) $(COMPILE_OPTIONS) $(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS,gcc-cxxcompiler) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(CXX_MMD) $(CXX_MF) $(basename $@).d,$(CXX_MM))
-  @$(CMD_echo) $(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS,gcc-cxxcompiler) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) > $@.$(PRECOMPILE_FLAGS_EXTENSION)
+  $(call run_compile_command,$2,precompile header,,$(call GetCXX,$1,gcc) $(COMPILE_OPTIONS) $(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS,gcc) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(CXX_MMD) $(CXX_MF) $(basename $@).d,$(CXX_MM))
+  @$(CMD_echo) $(call AdjustFlags,$1,PRECOMPILE,CPPFLAGS CXXFLAGS,gcc) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) > $@.$(PRECOMPILE_FLAGS_EXTENSION)
 endef
 
 #safename,path,file,pack

@@ -1,10 +1,15 @@
 #!/bin/bash
+if [ "$(scram tool info root | grep '^CXXMODULES+=' | sed 's|.*=||')" != "1" ] ; then
+  exit 0
+fi
+CXXMODULES_DIR="include/${SCRAM_ARCH}/cxxmodules"
+MODULEMAP_FILE="module.modulemap"
+BASE_DIR="${LOCALTOP}"
 for bdir in ${LOCALTOP} ${RELEASETOP} ; do
-  for mdir in tmp/${SCRAM_ARCH}/cxxmodules include/${SCRAM_ARCH}/cxxmodules ; do
-    if [ -f "${bdir}/${mdir}/module.modulemap" ] ; then
-      echo "RUNTIME:path:prepend:ROOT_INCLUDE_PATH=${bdir}/${mdir}"
-      exit 0
-    fi
-  done
+  if [ -f "${bdir}/${CXXMODULES_DIR}/${MODULEMAP_FILE}" ] ; then
+    BASE_DIR="${bdir}"
+    break
+  fi
 done
-
+echo "RUNTIME:variable:CMSSW_CLING_MODULEMAP_PATH=${BASE_DIR}/${CXXMODULES_DIR}"
+echo "RUNTIME:path:prepend:CLING_MODULEMAP_PATH=${BASE_DIR}/${CXXMODULES_DIR}"

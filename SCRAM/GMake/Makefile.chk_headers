@@ -28,7 +28,7 @@ endef
 define compile_h
   @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $< " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $<" &&\
-  $(SCRAM_PREFIX_COMPILER_COMMAND) $(CXX) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $< &&\
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(call GetCXX,$1) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $<" &&\
+  $(SCRAM_PREFIX_COMPILER_COMMAND) $(call GetCXX,$1) -fsyntax-only -c -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(filter-out -O%,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS)) $< &&\
   $(CMD_touch) $@
 endef

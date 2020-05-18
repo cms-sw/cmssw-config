@@ -33,7 +33,6 @@ sub Project()
   $common->addPluginSupport("rivet","RIVET_PLUGIN","RivetPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".rivetcache",'$name="Rivet${name}.\$(SHAREDSUFFIX)"',"yes");
   $common->addPluginSupport("dd4hep","DD4HEP_PLUGIN","DD4HepPluginRefresh",'\/plugins$',"SCRAMSTORENAME_LIB",".dd4hepcache",'$name="lib${name}.components"',"yes");
   $common->setProjectDefaultPluginType ("edm");
-  $common->setLCGCapabilitiesPluginType ("edm");
   $common->addSymLinks("src/LCG include/LCG 1 . ''");
   print $fh "COND_SERIALIZATION:=\$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python/condformats_serialization_generate.py\n";
   print $fh "ALL_EXTRA_PRODUCT_RULES+=LCG\n";

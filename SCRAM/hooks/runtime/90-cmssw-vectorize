@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#No need to overirde LD_LIBRARY_PATH if SCRAM_VECTOR is not set of set to "default"
+if [ "${SCRAM_VECTOR}" = "" ] || [ "${SCRAM_VECTOR}" = "default" ] ; then exit 0 ; fi
+
+SUPPORTED_VECTORS="$(scram tool info self | grep '^SCRAM_VECTORIZE+=' | sed 's|.*=||')"
+SELECTED_VECTORS="${SCRAM_VECTOR}"
+if [ "${SCRAM_VECTOR}" = "auto" ] ; then
+  SELECTED_VECTORS="${SUPPORTED_VECTORS}"
+elif [ $(echo ${SUPPORTED_VECTORS} | tr ' ' '\n' | grep "^${SCRAM_VECTOR}\$" | wc -l) -eq 0 ] ; then
+  echo "WARNING: Vector instructions '${SCRAM_VECTOR}' not supported by project. Using default instruction set." 1>&2
+  exit 0
+fi
+SCRAM_VECTOR=""
+CPUFLAGS=$(cat /proc/cpuinfo | grep flags | tail -1 | sed 's|.*: *||')
+for v in ${SUPPORTED_VECTORS} ; do
+  if [ $(echo " $CPUFLAGS " | grep " $v " | wc -l) -gt 0 ] ; then
+    SCRAM_VECTOR=$v
+    break
+  fi
+done
+if [ "${SCRAM_VECTOR}" = "" ] ; then
+  echo "WARNING: Vector instructions '${SUPPORTED_VECTORS}' not available. Using default instruction set." 1>&2
+  exit 0
+fi
+
+echo "IMPORTANT: Setting CMSSW environment to use '${SCRAM_VECTOR}' instructions set." 1>&2
+for d in $(scram tool tag self LIBDIR) ; do
+  v=""
+  case $d in
+    ${LOCALTOP}/* ) v=$d ;;
+    * ) if [ -d $d/${SCRAM_VECTOR} ] ; then v=$d ; fi ;;
+  esac
+  if [ $v ] ; then
+    echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/${SCRAM_VECTOR}:$d"
+  fi
+done

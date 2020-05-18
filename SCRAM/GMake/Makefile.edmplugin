@@ -49,7 +49,7 @@ define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1)) &&\
+    $(if $(strip $3),$(CMD_echo) ">> Skipping edm_write_config for $3 $1",($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1))) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
@@ -68,7 +68,7 @@ define edm_plugin_clean
   $(call clean_prod,$($(1)_pluginprod))
 endef
 define edmPlugin
-ifneq ($(strip $($(1)_objs)$(filter $1,${2}Capabilities)),)
+ifneq ($(strip $($(1)_objs)),)
 $$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,$(1).edmplugin,$1,$4))
 $(1)_BUILDRULES := _edm
 $(call add_postprocessing,$($(1)_PROD_PACKAGE),50,check_duplicate_cfi_config)
@@ -217,7 +217,9 @@ $(COMMON_WORKINGDIR)/cache/packs/changed: $(foreach d,$(DELETED_PACKAGES),$(COMM
 $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
 	@$(call GetPackagePluginCache)
 
-poisoned_edmplugins: $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache) $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins)
+poisoned_edmplugins: $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins) \
+                     $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache \
+                          $(foreach v,$(SCRAM_VECTORIZE),$(SCRAMSTORENAME_LIB)/$v/.poisonededmplugincache))
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:
@@ -236,6 +238,9 @@ $(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/
 	    $(CMD_cat) $$c >> $@;\
 	  done;\
 	done
+
+$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(SCRAMSTORENAME_LIB)/.poisonededmplugincache
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_ln) -sf ../$(@F) $@
 endif
 endif
 

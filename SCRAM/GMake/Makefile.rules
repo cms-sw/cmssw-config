@@ -1,8 +1,13 @@
 -include $(TOOLS_MKDIR).mk
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+SCRAM_VECTORIZE:=
+$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr '[a-z.]' '[A-Z_]'))$(if \
+    $(strip $($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_CXXFLAGS_VECTORIZE_$u)),\
+    $(eval SCRAM_VECTORIZE+=$v)$(eval VECTORIZE_FLAG_$v:=$u),\
+    $(warning Vectorization flag '$v' is not supported as Compiler '$(SCRAM_COMPILER)' does not set 'CXXFLAGS_VECTORIZE_$u' flag.)))
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
-ALL_COMPILER_FLAGS:=$(sort $(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS))
+ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_VECTORIZE_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
@@ -30,6 +35,7 @@ ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_PRODS          :=
 ALL_MODULEMAPS     :=
+AUTO_GENERATED_SOURCES :=
 TOP_LEVEL_VARIABLES:= BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
@@ -253,25 +259,35 @@ else
 $(1) = $$(call get_uniq_cached_var_,$(1))
 endif
 endef
+CFLAGS_COMPILER:=ccompiler
+FFLAGS_COMPILER:=f77compiler
+GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
+GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
+GetVectorFlag=$(strip $($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$2_VECTORIZE_$1))
+#type,flag
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
-AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$4,$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,))))
+#$1,  $2,   $3,   $4,     $5
+#prod,types,flags,compiler,compiler_type,vectorize
+AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(VECTORIZE_FLAG_$6))))
+#$1,  $2,  $3,  $4,      $5,      $6,            $7,             $8,          $9
+#prod,type,flag,compiler,filename,types_one_word,over_file_flags,compile_type,vectorize
 define AdjustFlagsImp
-$(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)),$(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3),\
-  $(eval ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3:=\
+$(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)),$(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3),\
+  $(eval ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3:=\
     $(strip \
       $(USER_PRE_$3) \
       $(filter-out \
-        $(strip $(USER_PRE_$3) $(USER_$3) $(USER_REM_$3) $(REM_$3) $($1_FILE$5_LOC_FLAGS_REM_$3) $($1_LOC_FLAGS_REM_$3) $($1_FILE$5_LOC_FLAGS_$3) $($1_LOC_FLAGS_$3)\
-        $(if $(strip $4),$($4_EX_FLAGS_REM_$3_ALL)) $(foreach t,$2 $($1_CLASS),$(REM_$t_$3) $($t_$3))),\
-        $(if $(strip $4),$($4_EX_FLAGS_$3_ALL),$($3)) $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_$3))\
-      $(strip $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_LOC_FLAGS_$3) $($(2)_LOC_FLAGS_$3) $($(1)_FILE$5_LOC_FLAGS_$3) $(USER_$3))\
+        $(strip $(USER_PRE_$3) $(USER_$3) $(USER_REM_$3) $($1_FILE$5_LOC_FLAGS_REM_$3) $($1_LOC_FLAGS_REM_$3) $($1_FILE$5_LOC_FLAGS_$3) $($1_LOC_FLAGS_$3)\
+         $(if $(strip $9),$(call GetVectorFlag,$9,REM_$3))\
+         $($4-$8_EX_FLAGS_REM_$3_ALL) $(foreach t,$2 $($1_CLASS),$(REM_$t_$3) $($t_$3))),\
+        $($4-$8_EX_FLAGS_$3_ALL) $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_$3))\
+      $(strip $(foreach t,$2 $($1_CLASS),$($t_$3)) $(if $(strip $9),$(call GetVectorFlag,$9,$3)) $($1_LOC_FLAGS_$3) $($(2)_LOC_FLAGS_$3) $($(1)_FILE$5_LOC_FLAGS_$3) $(USER_$3))\
     )\
   )\
-  $(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$3)\
+  $(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)\
 )
 endef
 TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
-TOOLS_FLAGS_FUNC_ORIG=$(strip $(USER_PRE_$(1)) $(filter-out $(strip $(USER_REM_$(1)) $($(2)_LOC_FLAGS_REM_$(1)) $($(2)_LOC_FLAGS_$(1))),$($(1)) $($(2)_LOC_FLAGS_$(1)_ALL)) $($(2)_LOC_FLAGS_$(1)) $(USER_$(1)))
 TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
 TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(addprefix -l,$($(1)_LOC_$(2)_ALL)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
@@ -279,7 +295,7 @@ $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
 Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
-Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm)) \
+Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
                      @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
@@ -388,6 +404,9 @@ endif
 endef
 define FileSearchPath
 $(eval file_search_path_tmp_:=)$(foreach d,$(subst $(path_seperator),$(space),$($(2))),$(if $(file_search_path_tmp_),,$(if $(strip $(wildcard $(d)/$(1))),$(eval file_search_path_tmp_:=$(d)/$(1)))))$(file_search_path_tmp_)
+endef
+define GetMissingSymbolFlags
+  $(if $($(1)_libcheck),$(if $2,$(info @@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)),),$(MISSING_SYMBOL_FLAGS))
 endef
 ##############################################################################
 define BuildClean
@@ -529,6 +548,9 @@ endif
 ##############################################################################
 ##############################################################################
 #Compilation Rules
+GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(CXX)))
+GetCC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CC),$(if $(strip $2),$($2_CC),$(CC)))
+GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(if $(strip $2),$($2_FC),$(FC)))
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
@@ -541,25 +563,27 @@ endef
 else
 define run_compile_command
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> Compiling $(2) $< " &&\
+  $(CMD_echo) ">> Compiling $(2) $<" &&\
   $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$4 $5 $< -o $@" &&\
               ($(SCRAM_PREFIX_COMPILER_COMMAND) $4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
 endef
 endif
 define compile_cxx_common
-  $(call run_compile_command,$2,$4,$5,$(CXX) $(COMPILE_OPTIONS) $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)))
+  $(call run_compile_command,$2,$(strip $7 $4),$5,$(call GetCXX,$1) $(COMPILE_OPTIONS) $(3) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS),$(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d),$(if $(6),,$(CXX_MM)),$7)
 endef
 define compile_c_common
-  $(call run_compile_command,$2,$4,$5,$(CC)  $(COMPILE_OPTIONS) $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)))
+  $(call run_compile_command,$2,$(strip $7 $4),$5,$(call GetCC,$1) $(COMPILE_OPTIONS) $(3) $(COPTIMISEDFLAGS) $(CSHAREDOBJECTFLAGS),$(if $(6),,$(C_MMD) $(C_MF) $(basename $@).d),$(if $(6),,$(C_MM)),$7)
 endef
+ifneq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 ifeq ($(strip $(SCRAM_DEFAULT_COMPILER)),icc)
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,)
+  $(call run_compile_command,$2,$(strip $7 $4),$5,$(call GetFC,$1)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),,,$7)
 endef
 else
 define compile_fortran_common
-  $(call run_compile_command,$2,$4,$5,$(FC)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)))
+  $(call run_compile_command,$2,$(strip $7 $4),$5,$(call GetFC,$1)  $(COMPILE_OPTIONS) $(3) $(FOPTIMISEDFLAGS) $(FSHAREDOBJECTFLAGS),$(if $(6),,$(F77_MMD) $(F77_MF) $(basename $@).d),$(if $(6),,$(F77_MM)),$7)
 endef
+endif
 endif
 
 #LLVM Analyzer Rules
@@ -578,29 +602,20 @@ endef
 
 ##############################################################################
 define compile_cxx
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS))
-endef
-define compile_cxx_capabilities
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM CAPABILITIES,CPPFLAGS CXXFLAGS),capabilities)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,,,$3),,,,$3)
 endef
 define compile_cxx_edm
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS),edm plugin)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS,,,$3),edm plugin,,,$3)
 endef
 define compile_c
-  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS))
+  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS,,,$3),,,,$3)
 endef
 define compile_c_edm
-  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CFLAGS),edm plugin)
+  $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CFLAGS,,,$3),edm plugin,,,$3)
 endef  
 define compile_fortran
-  $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS))
+  $(call compile_fortran_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS FFLAGS,,,$3),,,,$3)
 endef  
-define compile_boost
-  $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($*)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),boost)
-endef  
-define compile_pywrapper
-  $(call compile_cxx_common,$1,$2,-DSCRAM_PYTHON_MODULE="BOOST_PYTHON_MODULE($(1)_PyWrapper)" $(call AdjustFlags,$1,,CPPFLAGS PY_CXXFLAG),pywrapper)
-endef
 
 define analyze_cxx
   $(call analyze_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS))
@@ -626,37 +641,6 @@ define add_postprocessing
   $(eval f:=$(subst $(space),_,$2:$3@arg1=$4;arg2=$5;arg3=$6;arg4=$7;arg5=$8))$(if $(strip $(filter $(f),$($1_POSTPROCESSING))),,$1_POSTPROCESSING+=$(f))
 endef
 ##############################################################################
-# Source Generators Rules
-# boost source generation from Pyste
-define pyste2boost
-  @$(startlog_$(2))$(CMD_echo)  ">> Generating and compiling Boost stub for module $*" 	&& \
-  $(VERB_ECHO) python $(PYSTE_EXEC) -D_REENTRANT $($(1)_CPPFLAGS) --out=$@ --module=$* $< &&\
-  python $(PYSTE_EXEC) -D_REENTRANT $($(1)_CPPFLAGS) --out=$@ --module=$* $< $(endlog_$(2))
-endef  
-# PyWrapper Generation
-define generate_pywrapper
-  @$(startlog_$(2))$(CMD_echo) "Generating wrapper code to put the following files in a single module called: $(1)" $(endlog_$(2))
-  @exec 5>&1;	\
-  ( $(CMD_echo) "#include <boost/python.hpp>"; echo;	\
-  for c in $($(1)_classnames) ..; do		\
-    case $$c in .. ) continue ;; esac ;		\
-    $(CMD_echo) "  $$c" 1>&5;				\
-    $(CMD_echo) "extern void init_module_$$c ();";	\
-  done;						\
-  echo; $(CMD_echo) "void init_module_$(1) () {";	\
-  for c in $($(1)_classnames) ..; do		\
-    case $$c in .. ) continue ;; esac ;		\
-    $(CMD_echo) "  init_module_$$c ();";		\
-  done;						\
-  $(CMD_echo) "}"; echo;				\
-  $(CMD_echo) "extern \"C\" void init$(1) () {";	\
-  $(CMD_echo) 'boost::python::detail::init_module("$(1)",'\
-	'init_module_$(1));';			\
-  $(CMD_echo) "}";					\
-  ) > $@.tmp
-  @$(CMD_mv) $@.tmp $@
-endef  
-##############################################################################
 define processMMDData
   $(startlog_$(2))$(CMD_rm) -f $3 && $(CMD_touch) $3 &&\
   for dep in $4 ; do \
@@ -673,35 +657,30 @@ endef
 # Library linking Rules
 # Shared library linking
 define link_lib_common
-  @$(startlog_$(2))$(CMD_echo) ">> Building $(5) $@" &&\
-  $(VERB_ECHO)                $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS)) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(6) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $($(1)_objs) -o $@ $(if $7,$7,$(call AdjustFlags,$1,,LDFLAGS))) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  @$(startlog_$(2))$(CMD_echo) ">> Building $(6) $(5) $@" &&\
+  $(VERB_ECHO)                $(call GetCXX,$1) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
-    $(call copy_lib_to_main_productstore,$(3)) ;\
+    $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
-  $(call check_missing_symbols,$($(1)_libcheck),$(3),$(4)) $(call run_edm_checks,$1,$2,$3,$4) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1)
+  true $(if $(strip $6),&& $(CMD_echo) ">> Skipping EDM Checks for $1/$6",$(call run_edm_checks,$1,$2,$3,$4)) $(endlog_$(2))
+  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && \
+  [ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && \
+   $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1)
 endef
 define link_lib
-  $(call link_lib_common,$1,$2,$3,$4,shared library,$(call AdjustFlags,$1,,CXXFLAGS))
+  $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS,,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
 endef  
 define link_lib_edm
-  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$(call AdjustFlags,$1,EDM,CXXFLAGS),$(call AdjustFlags,$1,EDM,LDFLAGS))
+  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS,,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5))
 endef
-define link_pylib
-  @$(startlog_$(2))$(CMD_echo) ">> Building Python module $($(1)_product)" && \
-  $(VERB_ECHO)                $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink) &&\
-  (($(call checklibs,$(1)) && $(CXX) $(CXXSHAREDFLAGS) $($(1)_objs) -o $@ $($(1)_CXXSharedLink)) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
-  $(call copy_lib_to_main_productstore,$(3)) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && $(CMD_touch) $(WORKINGDIR)/cache/prod/lib$(1)
-endef  
 ##############################################################################
 # Binary/test building Rules
 # Binary building 
 define build_bin
   @$(startlog_$(2))$(CMD_echo) ">> Building binary $(1)" &&\
-  $(VERB_ECHO)                $(CXX) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
-  (($(call checklibs,$(1)) && $(CXX) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
@@ -724,24 +703,6 @@ define generate_python_bytecode
   else \
     $(CMD_echo) "Python tool is not used. So not going to generate byte-code." ; \
   fi
-endef
-define python_script_copy
-  @$(startlog_$(2))if [ ! -d $(LOCALTOP)/$(3) ]; then \
-    $(CMD_mkdir) -p $(LOCALTOP)/$(3) &&\
-    $(CMD_echo) "Creating product storage directory: $(LOCALTOP)/$(3)"; 	\
-  fi &&\
-  $(CMD_rm) -rf $($(1)_python_dir) && $(CMD_mkdir) -p $($(1)_python_dir) &&\
-  $(CMD_echo) ">> Copying python/* to $($(1)_python_dir)" &&\
-  for name in `$(CMD_ls) $($(1)_srcdir) | $(CMD_grep) -v "CVS\|BuildFile\|BuildFile.xml"` ; do \
-    f=$($(1)_srcdir)/$$name &&\
-    if [ -d $$f ] ; then \
-      $(CMD_cp) -rp $$f $($(1)_python_dir) || continue ;\
-    else  \
-      [ "X`$(CMD_echo) $$f | $(CMD_grep) '\.py$$'`" != X ] || continue ; \
-      $(CMD_cp) -rp $$f $($(1)_python_dir)/ || continue ;\
-    fi \
-  done &&\
-  $(call generate_python_bytecode,$(LOCALTOP)/$($(1)_python_dir)) $(endlog_$(2))
 endef
 define copy_src_scripts
   @$(startlog_$(2))$(CMD_echo) "------- copying scripts from $(1) -------" &&\
@@ -936,6 +897,11 @@ runpython_$(2): runpython_$(2)_python
 endif
 endef
 
+define VectorizePlugin
+all_$(2) += $(5)/$(10)/$(8)
+$(5)/$(10)/$(8): $($(2)_objdir)/$(10)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(1)_extra_deps)
+	$$(call $(3)_register_plugin,$(1),$(9),$(10))
+endef
 define addPlugin
 $(2)_pluginname    := $(1)
 ALL_$(3)_PLUGINS   += $(1)
@@ -956,6 +922,7 @@ endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
+$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$v)))
 endef
 
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
@@ -969,18 +936,18 @@ $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
 endef
 else
 define CXXCompileRule
-$($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_cxx$(4),$(1),$(3))
+$($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
+	$$(call compile_cxx$(4),$(1),,$(subst /,,$(5)))
 endef
 define CCompileRule
-$($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_c$(4),$(1),$(3))
+$($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
+	$$(call compile_c$(4),$(1),,$(subst /,,$(5)))
 endef
 endif
 
 define F77CompileRule
-$($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
-	$$(call compile_fortran$(4),$(1),$(3))
+$($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
+	$$(call compile_fortran$(4),$(1),,$(subst /,,$(5)))
 endef
 
 define EmptyProduct
@@ -1046,6 +1013,19 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
+NonVectorizeExt:=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)))
+VectorizeObjs=$(filter-out $(NonVectorizeExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
+NonVectorizeObjs=$(filter-out $(call VectorizeObjs,$1),$($(1)_objs))
+
+define VectorizeLib
+$1:: $($(1)_objdir)/$4/$($(1)_product)
+all_$(1)+=$($(1)_objdir)/$4/$($(1)_product)
+$(1)_objs_$4:=$(subst $($(1)_objdir)/,$($(1)_objdir)/$4/,$(call VectorizeObjs,$1)) $(call NonVectorizeObjs,$1)
+$($(1)_objdir)/$4/compile: $($(1)_objdir)/precompile $$($(1)_objs_$4) $($(1)_compile)
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
+$($(1)_objdir)/$4/$($(1)_product): $($(1)_objdir)/$4/compile $$($(1)_objs_$4) $($(1)_libdeps)
+	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname),$4)
+endef
 #safename,path,productstore,type,logprodstore,safepath
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
@@ -1053,7 +1033,7 @@ $(foreach f,$($(1)_OPENCL_DEVICE_FILES),$(eval $(call GenerateAOCX,$1,$(f))))
 ifneq ($(strip $($(1)_objs)),)
 $$(eval $$(call AddBigObjRule,$1,$2))
 ALL_$(4)_PRODUCTS += $(1)
-$(1):  $($(1)_objdir)/$($(1)_product)
+$(1)::  $($(1)_objdir)/$($(1)_product)
 $($(1)_objdir)/$($(1)_product): $($(1)_objdir)/compile $($(1)_libdeps)
 ifeq ($(strip $(4)),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname))
@@ -1063,11 +1043,11 @@ endif
 ifeq ($(strip $(4)),bin)
 	$$(call build_bin,$(1),$(1),$(3))
 endif
-ifeq ($(strip $(4)),python)
-	$$(call link_pylib,$(1),$(1),$(3))
-endif
 ifeq ($(strip $(4)),test)
 	$$(call build_test,$(1),$(1),$(3))
+ifeq ($(strip $(4)),lib)
+$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$(eval $(call VectorizeLib,$1,$2,$3,$v)))
+endif
 .PHONY: runtests_$(1) unittests_$(1)
 ifeq ($(strip $(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
@@ -1150,6 +1130,9 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
+$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),
+  $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES),$v/)))
+)
 endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
@@ -1164,8 +1147,15 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
 $(1)_plugintype:=$(8)
-$(eval $(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
-$(eval $(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
+ifeq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),1)
+$(1)_LOC_FLAGS_VECTORIZE:=$(SCRAM_VECTORIZE)
+else
+ifneq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),)
+$(1)_LOC_FLAGS_VECTORIZE:=$(filter $($(1)_LOC_FLAGS_VECTORIZE),$(SCRAM_VECTORIZE))
+endif
+endif
+$$(eval $$(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
+$$(eval $$(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
 endef
 
 #safename,path,safepath,scriptstore,scripts,plugintype
@@ -1189,116 +1179,20 @@ $(1) all_$(1): $$(all_$(1))
 endif
 endef
 
-define AddExtraPythonProdRule
-$(if $(2),$(eval $(call ExtraPythonProd,$(1),$(firstword $(2)),$(firstword $(3))))$(eval $(call AddExtraPythonProdRule,$(1),$(wordlist 2,100,$(2)),$(wordlist 2,100,$(3)))),)
-endef
-
-define ExtraPythonProd
-all_$(1)_extra_python_prod += $(3)/$(2)
-$(3)/$(2): $(2) $(1)_copy_python_scripts $($(1)_CONFIGDEPS)
-	@$(CMD_echo) ">> Copying python products \"$(2)\" => $(3)"
-	$$(call copy_python_products,$(1),$(logfile_$(1)),$(2),$(3))
-endef
-
-#safename,path,safepath,hasscripts,symlinkpython,pythonstore,xprodfiles,xproddirs
-define PythonProductHead
-$(3)          += all_$(1)
-.PHONY: $(1) all_$(1) $(1)_copy_python_scripts $(WORKINGDIR)/$2/init_links
-$(eval $(call LogFile,$(1),$(2)))
-$(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
-$(1)_python_dir := $(addprefix $(6)/,$(patsubst $(SCRAM_SOURCEDIR)/%/python,%,$(2)))
-$(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
-$(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
-$(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
-$(1)_CONFIGDEPS := $(CONFIGDEPS) $$(sort $$(foreach u,$$(sort $$($(1)_LOC_USE) $($(1)_EX_USE)),$$($$($$(u))_XDEPS) $$(if $$($$($$(u))_BuildFile),$$($$($$(u))_BuildFile),$$(filter $(SCRAM_TOOLS_DIR)/$$(u),$(ToolTimeStamps)))))
-ifneq ($$(strip $($(1)_BuildFile)),)
-ALL_BUILDFILES += $($(1)_BuildFile)
-$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
-	@$(CMD_touch) $($(1)_BuildFile)
-$$($(1)_objdir)/config: $($(1)_BuildFile)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
-else
-$$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
-	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
-endif
-$(1)_config += $$($(1)_objdir)/config
-all_$(1) += $(1)_copy_python_scripts
+#safename,path,safepath
+define PythonProduct
+$(3) += all_$(1)
+.PHONY: $(1) all_$(1)
 ifeq ($(strip $(PYTHON_PACKAGE_SYMLINK)),YES)
+.PHONY: $(WORKINGDIR)/$2/init_links
 $(WORKINGDIR)/$2/init_links:
 	@$$(call create_subdir_init,$2)
 all_$(1) += $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
 endif
-ifeq ($(strip $(4)),1)
-$(1)_copy_python_scripts: $(logfile_$(1)) $$($(1)_CONFIGDEPS)
+runpython_$(3): $$(all_$(1))
 	@:
-else
-$(1)_copy_python_scripts: $(logfile_$(1))
-	@$(CMD_echo) "No source files to compile. Nothing to be done for Python modules at $(2)."
-endif
-runpython_$(3): $(1)_copy_python_scripts
+$(1) all_$(1): runpython_$(3)
 	@:
-ifneq ($(strip $(7)),)
-.PHONY: $(1)_extra_python_prod
-all_$(1) += $(all_$(1)_extra_python_prod)
-$(eval $(call AddExtraPythonProdRule,$(1),$(7),$(8)))
-all_$(1) += $(all_$(1)_extra_python_prod)
-endif
-$(1)_srcdir       := $(LOCALTOP)/$(2)
-$(1)_files        := $$(notdir $$(wildcard $$(foreach dir,$$($(1)_srcdir),$$(foreach ext,$(CXXSRC_FILES_SUFFIXES),$$(dir)/*.$$(ext)))))
-$(1)_files        += $$(patsubst %.pyste,%_boost.cc,$$(notdir $$(wildcard $$($(1)_srcdir)/*.pyste)))
-$(1)_files        := $$(filter-out $($(1)_SKIP_FILES),$$($(1)_files))
-endef
-
-define PythonProductFlags
-$(1)_files        += $($(1)_objdir)/$(1)_PyWrapper.cc
-$(1)_objs         := $$(addprefix $($(1)_objdir)/, $$(addsuffix .$(OBJEXT), $$(notdir $$($(1)_files))))
-$(1)_PY_CXXFLAGS   = $$(filter-out -pedantic-errors -ansi, $$($(1)_CXXFLAGS))
-$(1)_libdeps      := $$(call libdeps,$1)
-$(1)_classnames   := $$(patsubst %_boost,%,$$(filter %_boost,$$(basename $$(notdir $$($(1)_files)))))
-$(1)_CXXSharedLink = -rdynamic $$($(1)_LDFLAGS)
-endef
-
-#safename,path,productstore,logprodstore,safepath
-define PythonProductTail
-$(1)_product := $(1).$(SHAREDSUFFIX)
-$$(eval $$(call CommonBinaryTail,$(1),$(2),$(3),python,$(4),$(5)))
-$$(eval $$(call CompileRules,$(1)))
-.PRECIOUS: $($(1)_objdir)/%_boost.cc
-$($(1)_objdir)/%_boost.cc: $($(1)_srcdir)/%.pyste $($(1)_config)
-	$$(call pyste2boost,$(1),$(1))
-$($(1)_objdir)/%_boost.o: $($(1)_srcdir)/%_boost.cc $($(1)_config)
-	$$(call compile_boost,$(1),$(1))
-$($(1)_objdir)/%_boost.o: $($(1)_objdir)/%_boost.cc
-	$$(call compile_boost,$(1),$(1))
-$($(1)_objdir)/$(1)_PyWrapper.o: $($(1)_objdir)/$(1)_PyWrapper.cc
-	$$(call compile_pywrapper,$(1),$(1))
-$($(1)_objdir)/$(1)_PyWrapper.cc: $($(1)_config)
-	$$(call generate_pywrapper,$(1),$(1))
-endef
-
-#safename,path,safepath,hasscripts,symlinkpython,pythonstore,libstore,xprodfiles,xproddirs,logprodstore
-define PythonProduct
-$(eval $(call PythonProductHead,$(1),$(2),$(3),$(4),$(5),$(6),$(8),$(9)))
-ifneq ($$(strip $$($(1)_files)),)
-ifneq ($$(strip $$($(1)_BuildFile)),)
-ifneq ($$(strip $$(filter boost_python,$($(1)_LOC_USE))),)
-$$(eval $$(call PythonProductFlags,$(1)))
-$$(eval $$(call PythonProductTail,$(1),$(2),$(7),$(10),$(3)))
-else
-ifeq ($(strip $(ONLYECHOTARGETS)),)
-$$(info ****WARNING: Skipped building product $(1).$(SHAREDSUFFIX) due to missing boost_python tool selecting in $(2)/$(SCRAM_BUILDFILE))
-endif
-endif
-else
-ifeq ($(strip $(ONLYECHOTARGETS)),)
-$$(info ****WARNING: Skipped building product $(1).$(SHAREDSUFFIX) due to missing $(2)/$(SCRAM_BUILDFILE))
-endif
-endif
-endif
-ifeq ($$(strip $$($(1)_product)),)
-$(1) all_$(1): $(all_$(1))
-	@:
-endif
 endef
 
 ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
@@ -1350,6 +1244,7 @@ include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lexyacc
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.codegen
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.dnn
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.aocx
+AUTO_GENERATED_SOURCES:=$(addsuffix /%,$(sort $(AUTO_GENERATED_SOURCES)))
 endif  #Finish CODE_ANALYSIS_RULES
 ##############################################################################
 define SetTargetType
@@ -1783,32 +1678,6 @@ edm_checks_$(SCRAM_SOURCEDIR): $(addprefix edm_checks_, $(subdirs_$(SCRAM_SOURCE
 scripts_$(SCRAM_SOURCEDIR): $(addprefix scripts_, $(subdirs_$(SCRAM_SOURCEDIR)))
 	@$(CMD_echo) ">> Scripts copy completed for $(SCRAM_PROJECTNAME) $(SCRAM_PROJECTVERSION)"
 ###########################################################
-define GetMissingSymbolFlags
-  $(if $($(1)_libcheck),$(if $2,$(info @@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)),),$(MISSING_SYMBOL_FLAGS))
-endef
-ifndef SCRAM_NOSYMCHECK
-ifeq ($(strip $(MISSING_SYMBOL_FLAGS)),)
-define check_missing_symbols
-  if [ "X$(1)" = X ] ; then \
-    $(CMD_echo) "@@@@ Checking shared library for missing symbols: $(@F)" &&\
-    $(CMD_echo) "int main(){}" > $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp  &&\
-    $(VERB_ECHO) $(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp &&\
-    ($(CXX) $(CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(LDFLAGS) -o $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out $@ $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp || ($(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out && $(call delete_plugin_build_prod,$(2),$(3)) && exit 1)) &&\
-    $(CMD_rm) -f $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).cpp $(LOCALTOP)/$(SCRAM_INTwork)/$(@F).out	&&\
-    $(CMD_echo) "@@@@ ----> OK, shared library FULLY-BOUND (no missing symbols): $(@F)" ; \
-  else \
-    $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to NO_LIB_CHECKING flag in BuildFile: $(@F)"; \
-  fi
-endef
-else
-check_missing_symbols:=$(CMD_true)
-endif
-else
-define check_missing_symbols
-  $(CMD_echo) "@@@@ Checking for missing symbols was SKIPPED due to SCRAM_NOSYMCHECK: $(@F)"
-endef
-endif
-
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% edm_checks_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
 .PHONY: skiptest_% deps-tree

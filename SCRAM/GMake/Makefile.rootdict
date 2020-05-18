@@ -1,3 +1,5 @@
+ROOTDICT_SUBDIR:=b
+AUTO_GENERATED_SOURCES+=$(ROOTDICT_SUBDIR)
 ROOTDICT_FILE_PREFIX = $(1)_
 TOP_LEVEL_VARIABLES+=ROOTDICT
 # Root Dictionary compilation
@@ -52,6 +54,6 @@ endef
 #safename,path,linkdefs,prodstore
 define RootDict
 $(1)_LOC_FLAGS_CPPFLAGS     += -I$(LOCALTOP)/$(2)
-$(eval $(call AddRootDictRule,$(1),$($(1)_ROOTDICTS),$(addprefix $2/,$(3)),b,$(4)))
+$(eval $(call AddRootDictRule,$(1),$($(1)_ROOTDICTS),$(addprefix $2/,$(3)),$(ROOTDICT_SUBDIR),$(4)))
 endef
 
