@@ -46,7 +46,10 @@
  <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
  <runtime name="LANG"                  value="C"/>
  <runtime name="TEST_SRTOPT_PATH"      value="$LOCALTOP/test/$SCRAM_ARCH"            type="path"/>
- <release name="_ASAN_">
+ <release name="_CXXMODULE">
+  <runtime name="CLING_PREBUILT_MODULE_PATH" value="$LOCALTOP/lib/$SCRAM_ARCH"        type="path"/>
+ </release>
+ <release name="_ASAN">
   <runtime name="ASAN_OPTIONS"         value="detect_leaks=0:alloc_dealloc_mismatch=0"/>
  </release>
 </tool>
