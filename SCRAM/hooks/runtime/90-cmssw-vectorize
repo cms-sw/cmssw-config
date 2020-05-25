@@ -13,7 +13,7 @@ elif [ $(echo ${SUPPORTED_VECTORS} | tr ' ' '\n' | grep "^${SCRAM_VECTOR}\$" | w
 fi
 SCRAM_VECTOR=""
 CPUFLAGS=$(cat /proc/cpuinfo | grep flags | tail -1 | sed 's|.*: *||')
-for v in ${SUPPORTED_VECTORS} ; do
+for v in ${SELECTED_VECTORS} ; do
   if [ $(echo " $CPUFLAGS " | grep " $v " | wc -l) -gt 0 ] ; then
     SCRAM_VECTOR=$v
     break
