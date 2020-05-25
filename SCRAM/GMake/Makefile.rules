@@ -1,10 +1,6 @@
 -include $(TOOLS_MKDIR).mk
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
-SCRAM_VECTORIZE:=
-$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr '[a-z.]' '[A-Z_]'))$(if \
-    $(strip $($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_CXXFLAGS_VECTORIZE_$u)),\
-    $(eval SCRAM_VECTORIZE+=$v)$(eval VECTORIZE_FLAG_$v:=$u),\
-    $(warning Vectorization flag '$v' is not supported as Compiler '$(SCRAM_COMPILER)' does not set 'CXXFLAGS_VECTORIZE_$u' flag.)))
+$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr '[a-z.]' '[A-Z_]'))$(eval VECTORIZE_FLAG_$v:=$u))
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_VECTORIZE_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
@@ -263,7 +259,24 @@ CFLAGS_COMPILER:=ccompiler
 FFLAGS_COMPILER:=f77compiler
 GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
-GetVectorFlag=$(strip $($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$2_VECTORIZE_$1))
+GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2)))
+
+define SetCompilerVectorizationFlag
+  $(eval $(1)_SCRAM_VECTORIZE:=)
+  $(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),\
+      $(eval u:=$(VECTORIZE_FLAG_$(v)))\
+      $(if $(strip $($(1)-cxxcompiler_EX_FLAGS_CXXFLAGS_VECTORIZE_$(u))),\
+          $(eval $(1)_SCRAM_VECTORIZE+=$v),\
+          $(warning Vectorization flag '$v' is not supported as Compiler '$(1)' does not set 'CXXFLAGS_VECTORIZE_$u' flag.)))
+endef
+
+define SetCompilerVectorization
+ifeq ($(strip $($(1)_SCRAM_VECTORIZE_SET)),)
+  $(1)_SCRAM_VECTORIZE_SET:=1
+  $$(eval $$(call SetCompilerVectorizationFlag,$1))
+endif
+endef
+
 #type,flag
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 #$1,  $2,   $3,   $4,     $5
@@ -278,10 +291,10 @@ $(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)),$
       $(USER_PRE_$3) \
       $(filter-out \
         $(strip $(USER_PRE_$3) $(USER_$3) $(USER_REM_$3) $($1_FILE$5_LOC_FLAGS_REM_$3) $($1_LOC_FLAGS_REM_$3) $($1_FILE$5_LOC_FLAGS_$3) $($1_LOC_FLAGS_$3)\
-         $(if $(strip $9),$(call GetVectorFlag,$9,REM_$3))\
+         $(if $(strip $9),$(call GetVectorFlag,$1,$9,REM_$3))\
          $($4-$8_EX_FLAGS_REM_$3_ALL) $(foreach t,$2 $($1_CLASS),$(REM_$t_$3) $($t_$3))),\
         $($4-$8_EX_FLAGS_$3_ALL) $(foreach t,$2 $($1_CLASS),$($t_$3)) $($1_$3))\
-      $(strip $(foreach t,$2 $($1_CLASS),$($t_$3)) $(if $(strip $9),$(call GetVectorFlag,$9,$3)) $($1_LOC_FLAGS_$3) $($(2)_LOC_FLAGS_$3) $($(1)_FILE$5_LOC_FLAGS_$3) $(USER_$3))\
+      $(strip $(foreach t,$2 $($1_CLASS),$($t_$3)) $(if $(strip $9),$(call GetVectorFlag,$1,$9,$3)) $($1_LOC_FLAGS_$3) $($(2)_LOC_FLAGS_$3) $($(1)_FILE$5_LOC_FLAGS_$3) $(USER_$3))\
     )\
   )\
   $(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)\
@@ -548,6 +561,7 @@ endif
 ##############################################################################
 ##############################################################################
 #Compilation Rules
+GetCompilerData=$(strip $(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_$2),$($(SCRAM_COMPILER)_$2)))
 GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(CXX)))
 GetCC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CC),$(if $(strip $2),$($2_CC),$(CC)))
 GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(if $(strip $2),$($2_FC),$(FC)))
@@ -1148,10 +1162,10 @@ endef
 define Library
 $(1)_plugintype:=$(8)
 ifeq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),1)
-$(1)_LOC_FLAGS_VECTORIZE:=$(SCRAM_VECTORIZE)
+$(1)_LOC_FLAGS_VECTORIZE:=$(call GetCompilerData,$1,SCRAM_VECTORIZE)
 else
 ifneq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),)
-$(1)_LOC_FLAGS_VECTORIZE:=$(filter $($(1)_LOC_FLAGS_VECTORIZE),$(SCRAM_VECTORIZE))
+$(1)_LOC_FLAGS_VECTORIZE:=$(filter $($(1)_LOC_FLAGS_VECTORIZE),$(call GetCompilerData,$1,SCRAM_VECTORIZE))
 endif
 endif
 $$(eval $$(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
@@ -1625,6 +1639,8 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 ifeq ($(strip $(UFAST)),)
+$(foreach c,$(sort $(SCRAM_COMPILER) $(foreach x,$(ALL_PRODS),$($(x)_LOC_FLAGS_COMPILER))),\
+            $(eval $(call SetCompilerVectorization,$(c))))
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
 $(foreach x,$(ALL_EXTERNAL_PRODS),$(eval $(call ProductCommonVarsExternal,$(x)))$(eval $($(x)_INIT_FUNC)))

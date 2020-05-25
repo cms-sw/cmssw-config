@@ -1,5 +1,7 @@
 2020-05-25 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-02: Bug fix, use the selected vectorization if available
+	V05-10-03: Use correct vectorization flags if package is built with
+	a non default compiler.
 2020-05-19 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-01: Added CLING_PREBUILT_MODULE_PATH for CXXMODULE IBs.
 2020-05-18 Shahzad Muzaffar  <@smuzaffar>
