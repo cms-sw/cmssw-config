@@ -936,7 +936,7 @@ endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
-$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$$v)))
 endef
 
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
@@ -1059,9 +1059,6 @@ ifeq ($(strip $(4)),bin)
 endif
 ifeq ($(strip $(4)),test)
 	$$(call build_test,$(1),$(1),$(3))
-ifeq ($(strip $(4)),lib)
-$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$(eval $(call VectorizeLib,$1,$2,$3,$v)))
-endif
 .PHONY: runtests_$(1) unittests_$(1)
 ifeq ($(strip $(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
@@ -1072,6 +1069,9 @@ runtests_$(1): all_$(1) $(patsubst %,runtests_%,$($(1)_PRE_TEST)) unittests_$(1)
 	@:
 unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log
 	$$(call run_test,$(1),$(3),$(5),$(2))
+endif
+ifeq ($(strip $(4)),lib)
+$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizeLib,$1,$2,$3,$$v)))
 endif
 .PHONY: precompile_$(6) compile_$(6)
 ifneq ($(strip $(4)$($(1)_files)),test1)
