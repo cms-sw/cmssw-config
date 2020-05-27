@@ -1,3 +1,8 @@
+2020-05-27 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-04: ROOTCLING_ARGS support added. Now toolfiles can set
+	ROOTCLING_ARGS flag which will pass to rootcling command for
+	modules generations.
+	Bug fix for vectorization: make sure to it only run for selected libs.
 2020-05-25 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-02: Bug fix, use the selected vectorization if available
 	V05-10-03: Use correct vectorization flags if package is built with
