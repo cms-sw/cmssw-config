@@ -6,15 +6,10 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('-rel')
 parser.add_argument('-arch', dest = 'scramarch', default = os.environ.get("SCRAM_ARCH"))
-parser.add_argument('-scramroot', default = os.environ.get("SCRAMV1_ROOT"))
 args = parser.parse_args()
 
 rel = args.rel
 scramarch = args.scramarch
-scramroot = args.scramroot
-
-if scramroot is None:
-  scramroot = os.popen("sh -v scram arch 2>&1 |  grep 'SCRAMV1_ROOT=' | sed 's|;.*||;s|SCRAMV1_ROOT=||;s|\"||g' | sed -e \"s|'||g\"").read()
 
 global name
 uses = {}
@@ -166,7 +161,7 @@ def updateBFDeps(dir, pcache, cache):
         cache["usedby"][xdep][bf] = 1
 
 
-def buildFileDeps(rel, arch, scramroot):
+def buildFileDeps(rel, arch):
   pcache = data2json("%s/.SCRAM/%s/ProjectCache.db.gz" % (rel, arch))
   cache = {}
   for dir in sorted(pcache["BUILDTREE"]):
@@ -204,5 +199,5 @@ write2File(rel + "/etc/dependencies/uses.out", uses)
 write2File(rel + "/etc/dependencies/usedby.out", usedby)
 write2File(rel + "/etc/dependencies/prod2src.out", prod2src, prod2src=True)
 pythonDeps(rel)
-buildFileDeps(rel, scramarch, scramroot)
+buildFileDeps(rel, scramarch)
 sys.exit()
