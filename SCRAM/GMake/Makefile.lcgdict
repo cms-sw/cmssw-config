@@ -86,6 +86,11 @@ $(WORKINGDIR)/rootpcms/$(1): $(foreach l, $($(1)_EX_USE) $($(1)_EX_FLAGS_USE_SOU
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 endef
 
+define VectorizePCM
+all_$(1)+=$4/$2/$3
+$4/$2/$3: $4/$3
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_ln) -sf ../$$(@F) $$@
+endef
 define LCGDictRule
 $(1)_LOC_USE += $(LCGDICT_DEPS)
 $(1)_files  := $($(1)_objdir)/$(6)/$(2)r.cc        $($(1)_files)
@@ -110,6 +115,7 @@ $(7)/$$($(1)_pcm_name): $($(1)_objdir)/$(6)/$(2)r.cc
 	@[ -f $$< ] || $(CMD_rm) -f $$@
 $(WORKINGDIR)/rootpcms/$(2): $(7)/$$($(1)_pcm_name)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
+$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePCM,$1,$$v,$$($(1)_pcm_name),$7)))
 endef
 
 $(WORKINGDIR)/rootpcms/%:
