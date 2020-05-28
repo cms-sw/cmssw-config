@@ -1,3 +1,8 @@
+2020-05-28 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-05: Disable vectorization by default.
+	Added enable/disable/check-vectorize targets.
+	Bug fix: create symlinks for r_dict.pcm for vectorize libs
+	USER_VECTORIZE_ALL=1 to enable vectorization for all libs/plugins
 2020-05-27 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-04: ROOTCLING_ARGS support added. Now toolfiles can set
 	ROOTCLING_ARGS flag which will pass to rootcling command for
