@@ -1,6 +1,11 @@
 -include $(TOOLS_MKDIR).mk
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/vectorize)),)
+SCRAM_VECTORIZATION:=1
 $(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr '[a-z.]' '[A-Z_]'))$(eval VECTORIZE_FLAG_$v:=$u))
+else
+SCRAM_VECTORIZATION:=0
+endif
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_VECTORIZE_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
@@ -1161,12 +1166,16 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
 $(1)_plugintype:=$(8)
-ifeq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),1)
+ifeq ($(SCRAM_VECTORIZATION),1)
+ifeq ($(strip $(USER_VECTORIZE_ALL)),1)
 $(1)_LOC_FLAGS_VECTORIZE:=$(call GetCompilerData,$1,SCRAM_VECTORIZE)
-else
-ifneq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),)
+else ifeq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),1)
+$(1)_LOC_FLAGS_VECTORIZE:=$(call GetCompilerData,$1,SCRAM_VECTORIZE)
+else ifneq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),)
 $(1)_LOC_FLAGS_VECTORIZE:=$(filter $($(1)_LOC_FLAGS_VECTORIZE),$(call GetCompilerData,$1,SCRAM_VECTORIZE))
 endif
+else
+$(1)_LOC_FLAGS_VECTORIZE:=
 endif
 $$(eval $$(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
 $$(eval $$(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
@@ -1265,7 +1274,7 @@ define SetTargetType
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
   UPDATE_CLASSVERSION:=yes
 endif
-ifeq ($(strip $(filter-out help enable-biglib enable-biglib enable-biglib outputlog clean ProjectRename projectrename PROJECTRENAME ExternalLinks ToolUpdated ToolUpdated_%,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out help enable-vectorize disable-vectorize check-vectorize enable-biglib enable-biglib enable-biglib outputlog clean ProjectRename projectrename PROJECTRENAME ExternalLinks ToolUpdated ToolUpdated_%,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   FAST :=yes
   XFAST:=yes
@@ -1488,6 +1497,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "enable-biglib disable-biglib check-biglib"
 	@$(CMD_echo) "  Disable/enable/check big EDM plugins"
 	@$(CMD_echo) ""
+	@$(CMD_echo) "enable-vectorize disable-vectorize check-vectorize"
+	@$(CMD_echo) "  Disable/enable/check vectorization build support"
+	@$(CMD_echo) ""
 	@$(CMD_echo) "deps-tree <package1> <package2>"
 	@$(CMD_echo) "  To find the dependencies paths from <package1> to <package2>"
 	@$(CMD_echo) ""
@@ -1639,8 +1651,10 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 ifeq ($(strip $(UFAST)),)
+ifeq ($(SCRAM_VECTORIZATION),1)
 $(foreach c,$(sort $(SCRAM_COMPILER) $(foreach x,$(ALL_PRODS),$($(x)_LOC_FLAGS_COMPILER))),\
             $(eval $(call SetCompilerVectorization,$(c))))
+endif
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
 $(foreach x,$(ALL_EXTERNAL_PRODS),$(eval $(call ProductCommonVarsExternal,$(x)))$(eval $($(x)_INIT_FUNC)))
@@ -1831,6 +1845,16 @@ else
 dxr:
 	@$(CMD_echo) "**** ERROR: py2-dxr tool not available."
 endif
+disable-vectorize:
+	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/vectorize && $(CMD_echo) "Building with vectorization is disabled."
+enable-vectorize:
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/vectorize && $(CMD_echo) "Building with vectorization is enabled."
+check-vectorize:
+	@if [ -f $(SCRAM_ADMIN_DIR)/vectorize ] ; then \
+	  $(CMD_echo) Building with vectorization is enabled ;\
+	else \
+	  $(CMD_echo) Building with vectorization is disabled ;\
+	fi
 enable-biglib:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/no-bigproduct && $(CMD_echo) "Building big products is activated."
 	@$(call biglib_setup)
