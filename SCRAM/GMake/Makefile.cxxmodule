@@ -16,14 +16,7 @@ define generate_full_modulemap
  for m in $$($(CMD_find) $(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
    $(CMD_cat) $$m >> $@;\
  done ;\
- $(CMD_touch) $@ &&\
- if [ -f $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE) ] ; then \
-   for m in $$($(CMD_find) $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
-     LOC_MAP=$$($(CMD_echo) $$m | $(CMD_sed) -e 's|$(MODULEMAP_BASE_DIR)/||') &&\
-     [ ! -e $$LOC_MAP ] || continue ;\
-     $(CMD_sed) -e 's|"$(CXXMODULES_DIR_RELPAH)/src/|"$(MODULEMAP_BASE_DIR)/src/|' $$m >> $@;\
-   done ;\
- fi
+ $(CMD_touch) $@
 endef
 
 define ExtraPCMsRules
@@ -33,6 +26,14 @@ ifneq ($(strip $(CMSSW_CLING_MODULEMAP_PATH)),)
 export CLING_MODULEMAP_PATH:=$(LOCALTOP)/$(CXXMODULES_DIR):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_PATH),$(subst $(colon),$(space),$(CLING_MODULEMAP_PATH))))
 endif
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
+	@if [ -e $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR) ] ; then \
+	  for m in $$$$($(CMD_find) $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
+	    LOC_MAP=$$$$($(CMD_echo) $$$$m | $(CMD_sed) -e 's|$(MODULEMAP_BASE_DIR)/||') &&\
+	    [ ! -e $$$$LOC_MAP ] || continue ;\
+	    $(CMD_sed) -e 's|"$(CXXMODULES_DIR_RELPAH)/src/|"$(MODULEMAP_BASE_DIR)/src/|' $$$$m > $$$$LOC_MAP;\
+	    $(CMD_touch) -t $(OLD_TIMESTAMP) $$$$LOC_MAP;\
+	  done ;\
+	fi
 	@$$(call generate_full_modulemap)
 cxxmodules: $(filter lib/$(SCRAM_ARCH)/$(patsubst /%,%,$(subst src,,$(THISDIR)))%,$(ALL_PCMS))
 	@:

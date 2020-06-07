@@ -1,6 +1,7 @@
 2020-06-07 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-07: Bug fix for patch release: Use full release base path to
 	collect modulemaps.
+	V05-10-08: Copy package's modulemap file locally.
 2020-06-04 Roman Tulinov <@tulamor>
 	V05-10-06: Convert findDependencies.pl to python
 2020-05-28 Shahzad Muzaffar  <@smuzaffar>
