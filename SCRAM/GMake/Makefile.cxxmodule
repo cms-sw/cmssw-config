@@ -4,6 +4,7 @@ MODULEMAP_EXT:=modulemap
 MODULEMAP_FILE:=module.$(MODULEMAP_EXT)
 DEPENDENCY_ORDER_FUNCTION_ROOTPCMS:=SetRootPCMSRules
 EXTRA_TOP_LEVEL_BUILD_RULES+=ExtraPCMsRules
+MODULEMAP_BASE_DIR:=$(strip $(if $(strip $(RELEASETOP)),$(RELEASETOP),$(FULL_RELEASE_FOR_A_PATCH)))
 
 Tool_DirectDependencyPCMS=$(foreach l,$(foreach u,$($(1)_LOC_USE),$($(u))),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                        $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
@@ -16,11 +17,11 @@ define generate_full_modulemap
    $(CMD_cat) $$m >> $@;\
  done ;\
  $(CMD_touch) $@ &&\
- if [ -f $(RELEASETOP)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE) ] ; then \
-   for m in $$($(CMD_find) $(RELEASETOP)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
-     LOC_MAP=$$($(CMD_echo) $$m | $(CMD_sed) -e 's|$(RELEASETOP)/||') &&\
+ if [ -f $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE) ] ; then \
+   for m in $$($(CMD_find) $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR) -name '*.$(MODULEMAP_EXT)') ; do \
+     LOC_MAP=$$($(CMD_echo) $$m | $(CMD_sed) -e 's|$(MODULEMAP_BASE_DIR)/||') &&\
      [ ! -e $$LOC_MAP ] || continue ;\
-     $(CMD_sed) -e 's|"$(CXXMODULES_DIR_RELPAH)/src/|"$(RELEASETOP)/src/|' $$m >> $@;\
+     $(CMD_sed) -e 's|"$(CXXMODULES_DIR_RELPAH)/src/|"$(MODULEMAP_BASE_DIR)/src/|' $$m >> $@;\
    done ;\
  fi
 endef
