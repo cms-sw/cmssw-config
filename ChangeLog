@@ -1,3 +1,5 @@
+2020-06-09 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-09: Bug fix, make sure the compiler output goes to a log file
 2020-06-07 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-07: Bug fix for patch release: Use full release base path to
 	collect modulemaps.

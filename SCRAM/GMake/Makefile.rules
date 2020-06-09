@@ -956,17 +956,17 @@ endef
 else
 define CXXCompileRule
 $($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_cxx$(4),$(1),,$(subst /,,$(5)))
+	$$(call compile_cxx$(4),$(1),$3,$(subst /,,$(5)))
 endef
 define CCompileRule
 $($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
-	$$(call compile_c$(4),$(1),,$(subst /,,$(5)))
+	$$(call compile_c$(4),$(1),$3,$(subst /,,$(5)))
 endef
 endif
 
 define F77CompileRule
 $($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
-	$$(call compile_fortran$(4),$(1),,$(subst /,,$(5)))
+	$$(call compile_fortran$(4),$(1),$3,$(subst /,,$(5)))
 endef
 
 define EmptyProduct
