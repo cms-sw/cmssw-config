@@ -306,12 +306,12 @@ $(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)),$
 )
 endef
 TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
-TOOLS_DIR_FUNC=$(strip $(addprefix $3,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL)))))
+TOOLS_DIR_FUNC=$(strip $(foreach d,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL))),$(if $(strip $(SYSTEM_$2_$d)),$4,$3)$d))
 TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(addprefix -l,$($(1)_LOC_$(2)_ALL)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
-Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I))
+Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I,-isystem))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
@@ -337,6 +337,9 @@ $(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariableR:$(1):$(type):EX,)))
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_REM_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,)))
 $(call AddCachedVariable,$(1)_EX_USE_ALL,FindToolDependency:$(1):EX,)
+ifeq ($(strip $($1_EX_FLAGS_SYSTEM_INCLUDE)),1)
+$$(foreach i,$($1_EX_INCLUDE),$$(eval SYSTEM_INCLUDE_$$i:=1))
+endif
 endef
 
 define SetProductCommonVars
