@@ -1,5 +1,7 @@
+2020-06-13 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-11: Bug fix for generating dependencies files.
 2020-06-12 Shahzad Muzaffar  <@smuzaffar>
-        V05-10-10: Use -isystem instead of -I for include paths if tools sets
+	V05-10-10: Use -isystem instead of -I for include paths if tools sets
 	<flags SYSTEM_INCLUDe="1"/>
 2020-06-09 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-09: Bug fix, make sure the compiler output goes to a log file
