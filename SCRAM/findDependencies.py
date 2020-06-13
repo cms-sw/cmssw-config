@@ -61,7 +61,7 @@ def write2File(path, data, type_= None, prod2src=None):
   with open(path, 'w') as file:
     if type_:
       if re.search(r'^bf', path.split("/")[-1]):
-        if type_ not in data: data["type_"] = {}
+        if type_ not in data: data[type_] = {}
       for x in sorted(data[type_]):
         file.write("%s %s\n" % (x, " ".join(sorted(data[type_][x]))))
     elif prod2src:
