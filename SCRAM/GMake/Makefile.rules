@@ -37,6 +37,7 @@ ALL_BUILDFILES     :=
 ALL_PRODS          :=
 ALL_MODULEMAPS     :=
 AUTO_GENERATED_SOURCES :=
+RESET_BUILD_LOGS:=yes
 TOP_LEVEL_VARIABLES:= BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
@@ -873,11 +874,13 @@ ifneq ($(strip $(SCRAM_IGNORE_SUBDIRS)),)
 subdirs_$(2) := $$(filter-out $$(addprefix $(2)_,$(SCRAM_IGNORE_SUBDIRS)),$$(subdirs_$(2)))
 endif
 $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARGET
+ifeq ($(strip $(RESET_BUILD_LOGS)),yes)
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+endif
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2))) $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
-	@$$(call run_postprocess,$1,$(redirectlog_$(2)))
+	@$$(call run_postprocess,$1,$$(redirectlog_$(2)))
 	@$$(call outputlog,$(1),$(2))
 	@$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
@@ -1277,6 +1280,9 @@ define SetTargetType
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
   UPDATE_CLASSVERSION:=yes
 endif
+ifneq ($(strip $(filter PostBuild,$(MAKECMDGOALS))),)
+RESET_BUILD_LOGS:=no
+endif
 ifeq ($(strip $(filter-out help enable-vectorize disable-vectorize check-vectorize enable-biglib enable-biglib enable-biglib outputlog clean ProjectRename projectrename PROJECTRENAME ExternalLinks ToolUpdated ToolUpdated_%,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   FAST :=yes
@@ -1325,13 +1331,15 @@ $(LOCALTOP)/$(SCRAMSTORENAME_LOGS)/testing.log: FORCE_TARGET
 	$(CMD_rm) -rf $@; \
 	$(CMD_echo) "Creating test log file $(SCRAMSTORENAME_LOGS)/testing.log" ;\
 	$(CMD_touch) $@
+ifeq ($(strip $(RESET_BUILD_LOGS)),yes)
 $(WORKINGDIR)/cache/log/%: FORCE_TARGET
-	@if [ -f $@ ] ; then  \
-	  $(CMD_rm) -f $@ ;\
-	else \
-	  [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) ;\
-	fi
-	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
+	@[ -f $@ ] && $(CMD_rm) -f $@ &&\
+	[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
+else
+$(WORKINGDIR)/cache/log/%:
+	@$(CMD_true)
+endif
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
 	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
