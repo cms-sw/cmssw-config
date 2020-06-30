@@ -41,20 +41,6 @@ config = args.config
 keys = dict(s.split('=') for s in args.keys)
 arch = args.arch
 
-
-def fixPath(dir):
-    if not dir:
-        return ""
-    parts = []
-    p = "/"
-    if not re.search(r'^/', dir):
-        p = ''
-    for part in dir.split('/'):
-        if part == "..": parts.pop()
-        elif part != "" and part != ".": parts.append(part)
-    return "%s%s" % (p,"/".join(parts))
-
-
 tooldir = "configurations"
 if re.search(r'^V[2-9]', scram):
     tooldir = "tools"
@@ -63,10 +49,7 @@ if not path.isdir(path.join(toolbox, tooldir)):
 
 dir = None
 if not config or re.search(r'^V[2-9]', config):
-    dir = os.path.dirname(__file__)
-    if not re.search(r'^/', dir):
-        dir=path.join(os.getcwd(), dir)
-    dir = fixPath(dir)
+    dir = (path.dirname(path.realpath(__file__)))
     match = re.search(r'^(.+)\/config$', dir)
     if match:
         config = match.group(1)
