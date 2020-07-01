@@ -1,6 +1,7 @@
 2020-07-01 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-14: Fix extra line for clang-tidy check
 	performance-inefficient-vector-operation.
+	V05-10-15: updateConfig migrated to python.
 2020-06-25 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-13: Make sure the build logs are saved in between two build
 	runs
