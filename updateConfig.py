@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, re, os, json, gzip
+import sys, re, os, json, gzip, shutil
 from argparse import ArgumentParser
 from os import path, environ
 from subprocess import  call, check_output
@@ -26,50 +26,23 @@ parser.add_argument('--project', '-p', dest='project', required=True, help='Miss
 parser.add_argument('--version', '-v', dest='version', required=True, help='Missing or empty project version.')
 parser.add_argument('--scram', '-s', dest='scram', required=True, help="Missing or empty scram version.")
 parser.add_argument('--toolbox', '-t', dest='toolbox', required=True, help="Missing or empty SCRAM tool box path.")
-parser.add_argument('--config', dest='config')
 parser.add_argument('--keys', dest='keys', action='append')
-parser.add_argument('--arch', '-a', dest='arch')
+parser.add_argument('--arch', '-a', dest='arch', required=True)
 args = parser.parse_args()
-if len(sys.argv) < 3:
-    parser.print_usage()
-    sys.exit(1)
-project = args.project
-version = args.version
-scram = args.scram
-toolbox = args.toolbox
-config = args.config
 keys = dict(s.split('=') for s in args.keys)
-arch = args.arch
 
-tooldir = "configurations"
-if re.search(r'^V[2-9]', scram):
-    tooldir = "tools"
-if not path.isdir(path.join(toolbox, tooldir)):
-    raise Exception("Wrong toolbox directory. Missing directory %s." % path.join(toolbox, tooldir))
+tooldir = "tools"
+if not path.isdir(path.join(args.toolbox, tooldir)):
+    raise Exception("Wrong toolbox directory. Missing directory %s." % path.join(args.toolbox, tooldir))
 
-dir = None
-if not config or re.search(r'^V[2-9]', config):
-    dir = (path.dirname(path.realpath(__file__)))
-    match = re.search(r'^(.+)\/config$', dir)
-    if match:
-        config = match.group(1)
-    else:
-        raise Exception("Missing config directory path which needs to be updated.")
-dir = path.join(config, "config")
-
-if not arch:
-    if not environ["SCRAM_ARCH"]:
-        arch = check_output("scram arch", shell=True).rstrip()
-    else: arch = environ["SCRAM_ARCH"]
-environ["SCRAM_ARCH"] = arch
-
+dir = (path.dirname(path.realpath(__file__)))
+environ["SCRAM_ARCH"] = args.arch
 cache = {
     "KEYS" : {
-                "PROJECT_NAME" : project,
-                "PROJECT_VERSION": version,
-                "PROJECT_TOOL_CONF": toolbox,
-                "PROJECT_CONFIG_BASE": config,
-                "SCRAM_VERSION": scram,
+                "PROJECT_NAME" : args.project,
+                "PROJECT_VERSION": args.version,
+                "PROJECT_TOOL_CONF": args.toolbox,
+                "SCRAM_VERSION": args.scram,
                 "SCRAM_COMPILER" : "gcc",
                 "PROJECT_GIT_HASH" : {}
               },
@@ -81,7 +54,7 @@ for f in ["bootsrc","BuildFile","Self","SCRAM_ExtraBuildRule","boot"]:
 
 for k in keys:
     cache["KEYS"][k]=keys[k]
-if not cache["KEYS"]["PROJECT_GIT_HASH"]: cache["KEYS"]["PROJECT_GIT_HASH"] = version
+if not cache["KEYS"]["PROJECT_GIT_HASH"]: cache["KEYS"]["PROJECT_GIT_HASH"] = args.version
 
 regexp = ""
 for k in cache["KEYS"].keys():
@@ -90,7 +63,7 @@ for k in cache["KEYS"].keys():
 for k in cache["EXKEYS"].keys():
     xk =  k
     for a in cache["EXKEYS"][k].keys():
-        if re.search(r'^%s' % a, arch):
+        if re.search(r'^%s' % a, args.arch):
             xk = cache["EXKEYS"][k][a]
             break
     regexp += "s|\@%s\@|%s|g;" % (k,v)
@@ -103,11 +76,11 @@ for file in files:
     if re.search(r'^\.', file): continue
     fpath = os.path.join(dir, file)
     if not path.exists(fpath) or path.isdir(fpath) or path.islink(fpath): continue
-    match = re.search("^%s_(.+)$" % project, file)
-    if match: call("mv %s %s/%s" % (fpath, dir, match.group(1)), shell=True)
+    match = re.search("^%s_(.+)$" % args.project, file)
+    if match: shutil.move(fpath, os.path.join(dir, match.group(1)))
 
 for type in cache["SCRAMFILES"].keys():
     call("touch %s/XXX_%s; rm -f %s/*_%s*" % (dir, type, dir, type), shell=True)
 call("find %s -name \"*\" -type f | xargs sed -i.backup$$ -e '%s'" % (dir,regexp), shell=True)
 call("find %s -name '*.backup*' -type f | xargs rm -f" % dir, shell=True)
-call("rm -rf %s/site;  echo %s > %s/scram_version" % (dir, scram, dir), shell=True)
+call("rm -rf %s/site;  echo %s > %s/scram_version" % (dir, args.scram, dir), shell=True)
