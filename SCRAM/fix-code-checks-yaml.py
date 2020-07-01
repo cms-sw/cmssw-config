@@ -48,6 +48,10 @@ for f in o.split("\n"):
           if r['ReplacementText'] == ' }':
             r['ReplacementText']='@N@}'
             atN = True
+        elif d["DiagnosticName"] in ['performance-inefficient-vector-operation']:
+          r['ReplacementText'] = r['ReplacementText'].replace('\n','@N@ ')
+          atN = True
+          change+=1
         new_rep.append(r)
       else:
         if not rf in ignore_files:
