@@ -35,7 +35,7 @@ tooldir = "tools"
 if not path.isdir(path.join(args.toolbox, tooldir)):
     raise Exception("Wrong toolbox directory. Missing directory %s." % path.join(args.toolbox, tooldir))
 
-dir = (path.dirname(path.realpath(__file__)))
+dir = path.dirname(path.realpath(__file__))
 environ["SCRAM_ARCH"] = args.arch
 cache = {
     "KEYS" : {
@@ -43,6 +43,7 @@ cache = {
                 "PROJECT_VERSION": args.version,
                 "PROJECT_TOOL_CONF": args.toolbox,
                 "SCRAM_VERSION": args.scram,
+                "PROJECT_CONFIG_BASE": path.dirname(dir),
                 "SCRAM_COMPILER" : "gcc",
                 "PROJECT_GIT_HASH" : {}
               },
