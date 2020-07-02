@@ -29,7 +29,7 @@ define compile_cuda_common
      '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
 define compile_cuda
-  $(call compile_cuda_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS,gcc) $(call AdjustFlags,$1,,CUDA_FLAGS))
+  $(call compile_cuda_common,$1,$2,$(patsubst -isystem%,-I%,$(call AdjustFlags,$1,,CPPFLAGS,gcc)) $(call AdjustFlags,$1,,CUDA_FLAGS))
 endef
 define CudeCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
