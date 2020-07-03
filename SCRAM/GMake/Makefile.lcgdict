@@ -96,10 +96,6 @@ $(1)_LOC_USE += $(LCGDICT_DEPS)
 $(1)_files  := $($(1)_objdir)/$(6)/$(2)r.cc        $($(1)_files)
 $(1)_objs   := $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT) $($(1)_objs)
 $(1)_extra_files += $($(1)_objdir)/$(6)/$(2)r.cc
-ifneq ($(strip $(filter $(LOCALTOP)/$(WORKINGDIR)/classes/%,$3)),)
-$3: $4
-	@$$(call generate_classes_h)
-endif
 $(2)r_header:=$3
 $$(eval $$(call pcm_build_rules$($(1)_CXXMODULES),$1,$2,$3,$4,$5,$6,$7))
 $(1)_ROOTPCMS += $(7)/$$($(1)_pcm_name)
@@ -117,6 +113,7 @@ $(WORKINGDIR)/rootpcms/$(2): $(7)/$$($(1)_pcm_name)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePCM,$1,$$v,$$($(1)_pcm_name),$7)))
 endef
-
+$(WORKINGDIR)/classes/%:
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
 $(WORKINGDIR)/rootpcms/%:
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@

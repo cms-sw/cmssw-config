@@ -1111,6 +1111,7 @@ sub searchForSpecialFiles ()
   my $top=$ENV{LOCALTOP};
   my @files=split /\s+/,$core->productfiles();
   my $flag=0;
+  my $pack=$self->get("parent");
   if(scalar(@files)>0)
   {
     my $firstfile=$files[0];
@@ -1138,11 +1139,16 @@ sub searchForSpecialFiles ()
   {
     for(my $i=0;$i<$xc;$i++)
     {
-      if (-f $x[$i])
+      my $xf = $x[$i];
+      if (-f $xf)
       {
-        if (-f $h[$i]){$xmldef{$x[$i]}=$h[$i];}
-	elsif($self->isAutoGenerateClassesH()){$xmldef{$x[$i]}="\$(WORKINGDIR)/classes/".$x[$i].".h";}
-	else{$xmldef{$x[$i]}="";}
+	if (-f $h[$i]){$xmldef{$xf}=$h[$i];}
+	elsif($self->isAutoGenerateClassesH()){$xmldef{$xf}="\$(WORKINGDIR)/classes/$xf.h";}
+	else{$xmldef{$xf}="";}
+      }
+      if (($xmldef{$xf} eq "") && (exists $self->{cache}{LCGDICT_PACKAGE}{$pack}))
+      {
+        $xmldef{"\$(WORKINGDIR)/classes/classes_def.xml"}="\$(WORKINGDIR)/classes/classes.h";
       }
     }
   }
@@ -1796,12 +1802,17 @@ sub Project_template()
   
   # All flags from top level BuildFile
   my $flags=$core->allflags();
+  $self->{cache}{LCGDICT_PACKAGE}={};
   foreach my $flag (keys %$flags)
   {
     my $val=join(" ",@{$flags->{$flag}});
     if ($flag=~/^HOOK_.+$/){print $fh "$flag:=$val\n";}
     elsif($flag=~/.*FLAGS$/){print $fh "self_EX_FLAGS_$flag+=$val\n";}
     else{print $fh "$flag+=$val\n";}
+    if ($flag eq "LCGDICT_PACKAGE")
+    {
+      foreach my $pack (@{$flags->{$flag}}){$self->{cache}{LCGDICT_PACKAGE}{$pack}=1;}
+    }
   }
 
   # Makefile section of toplevel BuildFile
