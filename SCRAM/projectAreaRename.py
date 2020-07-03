@@ -30,15 +30,13 @@ if args.olddir != args.newtop:
                 ftime = s[9]
                 call("gunzip -S.gz %s" % f, shell=True)
                 f = re.sub(r'.gz$', r'', f)
-            oref = None
             has_olddir = 0
             try:
                 with open("%s.rename" % f, "w+") as oref:
-                    iref = None
                     try:
                         with open(f, "w+") as iref:
                             for l in iref.readlines():
-                                if re.search("%s" % qod,l):
+                                if re.search(qod,l):
                                     has_olddir += 1
                                     l = re.sub(qod, args.newtop, l)
                                 iref.write(l)
