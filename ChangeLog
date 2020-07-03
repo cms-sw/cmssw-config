@@ -1,3 +1,5 @@
+2020-07-03 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-16: updateConfig migrated to python.
 2020-07-02 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-14-01: Use -I instead of -isystem for cuda host flags
 2020-07-01 Shahzad Muzaffar  <@smuzaffar>
