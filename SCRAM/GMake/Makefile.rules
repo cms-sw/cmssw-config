@@ -1379,8 +1379,8 @@ endif
 
 .PHONY: projectrename ProjectRename PROJECTRENAME
 ProjectRename projectrename PROJECTRENAME:
-	@if [ -f ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.pl ] ; then \
-	  ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.pl $(SCRAM_INIT_LOCALTOP) $(curtop) $(SCRAM_ARCH); \
+	@if [ -f ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.py ] ; then \
+	  ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename.py $(SCRAM_INIT_LOCALTOP) $(curtop) $(SCRAM_ARCH); \
 	  $(CMD_echo) "Done: $@"; \
 	fi
 ######################################################################
