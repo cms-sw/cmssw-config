@@ -21,7 +21,7 @@ if not path.isdir(path.join(rel, ".SCRAM")):
 if args.olddir != args.newtop:
     qod = re.escape(args.olddir)
     for d in [path.join(rel, ".SCRAM", args.arch), path.join(rel, "config")]:
-        for f in check_output("find %s -type f" % d, shell=True).rstrip().splitlines():
+        for f in check_output("find %s -type f" % d, shell=True).decode().rstrip().splitlines():
             ftime = 0
             gzip = 0
             if re.search('.db.gz$', f):
@@ -32,14 +32,14 @@ if args.olddir != args.newtop:
                 f = re.sub(r'.gz$', r'', f)
             has_olddir = 0
             try:
-                with open("%s.rename" % f, "w+") as oref:
+                with open("%s.rename" % f, "w") as oref:
                     try:
-                        with open(f, "w+") as iref:
+                        with open(f) as iref:
                             for l in iref.readlines():
                                 if re.search(qod,l):
                                     has_olddir += 1
                                     l = re.sub(qod, args.newtop, l)
-                                iref.write(l)
+                                oref.write(l)
                     except Exception as e:
                         print(e, "Error: Unable to read file %s" % f)
             except Exception as e:
