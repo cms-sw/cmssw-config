@@ -372,17 +372,6 @@ define outputlog
     $(DO_BUILD_LOG) for f in `$(CMD_find) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1) -name "*" -type f | $(CMD_grep) -v  '/build\.log$$'` ; $(DO_BUILD_LOG) do $(DO_BUILD_LOG) $(CMD_cat) $$f $(redirectlog_$(2)) ; $(DO_BUILD_LOG) $(CMD_rm) -f $$f;  $(DO_BUILD_LOG) done ;\
   fi
 endef
-define outputLogFile
-  @if [ "X$1" != "X" ] ; then \
-    $(CMD_cat) $1;\
-    dir=`$(CMD_dirname) $1`;\
-    while [ ! -f "$$dir/build.log" ] && [ "$$dir" != "$(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)" ] ; do \
-      dir=`$(CMD_dirname) $$dir`;\
-    done ;\
-    [ -f "$$dir/build.log" ] && $(CMD_cat) $1 >> $$dir/build.log ;\
-    $(CMD_rm) -f $1;\
-  fi
-endef
 define checklibs
   $(eval xliberr:=)$(foreach x,$($(1)_LOC_LIB),$(if $(strip $(filter-out $($(1)_PACKAGE),$($(x)_PACKAGE))),$(eval xliberr+=$x:$($(x)_PACKAGE)),)) \
   if [ "X$(xliberr)" != "X" ] ; then \
@@ -689,7 +678,7 @@ define link_lib_common
   true $(if $(strip $6),&& $(CMD_echo) ">> Skipping EDM Checks for $1/$6",$(call run_edm_checks,$1,$2,$3,$4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && \
   [ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && \
-   $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1)
+   $(CMD_touch) -r $@ $(WORKINGDIR)/cache/prod/$(6)/lib$(1)
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS,,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
@@ -882,6 +871,7 @@ endif
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2))) $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@$$(call run_postprocess,$1,$$(redirectlog_$(2)))
 	@$$(call outputlog,$(1),$(2))
+	@$(DO_BUILD_LOG) $(CMD_touch) -t $(OLD_TIMESTAMP) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log
 	@$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(SCRAM_SOURCEDIR)/$(1)/build.log &&\
 	$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
@@ -1338,7 +1328,8 @@ $(WORKINGDIR)/cache/log/%: FORCE_TARGET
 	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
 else
 $(WORKINGDIR)/cache/log/%:
-	@$(CMD_true)
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	$(CMD_touch) -t $(OLD_TIMESTAMP) $@
 endif
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
@@ -1789,6 +1780,7 @@ buildlog:
 	  for l in `$(CMD_find) $$pack -name "*" -type f | grep -v "$$pack/build.log"` ; do \
 	    $(CMD_cat) $$l >> $$f && $(CMD_cat) $$l && $(CMD_rm) -f $$l ;\
 	  done;\
+	  $(CMD_touch) -t $(OLD_TIMESTAMP) $$f;\
 	done
 runtime:
 	@$(CMD_echo) ">> Runtime environment:"; env
