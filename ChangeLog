@@ -1,6 +1,7 @@
 2020-07-09 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-23,V05-10-24: Added back projectAreaRename.pl
 	V05-10-25: Use projectAreaRename (i.e. without ext)
+	V05-10-26: Fix library rules to keep on building it failed.
 2020-07-07 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-22: Fix build log rules to avoid rebuild of products
 2020-07-05 Roman Tulinov <@tulamor>
