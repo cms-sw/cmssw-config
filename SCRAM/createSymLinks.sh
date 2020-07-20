@@ -34,11 +34,11 @@ function getSubDir () {
 if [ -d "$src" ] ; then
   for dir in "$(find $src -maxdepth $depth -mindepth $depth -name "*" -type d)"; do
     if [[ $dir =~ ^\. ]]; then continue; fi
-    if [ -n "$srcnfilter" ] && [[ dir=~ $srcnfilter]]; then continue; fi
-    if [ -n "$srcfilter" ] && [[ dir=~ $srcfilter]]; then continue; fi
+    if [ -n "$srcnfilter" ] && [[ dir =~ $srcnfilter ]]; then continue; fi
+    if [ -n "$srcfilter" ] && [[ dir =~ $srcfilter ]]; then continue; fi
     rpath=$dir
     sdir=$(getSubDir "$dir" "$subdir")
-    ldir=$(getSubDir "dir" "$linkdir")
+    ldir=$(getSubDir "$dir" "$linkdir")
     slink="${des}/${rpath}${ldir}"
     if [ -d "${dir}${sdir}" ]; then
       if [ "$des" = python ] &&  [ -d $slink ]; then rm -rf $slink; fi
@@ -48,7 +48,10 @@ if [ -d "$src" ] ; then
       if [ ! -h "$slink" ]; then
         [ -d $slinkdir ] || mkdir -p $slinkdir; ln -s ${ldir}/${dir}${sdir} $slink
         printf "  ${dir}${sdir} -> $slink\n"
-  elif [ "$des" = python ] &&  [ ! -d $slink ]; then rm -f $slink && mkdir -p $slink
+      fi
+    elif [ "$des" = python ] &&  [ ! -d $slink ]; then rm -f $slink && mkdir -p $slink
+    fi
+  done
 fi
 
 if [ -d "$des" ] ; then
@@ -57,11 +60,13 @@ if [ -d "$des" ] ; then
  for d in $(find $des -name "*" -type l) ; do
   local d1 = d
   d1="$(echo "d1" | sed 's/\/[^\/]+$//')"
-  if [ ! -e  $d]; then
+  if [ ! -e  $d ]; then
     unlink $d
     rm[$d1]=1
   else
     ok[$d1]=1
+  fi
+  done
   for K in "${!ok[@]}"; do unset rm[K]; done
   del=${rm[*]}
   if [[ ! $del =~ ^\s*$ ]]; then rm -rf $del; fi
