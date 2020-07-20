@@ -7,7 +7,7 @@ subdir=$4 || ""   #; shift  #sub-directory to search. There is a special cases
                   #         # . mean find directory with same name as parent e.g. in LCG project we have PackageA/PackageA
 linkdir=$5 || ""  #; shift  #name of symlink to creat
 shift 5
-SRCFILTER=""
+srcfilter=""
 srcnfilter=""
 
 while [ $# -gt 0 ] ; do
