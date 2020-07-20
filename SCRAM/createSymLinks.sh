@@ -34,9 +34,10 @@ function getSubDir () {
 if [ -d "$src" ] ; then
   for dir in "$(find $src -maxdepth $depth -mindepth $depth -name "*" -type d)"; do
     if [[ $dir =~ ^\. ]]; then continue; fi
-    if [ -n "$srcnfilter" ] && [[ dir =~ $srcnfilter ]]; then continue; fi
-    if [ -n "$srcfilter" ] && [[ dir =~ $srcfilter ]]; then continue; fi
+    if [ ! -z "$srcnfilter" ] && [[ dir =~ $srcnfilter ]]; then continue; fi
+    if [ ! -z "$srcfilter" ] && [[ dir =~ $srcfilter ]]; then continue; fi
     rpath=$dir
+    rpath="$(echo "$rpath" | sed "s|${src}/*||")"
     sdir=$(getSubDir "$dir" "$subdir")
     ldir=$(getSubDir "$dir" "$linkdir")
     slink="${des}/${rpath}${ldir}"
