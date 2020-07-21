@@ -6,20 +6,21 @@ depth=$3          #; shift  #how deep in source directory we search
 subdir=$4 || ""   #; shift  #sub-directory to search. There is a special cases
                   #         # . mean find directory with same name as parent e.g. in LCG project we have PackageA/PackageA
 linkdir=$5 || ""  #; shift  #name of symlink to creat
-shift 5
 srcfilter=""
 srcnfilter=""
-
-while [ $# -gt 0 ] ; do
-  arg="$(echo "$1" | sed 's/^\s+//')"
-  arg="$(echo "$1" | sed 's/\s*$//')"
-  if [[ $arg =~ ^-(.+)$ ]]; then
-    srcnfilter="${srcnfilter}${BASH_REMATCH[1]}|"
-  elif [[ $arg =~ ^(\+|)(.+)$ ]]; then
-    srcfilter="${srcfilter}${BASH_REMATCH[2]}|"
-  fi
-  shift
-done
+if [ $# -gt 5 ]; then
+  shift 5
+  while [ $# -gt 0 ] ; do
+    arg="$(echo "$1" | sed 's/^\s+//')"
+    arg="$(echo "$1" | sed 's/\s*$//')"
+    if [[ $arg =~ ^-(.+)$ ]]; then
+      srcnfilter="${srcnfilter}${BASH_REMATCH[1]}|"
+    elif [[ $arg =~ ^(\+|)(.+)$ ]]; then
+      srcfilter="${srcfilter}${BASH_REMATCH[2]}|"
+    fi
+    shift
+  done
+fi
 srcfilter="$(echo "$srcfilter" | sed 's/\|$//')"
 srcnfilter="$(echo "$srcnfilter" | sed 's/\|$//')"
 
@@ -41,6 +42,7 @@ if [ -d "$src" ] ; then
     sdir=$(getSubDir "$dir" "$subdir")
     ldir=$(getSubDir "$dir" "$linkdir")
     slink="${des}/${rpath}${ldir}"
+    printf "$slink \n"
     if [ -d "${dir}${sdir}" ]; then
       if [ "$des" = python ] &&  [ -d $slink ]; then rm -rf $slink; fi
       slinkdir=$(dirname "$slink")
