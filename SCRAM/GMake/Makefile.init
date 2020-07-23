@@ -5,16 +5,11 @@ ifndef SCRAM_ADMIN_DIR
 SCRAM_ADMIN_DIR:= .SCRAM/$(SCRAM_ARCH)
 endif
 ifndef SCRAM_TOOLS_DIR
-ifneq ($(strip $(filter V2_%,$(SCRAM_VERSION))),)
-SCRAM_TOOLS_DIR:= $(SCRAM_ADMIN_DIR)/timestamps
-EXTERNAL_LINK_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl
-TOOL_MAKE_SCRIPT:=$(SCRAM_CONFIGDIR)/SCRAM/updateToolMK.pl
-else
-SCRAM_TOOLS_DIR:= $(SCRAM_ADMIN_DIR)/tools
-EXTERNAL_LINK_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.py
-TOOL_MAKE_SCRIPT:=$(SCRAM_CONFIGDIR)/SCRAM/updateToolMK.py
+SCRAM_TOOLS_DIR:=$(SCRAM_ADMIN_DIR)/$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),timestamps,tools)
 endif
-endif
+EXTERNAL_LINK_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),pl,py)
+TOOL_MAKE_SCRIPT:=$(SCRAM_CONFIGDIR)/SCRAM/updateToolMK.$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),pl,py)
+
 SCRAM_MAKEFILE := $(firstword $(MAKEFILE_LIST))
 ToolTimeStamps := $(wildcard $(SCRAM_TOOLS_DIR)/*)
 DIRCACHE_MKDIR := $(SCRAM_INTwork)/MakeData
