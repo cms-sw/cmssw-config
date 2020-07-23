@@ -3,7 +3,6 @@ import sys
 import re
 import json
 from os import environ, rename, getcwd, unlink, listdir, readlink, chdir
-environ["SCRAM_TOOL_HOME"]="/afs/cern.ch/user/m/muzaffar/public/git/SCRAMV3"
 sys.path.append(environ["SCRAM_TOOL_HOME"])
 from os.path import exists, join, islink, isdir, abspath, isfile, dirname
 from argparse import ArgumentParser
