@@ -1135,6 +1135,7 @@ sub searchForSpecialFiles ()
   foreach my $f (split /\s+/,$xfile){push @x,"${path}/${f}";}
   foreach my $f (split /\s+/,$hfile){push @h,"${path}/${f}";}
   my $xc=scalar(@x);
+  my @ox=();
   if ((scalar(@h) == $xc) && ($xc>0))
   {
     for(my $i=0;$i<$xc;$i++)
@@ -1142,18 +1143,21 @@ sub searchForSpecialFiles ()
       my $xf = $x[$i];
       if (-f $xf)
       {
+        push @ox,$xf;
 	if (-f $h[$i]){$xmldef{$xf}=$h[$i];}
 	elsif($self->isAutoGenerateClassesH()){$xmldef{$xf}="\$(WORKINGDIR)/classes/$xf.h";}
 	else{$xmldef{$xf}="";}
       }
       if (($xmldef{$xf} eq "") && (exists $self->{cache}{LCGDICT_PACKAGE}{$pack}))
       {
-        $xmldef{"\$(WORKINGDIR)/classes/classes_def.xml"}="\$(WORKINGDIR)/classes/classes.h";
+        $xf="\$(WORKINGDIR)/classes/classes_def.xml";
+        push @ox,$xf;
+        $xmldef{$xf}="\$(WORKINGDIR)/classes/classes.h";
       }
     }
   }
   @h=(); @x=();
-  foreach my $f (keys %xmldef)
+  foreach my $f (@ox)
   {
     push @x,$f;
     $f=$xmldef{$f};
@@ -1371,16 +1375,16 @@ sub depsOnlyBuildFile
     my $ex=$self->{core}->data("EXPORT");
     foreach my $data ("INCLUDE", "USE")
     {
-      my %udata=();
-      foreach my $d (split ' ',$self->getCacheData($data)){$udata{$d}=1;}
+      my @udata=(); %xdata=();
+      foreach my $d (split ' ',$self->getCacheData($data)){push @udata,$d;}
       my $dataval=$self->fixData($core->value($data),$data,$localbf) || [];
-      foreach my $d (@$dataval){$udata{$d}=1;}
+      foreach my $d (@$dataval){if (!exists $xdata{$d}){$xdata{$d}=1;push @udata,$d;}}
       if (defined $ex)
       {
 	$dataval=$self->fixData($self->{core}->value($data,$ex),$data,$localbf,1) || [];
-	foreach my $d (@$dataval){$udata{$d}=1;}
+	foreach my $d (@$dataval){if (!exists $xdata{$d}){$xdata{$d}=1;push @udata,$d;}}
       }
-      $dataval=join(" ",keys %udata);
+      $dataval=join(" ",@udata);
       if ($dataval!~/^\s*$/){print $fref "${sname}_LOC_${data} := $dataval\n";}
     }
     print $fref "${sname}_EX_USE   := \$(foreach d,\$(${sname}_LOC_USE),\$(if \$(\$(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
@@ -2218,11 +2222,11 @@ sub binary_template ()
   my $localbf = $self->getLocalBuildFile();
   if($types)
   {
-    foreach my $ptype (keys %$types)
+    foreach my $ptype (sort keys %$types)
     {
       if ($ptype eq "LIBRARY")
       {
-        foreach my $prod (keys %{$types->{$ptype}})
+        foreach my $prod (sort keys %{$types->{$ptype}})
 	{
 	  my $safename=$self->fixProductName($prod);
 	  $self->set("safename",$safename);
@@ -2252,7 +2256,7 @@ sub binary_template ()
       }
       elsif($ptype eq "BIN")
       {
-        foreach my $prod (keys %{$types->{$ptype}})
+        foreach my $prod (sort keys %{$types->{$ptype}})
 	{
 	  my $safename=$self->fixProductName($prod);
 	  $self->set("safename",$safename);

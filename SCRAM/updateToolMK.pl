@@ -108,7 +108,7 @@ foreach my $t (keys %tools)
   }
   if(exists $c->{FLAGS})
   {
-    foreach my $k (keys %{$c->{FLAGS}})
+    foreach my $k (sort keys %{$c->{FLAGS}})
     {
       my $join=" ";
       if($k eq "CPPDEFINES"){$join=" -D";}

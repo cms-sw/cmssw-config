@@ -1342,14 +1342,14 @@ $(WORKINGDIR)/cache/log/%:
 endif
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
-	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
+	@$(EXTERNAL_LINK_SCRIPT) --arch $(SCRAM_ARCH)
 $(WORKINGDIR)/cache/xlibs: $(WORKINGDIR)/cache/xlibs.backup
 	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
 $(WORKINGDIR)/cache/xlibs.backup: $(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB 
 	@$(CMD_touch) $@
 $(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB: $(ToolTimeStamps)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D)
-	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.pl --arch $(SCRAM_ARCH)
+	@$(EXTERNAL_LINK_SCRIPT) --arch $(SCRAM_ARCH)
 ######################################################################
 $(eval curtop:=$(shell $(CMD_echo) $$LOCALTOP))
 ifneq ($(curtop),$(SCRAM_INIT_LOCALTOP))

@@ -36,6 +36,9 @@ if not path.isdir(path.join(args.toolbox, tooldir)):
     raise Exception("Wrong toolbox directory. Missing directory %s." % path.join(args.toolbox, tooldir))
 
 dir = path.dirname(path.realpath(__file__))
+pdir = path.join(dir, "Projects", args.project)
+if not path.isdir(pdir):
+    raise Exception("No project directory found: %s" % (pdir))
 environ["SCRAM_ARCH"] = args.arch
 cache = {
     "KEYS" : {
@@ -69,19 +72,7 @@ for k in cache["EXKEYS"].keys():
             break
     regexp += "s|\@%s\@|%s|g;" % (k,v)
 
-try: os.listdir(dir)
-except Exception as e: print(e, "Can not open directory for reading: %s" % f)
-files = [f for f in os.listdir(dir)]
-for file in files:
-    if re.search(r'^CVS$', file): continue
-    if re.search(r'^\.', file): continue
-    fpath = os.path.join(dir, file)
-    if not path.exists(fpath) or path.isdir(fpath) or path.islink(fpath): continue
-    match = re.search("^%s_(.+)$" % args.project, file)
-    if match: shutil.move(fpath, os.path.join(dir, match.group(1)))
-
-for type in cache["SCRAMFILES"].keys():
-    call("touch %s/XXX_%s; rm -f %s/*_%s*" % (dir, type, dir, type), shell=True)
-call("find %s -name \"*\" -type f | xargs sed -i.backup$$ -e '%s'" % (dir,regexp), shell=True)
-call("find %s -name '*.backup*' -type f | xargs rm -f" % dir, shell=True)
-call("rm -rf %s/site;  echo %s > %s/scram_version" % (dir, args.scram, dir), shell=True)
+call("find %s -name \"*\" -type f | xargs sed -i.backup -e '%s'" % (pdir,regexp), shell=True)
+call("rm -rf {0}/*.backup; mv {0}/* {1}/; rm -rf {1}/Projects".format(pdir, dir), shell=True)
+with open("%s/scram_version" % dir, "w") as fh:
+    fh.write(args.scram)
