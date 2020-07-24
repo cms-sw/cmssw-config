@@ -1262,16 +1262,27 @@ $(1) all_$(1): $($(1))
 endef
 
 ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
+ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/cuda)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.cuda
-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.qtmoc
+endif
+ifneq ($(strip $(ROOTCLING)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.rootdict
+endif
+ifneq ($(strip $(ROOTRFLX_BASE)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
+endif
+ifneq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization
+endif
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pch
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lexyacc
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.codegen
+ifneq ($(strip $(TFCOMPILE)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.dnn
+endif
+ifneq ($(strip $(AOC)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.aocx
+endif
 AUTO_GENERATED_SOURCES:=$(addsuffix /%,$(sort $(AUTO_GENERATED_SOURCES)))
 endif  #Finish CODE_ANALYSIS_RULES
 ##############################################################################
@@ -1411,11 +1422,11 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	$(CMD_rm) -rf $(ALL_PRODUCT_STORES)
 	@$(CMD_echo) "Resetting project cache:"; $(CMD_mkdir) -p $(SCRAM_ADMIN_DIR)
 	@for db in ProjectCache DirCache RuntimeCache ObjectCache; do \
-	  $(CMD_echo) $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/$$db.db* ; \
+	  $(CMD_echo) $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/$$db.* ; \
 	  $(CMD_touch) $(SCRAM_ADMIN_DIR)/$$db.db.gz; \
-	  $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/$$db.db* ;  \
+	  $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/$$db.* ;  \
 	done
-	$(CMD_rm) -rf $(SCRAM_ADMIN_DIR)/MakeData
+	$(CMD_rm) -rf $(SCRAM_ADMIN_DIR)/MakeData $(SCRAM_ADMIN_DIR)/BuildFiles
 	$(CMD_rm) -f  $(LLVM_CCDB_EXT)
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
 	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
