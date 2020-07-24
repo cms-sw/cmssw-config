@@ -78,4 +78,4 @@ with open("%s/scram_version" % dir, "w") as fh:
     fh.write(args.scram)
 if int(args.scram[1:].split("_")[0])>2:
     for xf in ["Plugins/BuildRules.pm", "linkexternal.pl", "updateToolMK.pl", "find-deps-tree.pl"]:
-        call("rm -rf %s" % path.join(dir, "SCRAM", xf))
+        call("rm -rf %s" % path.join(dir, "SCRAM", xf), shell=True)
