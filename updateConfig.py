@@ -78,4 +78,4 @@ with open("%s/scram_version" % dir, "w") as fh:
     fh.write(args.scram)
 if int(args.scram[1:].split("_")[0])>2:
     call("rm -rf {0}/Plugins/BuildRules.pm {0}/linkexternal.pl "
-         "{0}/updateToolMK.pl".format(join(dir,"SCRAM")))
+         "{0}/updateToolMK.pl {0}/find-deps-tree.pl".format(path.join(dir,"SCRAM")))
