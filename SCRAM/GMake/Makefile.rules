@@ -245,6 +245,8 @@ define get_uniq_cached_var_
 $(if $(subst undefined,,$(origin cached_var_$(1))),$(cached_var_$(1)),$(eval $(call set_cached_var_,$(1)))$(eval cached_var_$(1):=$(call Uniq,$(cached_var_$(1))))$(cached_var_$(1)))
 endef
 ##############################################################################
+find_project_file=$(call find_release_file,$1,$(LOCALTOP))
+find_release_file=$(strip $(eval scram_pfp:=)$(foreach d,$(strip $2 $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 do_rsort=$(if $(wordlist 2,2,$(1)),$(call do_rsort,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)),$(1))
 rsort=$(call do_rsort,$(sort $1))
 define GetTimeStamp
@@ -261,11 +263,16 @@ else
 $(1) = $$(call get_uniq_cached_var_,$(1))
 endif
 endef
+
 CFLAGS_COMPILER:=ccompiler
 FFLAGS_COMPILER:=f77compiler
 GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
 GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2)))
+
+ifneq ($(strip $(COND_SERIALIZATION)),)
+COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
+endif
 
 define SetCompilerVectorizationFlag
   $(eval $(1)_SCRAM_VECTORIZE:=)
@@ -391,8 +398,6 @@ define checklibs
     $(CMD_false);\
   fi
 endef
-find_project_file=$(call find_release_file,$1,$(LOCALTOP))
-find_release_file=$(strip $(eval scram_pfp:=)$(foreach d,$(strip $2 $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 define biglib_setup
   proj_tool=`$(CMD_echo) $(SCRAM_PROJECTNAME) | tr '[A-Z]' '[a-z]'` ; \
   tool_file=$(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ;\
@@ -1654,9 +1659,6 @@ endif
 endif
 ifeq ($(IS_MIC),yes)
 ROOTCLING:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcling/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcling/bin/rootcling
-endif
-ifneq ($(strip $(COND_SERIALIZATION)),)
-COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
 endif
 ##############################################################################
 self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
