@@ -76,3 +76,6 @@ call("find %s -name \"*\" -type f | xargs sed -i.backup -e '%s'" % (pdir,regexp)
 call("rm -rf {0}/*.backup; mv {0}/* {1}/; rm -rf {1}/Projects".format(pdir, dir), shell=True)
 with open("%s/scram_version" % dir, "w") as fh:
     fh.write(args.scram)
+if int(args.scram[1:].split("_")[0])>2:
+    call("rm -rf {0}/Plugins/BuildRules.pm {0}/linkexternal.pl "
+         "{0}/updateToolMK.pl".format(join(dir,"SCRAM")))
