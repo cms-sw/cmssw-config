@@ -270,10 +270,6 @@ GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
 GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2)))
 
-ifneq ($(strip $(COND_SERIALIZATION)),)
-COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
-endif
-
 define SetCompilerVectorizationFlag
   $(eval $(1)_SCRAM_VECTORIZE:=)
   $(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),\
@@ -1276,9 +1272,7 @@ endif
 ifneq ($(strip $(ROOTRFLX_BASE)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
 endif
-ifneq ($(strip $(COND_SERIALIZATION_SCRIPT)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization
-endif
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pch
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lexyacc
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.codegen
@@ -1659,6 +1653,9 @@ endif
 endif
 ifeq ($(IS_MIC),yes)
 ROOTCLING:=LD_LIBRARY_PATH=$(ROOT_INTERFACE_BASE)/rootcling/lib:$$LD_LIBRARY_PATH $(ROOT_INTERFACE_BASE)/rootcling/bin/rootcling
+endif
+ifneq ($(strip $(COND_SERIALIZATION)),)
+COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
 endif
 ##############################################################################
 self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
