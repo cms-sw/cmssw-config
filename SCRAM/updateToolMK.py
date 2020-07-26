@@ -91,6 +91,7 @@ def mkprocessfile (infile, outfile, data):
             if m:
                 v = edit["value"]
                 exec (v)
+                line = locals()['eline']
                 if "cont" not in edit:
                     break
         oref.write(line+"\n")
@@ -101,7 +102,6 @@ arch = sys.argv[1]
 localtop = environ["LOCALTOP"]
 reltop = environ["RELEASETOP"] if "RELEASETOP" in environ else ""
 proj_name = environ["SCRAM_PROJECTNAME"].lower()
-
 tools= {}
 for tool in sys.argv[2:]:
    tools[tool] = 1
@@ -123,26 +123,26 @@ mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS)).+)\s+[:+]=.*"
 mkprocess["skiplines"].append(re.compile("^.+_EX_((?!LIB).+)\s+[:+]=.*"))
 mkprocess["skiplines"].append(re.compile("^(ALL_COMMONRULES|NON_XML_BUILDFILE)\s+\+=.*"))
 mkprocess["skiplines"].append(re.compile("^.+_PACKAGE\s+:=\s+self\/.*"))
-mkprocess["skiplines"].append(re.compile("\$\(call\s+.*"))
+mkprocess["skiplines"].append(re.compile("^.+\$\(call\s+.*"))
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_USE\s*:=\s*(.+)$")})
 mkprocess["editlines"][-1]["cont"] = 1
-mkprocess["editlines"][-1]["value"] = 'line="%s_EX_USE := $(foreach d, %s,$(if $($(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,$d))" % (m.group(1), m.group(2))';
+mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_USE := $(foreach d, %s,$(if $($(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,$d))" % (m.group(1), m.group(2))';
 
 mkprocess["editlines"].append({"reg": re.compile("^\s*ALL_PRODS(\s+\+=.+)$")})
-mkprocess["editlines"][-1]["value"] = 'line="ALL_EXTERNAL_PRODS%s" % m.group(1)'
+mkprocess["editlines"][-1]["value"] = 'eline="ALL_EXTERNAL_PRODS%s" % m.group(1)'
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+)\s+self(\s*.*)$")})
-mkprocess["editlines"][-1]["value"] = 'line="%s ${tool}%s" % (m.group(1), m.group(2))'
+mkprocess["editlines"][-1]["value"] = 'eline="%s %s%s" % (m.group(1), tool, m.group(2))'
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+)\s+self\/(.+)$")})
-mkprocess["editlines"][-1]["value"] = 'line="%s %s/%s" % (m.group(1), tool, m.group(2))'
+mkprocess["editlines"][-1]["value"] = 'eline="%s %s/%s" % (m.group(1), tool, m.group(2))'
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$")})
-mkprocess["editlines"][-1]["value"] = 'line="%s$(%s)/.SCRAM/$(SCRAM_ARCH)/MakeData/DirCache.mk" % (m.group(1), basevar)'
+mkprocess["editlines"][-1]["value"] = 'eline="%s$(%s)/.SCRAM/$(SCRAM_ARCH)/MakeData/DirCache.mk" % (m.group(1), basevar)'
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+)_forbigobj\s*\+=(.+)$")})
-mkprocess["editlines"][-1]["value"] = 'line="%s_relbigobj+=%s" % (m.group(1), m.group(2))'
+mkprocess["editlines"][-1]["value"] = 'eline="%s_relbigobj+=%s" % (m.group(1), m.group(2))'
 
 mkprocess["skipcount"] = len(mkprocess["skiplines"])
 mkprocess["editcount"] = len(mkprocess["editlines"])
