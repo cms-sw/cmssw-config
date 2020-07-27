@@ -1,15 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, re, os, json, gzip
 from argparse import ArgumentParser
+sys.path.append(os.environ["SCRAM_TOOL_HOME"])
+from SCRAM.Core.Utils import readProducts
+from SCRAM.Configuration.ConfigArea import ConfigArea
 
 parser = ArgumentParser()
 parser.add_argument('-rel')
-parser.add_argument('-arch', dest = 'scramarch', default = os.environ.get("SCRAM_ARCH"))
 args = parser.parse_args()
 
 rel = args.rel
-scramarch = args.scramarch
 
 global name
 uses = {}
@@ -22,11 +23,14 @@ def doexec():
   global uses
   getnext = 0
   depname = ""
+  reCC = re.compile(r'(\.o|\.cc)\s*:$')
+  re1 = re.compile(r'^[^:]+ :\s*$')
+  re2 = re.compile(r'\s*\\$')
   with open(name, 'r') as file:
     for l in file:
       l = l.rstrip('\n')
-      if re.search(r'^[^:]+ :\s*$', l): break
-      l = re.sub(r'\s*\\$', r'', l)
+      if re1.search(l): break
+      l = re2.sub(r'', l)
       sp1 = l.split()
       if len(sp1) == 0: continue
       if len(sp1[0]) < 4: continue
@@ -42,11 +46,11 @@ def doexec():
         depname = tsp1
         getnext = 0
       else:
-        if re.search(r'^tmp\/', sp1[0]):
-          if re.search(r'(\.o|\.cc)\s*:$', sp1[0]):
+        if sp1[0][:4] == "tmp/":
+          if reCC.search(sp1[0]):
             getnext = 1
         else:
-          if re.search( r'^src', sp1[0]):
+          if sp1[0][:3] == "src":
             if depname not in uses:
               uses[depname] = "%s " % tsp1
             else:
@@ -126,60 +130,47 @@ def import2CMSSWDir(str, cache):
   return pyfiles
 
 
-def data2json(infile):
-  jstr = ""
-  rebs = re.compile(',\s+"BuildSystem::[a-zA-Z0-9]+"\s+\)')
-  revar = re.compile("^\s*\$[a-zA-Z0-9]+\s*=")
-  reundef = re.compile('\s*undef,')
-  lines = [l.strip().replace(" bless(","").replace("'",'"').replace('=>',' : ') for l in
-  gzip.open(infile).readlines()]
-  lines[0] = revar.sub("",lines[0])
-  lines[-1] = lines[-1].replace(";","")
-  for l in lines:
-    l = reundef.sub(' "",', rebs.sub("", l.rstrip()))
-    jstr += l
-  return json.loads(jstr)
-
-
 def updateBFDeps(dir, pcache, cache):
   bf = cache["dirs"][dir]
-  if "uses" not in cache: cache["uses"] = {}
-  if bf in cache["uses"]: return 0
+  if bf in cache["uses"]: return
   cache["uses"][bf] = {}
-  for pack in pcache["BUILDTREE"][dir]["RAWDATA"]["DEPENDENCIES"]:
-    if pack in cache["packs"]:
-      xdata = cache["packs"][pack]
-      updateBFDeps(xdata, pcache, cache)
-      xdata = cache["dirs"][xdata]
-      cache["uses"][bf][xdata] = 1
-      if "usedby" not in cache: cache["usedby"] = {}
-      if xdata not in cache["usedby"]: cache["usedby"][xdata] = {}
-      cache["usedby"][xdata][bf] = 1
-      for xdep in cache["uses"][xdata]:
+  deps = {}
+  if "USE" in pcache[dir]:
+    for use in pcache[dir]["USE"]:
+      deps[use] = 1
+  if "BUILDPRODUCTS" in pcache[dir]:
+    for type in pcache[dir]["BUILDPRODUCTS"]:
+      for prod in pcache[dir]["BUILDPRODUCTS"][type]:
+        if "USE" not in pcache[dir]["BUILDPRODUCTS"][type][prod]:
+          continue
+        for use in pcache[dir]["BUILDPRODUCTS"][type][prod]["USE"]:
+          deps[use] = 1
+  for pack in deps:
+    if pack in cache["dirs"]:
+      updateBFDeps(pack, pcache, cache)
+      xbf = cache["dirs"][pack]
+      cache["uses"][bf][xbf] = 1
+      if xbf not in cache["usedby"]:
+          cache["usedby"][xbf] = {}
+      cache["usedby"][xbf][bf] = 1
+      for xdep in cache["uses"][xbf]:
         cache["uses"][bf][xdep] = 1
         cache["usedby"][xdep][bf] = 1
+  return
 
 
-def buildFileDeps(rel, arch):
-  pcache = data2json("%s/.SCRAM/%s/ProjectCache.db.gz" % (rel, arch))
-  cache = {}
-  for dir in sorted(pcache["BUILDTREE"]):
-    if pcache["BUILDTREE"][dir]["SUFFIX"] != "": continue
-    if len(pcache["BUILDTREE"][dir]["METABF"]) == 0: continue
-    bf = pcache["BUILDTREE"][dir]["METABF"][0]
-    bf = re.sub(r'^src\/', r'', bf)
-    if "dirs" not in cache: cache["dirs"] = {}
+def buildFileDeps(rel):
+  area = ConfigArea()
+  area.location(rel)
+  pcache = readProducts(area)
+  cache = {"dirs": {}, "uses": {}, "usedby": {}}
+  for dir in sorted(pcache.keys()):
+    bf = os.path.join(dir, "BuildFile.xml")
     if dir not in cache["dirs"]: cache["dirs"][dir] = {}
     cache["dirs"][dir] = bf
-    pack = dir
-    class_ = pcache["BUILDTREE"][dir]["CLASS"]
-    if re.search(r'^(LIBRARY|CLASSLIB)$', class_):
-      pack = pcache["BUILDTREE"][dir]["PARENT"]
-    if "packs" not in cache: cache["packs"] = {}
-    if pack not in cache["packs"]: cache["packs"][pack] = {}
-    cache["packs"][pack] = dir
   for dir in cache["dirs"]:
     updateBFDeps(dir, pcache, cache)
+  del cache["dirs"]
   for type_ in ("uses", "usedby"):
     write2File("%s/etc/dependencies/bf%s.out" % (rel, type_), cache, type_)
 
@@ -187,8 +178,9 @@ def buildFileDeps(rel, arch):
 for root, dirs, files in os.walk(directory):
   for filename in files:
     name = os.path.join(root, filename)
-    if re.search(r'^.*(\.dep)', name): doexec()
-    elif re.search(r'\/scram-prod2src[.]txt$', name):
+    if filename[-4:] == ".dep":
+        doexec()
+    elif filename == "scram-prod2src.txt":
       import fileinput
       for line in fileinput.input(name):
         prod2src.append(line)
@@ -198,5 +190,4 @@ write2File(rel + "/etc/dependencies/uses.out", uses)
 write2File(rel + "/etc/dependencies/usedby.out", usedby)
 write2File(rel + "/etc/dependencies/prod2src.out", prod2src, prod2src=True)
 pythonDeps(rel)
-buildFileDeps(rel, scramarch)
-sys.exit()
+buildFileDeps(rel)
