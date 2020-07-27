@@ -8,6 +8,8 @@ from SCRAM.Configuration.ConfigArea import ConfigArea
 
 parser = ArgumentParser()
 parser.add_argument('-rel')
+parser.add_argument('-arch')
+parser.add_argument('-scramroot')
 args = parser.parse_args()
 
 rel = args.rel
