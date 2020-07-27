@@ -1387,10 +1387,7 @@ endif
 
 .PHONY: projectrename ProjectRename PROJECTRENAME
 ProjectRename projectrename PROJECTRENAME:
-	@if [ -e ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename ] ; then \
-	  ./$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename $(SCRAM_INIT_LOCALTOP) $(curtop) $(SCRAM_ARCH); \
-	  $(CMD_echo) "Done: $@"; \
-	fi
+	@$(PROJECT_AREA_RENAME_SCRIPT) $(SCRAM_INIT_LOCALTOP) $(curtop) $(SCRAM_ARCH); $(CMD_echo) "Done: $@"
 ######################################################################
 #Common Rules
 .PHONY: all project project_all all_$(SCRAM_SOURCEDIR) ProjectPluginRefresh CompilePython PostBuild
@@ -1892,7 +1889,7 @@ check-biglib:
 	fi
 deps-tree::
 	@$(CMD_echo) "Finding all dependencies paths from package/tool '$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))' to package/tool '$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))'"
-	@$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-deps-tree.pl $(DEPS_TREE_PACKAGE) $(DEPS_TREE_DEPENDENCY) $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)
+	@$(FIND_DEPS_TREE_SCRIPT) $(DEPS_TREE_PACKAGE) $(DEPS_TREE_DEPENDENCY) $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)
 $(LLVM_CCDB_EXT): FORCE_TARGET
 	@$(CMD_cd) $(LOCALTOP) && $(MAKE) -f $(SCRAM_MAKEFILE) compile COMPILER=llvm SCRAM_GENERATE_LLVM_CCDB=YES &&\
 	[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\

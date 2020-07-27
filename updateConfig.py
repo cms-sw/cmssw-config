@@ -76,6 +76,16 @@ call("find %s -name \"*\" -type f | xargs sed -i.backup -e '%s'" % (pdir,regexp)
 call("rm -rf {0}/*.backup; mv {0}/* {1}/; rm -rf {1}/Projects".format(pdir, dir), shell=True)
 with open("%s/scram_version" % dir, "w") as fh:
     fh.write(args.scram)
+delFiles = []
+reName = []
+
+ext = "pl"
 if int(args.scram[1:].split("_")[0])>2:
-    for xf in ["Plugins/BuildRules.pm", "linkexternal.pl", "updateToolMK.pl", "find-deps-tree.pl"]:
-        call("rm -rf %s" % path.join(dir, "SCRAM", xf), shell=True)
+    ext = "py"
+    for xf in ["Plugins/BuildRules.pm"]:
+        call("rm -rf %s/SCRAM/%s" % (dir,xf))
+
+for xf in ["linkexternal", "updateToolMK", "find-deps-tree", "projectAreaRename", "findDependencies"]:
+    call("cd {0}/SCRAM; rm -f {1}; mv {1}.{2} {1}; rm -rf {1}.*" % (dir, xf, ext))
+
+

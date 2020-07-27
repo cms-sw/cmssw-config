@@ -1648,7 +1648,7 @@ sub initTemplate_PROJECT ()
   else{$stash->set('releasearea',1);$self->{cache}{ReleaseArea}=1;}
   if(!-d "${ltop}/external/$ENV{SCRAM_ARCH}")
   {
-    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
+    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal --arch $ENV{SCRAM_ARCH}");
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }  
   if ((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne ""))

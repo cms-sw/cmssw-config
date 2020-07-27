@@ -7,8 +7,10 @@ endif
 ifndef SCRAM_TOOLS_DIR
 SCRAM_TOOLS_DIR:=$(SCRAM_ADMIN_DIR)/$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),timestamps,tools)
 endif
-EXTERNAL_LINK_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal.$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),pl,py)
-TOOL_MAKE_SCRIPT:=$(SCRAM_CONFIGDIR)/SCRAM/updateToolMK.$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),pl,py)
+EXTERNAL_LINK_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/linkexternal
+TOOL_MAKE_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/updateToolMK
+FIND_DEPS_TREE_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/find-deps-tree
+PROJECT_AREA_RENAME_SCRIPT:=$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/projectAreaRename
 
 SCRAM_MAKEFILE := $(firstword $(MAKEFILE_LIST))
 ToolTimeStamps := $(wildcard $(SCRAM_TOOLS_DIR)/*)
