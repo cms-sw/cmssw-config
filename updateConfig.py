@@ -86,6 +86,6 @@ if int(args.scram[1:].split("_")[0])>2:
         call("rm -rf %s/SCRAM/%s" % (dir,xf))
 
 for xf in ["linkexternal", "updateToolMK", "find-deps-tree", "projectAreaRename", "findDependencies"]:
-    call("cd {0}/SCRAM; rm -f {1}; mv {1}.{2} {1}; rm -rf {1}.*" % (dir, xf, ext))
+    call("cd {0}/SCRAM; rm -f {1}; mv {1}.{2} {1}; rm -rf {1}.*".format(dir, xf, ext))
 
 
