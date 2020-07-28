@@ -3,7 +3,6 @@ import sys
 from os import environ
 from os.path import join, exists, isdir
 from subprocess import getstatusoutput
-environ["SCRAM_TOOL_HOME"]="/afs/cern.ch/user/m/muzaffar/public/git/SCRAMV3"
 sys.path.append(environ["SCRAM_TOOL_HOME"])
 
 from SCRAM.Core.Utils import readProducts

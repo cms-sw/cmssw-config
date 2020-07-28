@@ -12,7 +12,7 @@ from SCRAM.Configuration.ConfigArea import ConfigArea
 
 cache = {}
 
-SCRAM_CMD = join(environ["SCRAM_TOOL_HOME"], "cli", "scram.py")
+SCRAM_CMD = join(environ["SCRAM_TOOL_HOME"], "bin", "scram")
 ocache = {}
 linksDB = ""
 

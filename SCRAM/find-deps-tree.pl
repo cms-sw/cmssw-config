@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
+BEGIN{unshift @INC,"$ENV{SCRAM_TOOL_HOME}/src";}
 
 use Cache::CacheUtilities;
 

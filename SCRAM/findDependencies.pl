@@ -8,17 +8,11 @@ use Getopt::Long;
 Getopt::Long::config('bundling_override');
 
 my %options;
-GetOptions(\%options,'rel=s', 'arch=s','scramroot=s');
+GetOptions(\%options,'rel=s', 'arch=s');
 
 my $rel=$options{'rel'};
 my $scramarch=$options{'arch'} || $ENV{SCRAM_ARCH};
-my $scramroot=$options{'scramroot'} || $ENV{SCRAMV1_ROOT};
-
-if ($scramroot eq "")
-{
-  $scramroot=`sh -v scram arch 2>&1 |  grep 'SCRAMV1_ROOT=' | sed 's|;.*||;s|SCRAMV1_ROOT=||;s|"||g' | sed -e "s|'||g"`;
-  chomp $scramroot;
-}
+my $scramroot="$ENV{SCRAM_TOOL_HOME}/src";
 
 # Set the variable $File::Find::dont_use_nlink if you're using AFS,
 # since AFS cheats.
