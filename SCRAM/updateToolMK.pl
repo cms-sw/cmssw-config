@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-BEGIN{unshift @INC,"$ENV{SCRAM_TOOL_HOME}/src";}
+BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use File::Basename;
 use Cwd;
 use Cache::CacheUtilities;

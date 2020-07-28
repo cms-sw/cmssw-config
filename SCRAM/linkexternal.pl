@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
-BEGIN{unshift @INC,"$ENV{SCRAM_TOOL_HOME}/src";}
+BEGIN{unshift @INC,$ENV{SCRAM_TOOL_HOME};}
 use File::Basename;
 use Cwd;
 use Getopt::Long;
 use Cache::CacheUtilities;
 $|=1;
-my $SCRAM_CMD="$ENV{SCRAM_TOOL_HOME}/bin/scram";
+my $SCRAM_CMD="$ENV{SCRAM_TOOL_HOME}/../bin/scram";
 my %ocache=();
 my %cache=();
 $cache{validlinks}{LIBDIR}="lib";

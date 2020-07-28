@@ -12,7 +12,7 @@ GetOptions(\%options,'rel=s', 'arch=s');
 
 my $rel=$options{'rel'};
 my $scramarch=$options{'arch'} || $ENV{SCRAM_ARCH};
-my $scramroot="$ENV{SCRAM_TOOL_HOME}/src";
+my $scramroot=$ENV{SCRAM_TOOL_HOME};
 
 # Set the variable $File::Find::dont_use_nlink if you're using AFS,
 # since AFS cheats.
