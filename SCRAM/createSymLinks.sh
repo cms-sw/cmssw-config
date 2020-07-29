@@ -21,7 +21,6 @@ if [ $# -gt 5 ]; then
     shift
   done
 fi
-
 srcfilter="$(echo "$srcfilter" | sed 's/|$//')"
 srcnfilter="$(echo "$srcnfilter" | sed 's/|$//')"
 
