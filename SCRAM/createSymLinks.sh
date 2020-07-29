@@ -61,7 +61,7 @@ if [ -d "$des" ] ; then
  declare -A ok
  for d in $(find $des -name "*" -type l) ; do
   d1=$d
-  d1="$(echo "d1" | sed 's/\/[^\/]+$//')"
+  d1="$(echo "$d1" | sed 's/\/[^\/]+$//')"
   if [ ! -e  $d ]; then
     unlink $d
     rm[$d1]=1
