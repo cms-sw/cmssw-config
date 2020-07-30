@@ -1,3 +1,5 @@
+2020-07-30 Shahzad Muzaffar  <@smuzaffar>
+	V05-10-29: Drop createSymlink.pl in favor of createSymlink.sh
 2020-07-27 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-27: Added findDependency perl version back for SCRAM V2 based
 	releases.
