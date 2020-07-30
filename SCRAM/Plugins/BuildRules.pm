@@ -382,7 +382,7 @@ sub createSymLinks()
             "\t[ -d \$(\@D) ] ||  \$(CMD_mkdir) -p \$(\@D) &&\\\n";
   my @dirs=$self->getSymLinks();
   foreach my $cmd (@dirs)
-  {print $fh "\t",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.pl $cmd &&\\\n";}
+  {print $fh "\t",$self->{cache}{ProjectConfig},"/SCRAM/createSymLinks.sh $cmd &&\\\n";}
   print $fh "\tif [ ! -f \$@ ] ; then touch \$@; fi\n\n";
   return 1;
 }
