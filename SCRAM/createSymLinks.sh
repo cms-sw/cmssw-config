@@ -28,7 +28,8 @@ function getSubDir () {
   local dir=$1
   local sdir=$2
   if [ "X$sdir" = "X" ] ; then return; fi
-  if [ "X$sdir" = "X." ] ; then sdir=$"/`basename $dir`" ; else sdir="/${sdir}" ; fi
+  if [ "X$sdir" = "X." ] ; then sdir="/`basename $dir`" ; else sdir="/${sdir}" ; fi
+  echo "$sdir"
 }
 
 if [ -d "$src" ] ; then
