@@ -277,7 +277,6 @@ def main():
         else:
             cache["extradir"].append(i)
 
-    print(cache)
     #### Read previous link info
     cache["externals"] = "external/%s" % args.arch
     externals = cache["externals"]
