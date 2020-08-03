@@ -1,3 +1,6 @@
+2020-08-03 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-00: Update config to work with both SCRAM V2 and V3
+	V06-00-01: Sync changes from master
 2020-07-30 Shahzad Muzaffar  <@smuzaffar>
 	V05-10-29: Drop createSymlink.pl in favor of createSymlink.sh
 2020-07-27 Shahzad Muzaffar  <@smuzaffar>
