@@ -22,8 +22,8 @@ endef
 define ExtraPCMsRules
 .PHONY: cxxmodules
 ifneq ($(strip $(ALL_MODULEMAPS)),)
-ifneq ($(strip $(CMSSW_CLING_MODULEMAP_PATH)),)
-export CLING_MODULEMAP_PATH:=$(LOCALTOP)/$(CXXMODULES_DIR):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_PATH),$(subst $(colon),$(space),$(CLING_MODULEMAP_PATH))))
+ifneq ($(strip $(CMSSW_CLING_MODULEMAP_FILE)),)
+export CLING_MODULEMAP_FILES:=$(LOCALTOP)/$(CXXMODULES_DIR)/$(MODULEMAP_FILE):$(subst $(space),$(colon),$(filter-out $(CMSSW_CLING_MODULEMAP_FILE),$(subst $(colon),$(space),$(CLING_MODULEMAP_FILES))))
 endif
 $(CXXMODULES_DIR)/$(MODULEMAP_FILE): $(ALL_MODULEMAPS)
 	@if [ -e $(MODULEMAP_BASE_DIR)/$(CXXMODULES_DIR) ] ; then \
