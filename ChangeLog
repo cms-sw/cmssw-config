@@ -1,3 +1,5 @@
+2020-08-04 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-02: Use CLING_MODULEMAP_FILES instead of CLING_MODULEMAP_PATH
 2020-08-03 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-00: Update config to work with both SCRAM V2 and V3
 	V06-00-01: Sync changes from master
