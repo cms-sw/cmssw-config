@@ -76,7 +76,7 @@ def mkprocessfile (infile, outfile, data):
             if reReg1.match(line):
                 oref.write(line + "\n")
             elif line.startswith("ALL_PRODS "):
-                oref.write(line.repalce("ALL_PRODS ", "ALL_EXTERNAL_PLUGIN_PRODS ") + "\n")
+                oref.write(line.replace("ALL_PRODS ", "ALL_EXTERNAL_PLUGIN_PRODS ") + "\n")
             continue
         skip = False
         for reSkip in data["skiplines"]:
