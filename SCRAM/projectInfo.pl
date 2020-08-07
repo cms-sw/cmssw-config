@@ -166,7 +166,10 @@ sub process_USES ()
   my $str = "${pack}_USES = ";
   if (exists $data->{DEPS}{$pack}{USES})
   {
-    foreach my $d (keys %{$data->{DEPS}{$pack}{USES}}){push @packs,$data->{DEPS}{$d}{TYPE}."/${d}";}
+    foreach my $d (keys %{$data->{DEPS}{$pack}{USES}}){
+      my $type = $data->{DEPS}{$d}{TYPE} || "tool";
+      push @packs, "$type/${d}";
+    }
     $str.=join(" ",sort  @packs);
   }
   print "$str\n";

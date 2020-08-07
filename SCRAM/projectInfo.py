@@ -6,13 +6,12 @@ from subprocess import  check_output
 help_text = "%s <localtop> <USES|USED_BY|ORIGIN> <tool|package> [<arch>]" % sys.argv[0]
 parser = ArgumentParser(usage=help_text)
 parser.add_argument('localtop')
-parser.add_argument('cmd')
+parser.add_argument('cmd', choices=["USES", "USED_BY", "ORIGIN"])
 parser.add_argument('pack')
 parser.add_argument('arch', default = os.environ.get("SCRAM_ARCH"))
 args = parser.parse_args()
 localtop = args.localtop
 cmd = args.cmd.upper()
-if not re.search(r'^(USES|USED_BY|ORIGIN)$', cmd): parser.print_usage() & sys.exit(1)
 pack = args.pack
 arch = args.arch
 os.environ["SCRAM_ARCH"] = arch
@@ -62,7 +61,7 @@ def process_ORIGIN(data, prod):
   if "ORIGIN" in data["PROD"][prod]:
     for dir in data["PROD"][prod]["ORIGIN"]:
       tool = data["PROD"][prod]["ORIGIN"][dir]
-    str += os.path.join(tool, dir)
+      str += os.path.join(tool, "%s " % dir)
   print(str)
 
 
@@ -81,6 +80,8 @@ def process_USES(data, pack):
   str = "%s_USES = " % pack
   if "USES" in data["DEPS"][pack]:
     for d in data["DEPS"][pack]["USES"]:
+      if "TYPE" not in data["DEPS"][d]:
+        data["DEPS"][d]["TYPE"] = "tool"
       packs.append(os.path.join(data["DEPS"][d]["TYPE"],d))
     str += " ".join(sorted(packs))
   print(str)
@@ -98,18 +99,12 @@ def updateSCRAMTool(tool, base, data):
         if re.search(r'^(LIBRARY|CLASSLIB|SEAL_PLATFORM)$', _class):
           dir = dc["PARENT"]
           prod = dc["NAME"]
-        if dir not in data["DATA"]: data["DATA"][dir] = {}
-        if "USES" not in data["DATA"][dir]: data["DATA"][dir]["USES"] = {}
-        data["DATA"][dir]["USES"] = {}
-        data["DATA"][dir]["TYPE"] = tool
+        if dir not in data["DATA"]: data["DATA"][dir] = {"USES":{}, "TYPE": tool}
         dc = dc["RAWDATA"]["DEPENDENCIES"]
         for d in dc:
           data["DATA"][dir]["USES"][FixToolName(d)] = 1
         if prod: 
-          if prod not in data["PROD"]: data["PROD"][prod] = {}
-          if "ORIGIN" not in data["PROD"][prod]: data["PROD"][prod]["ORIGIN"] = {}
-          if dir not in data["PROD"][prod]["ORIGIN"]: data["PROD"][prod]["ORIGIN"][dir] = {} 
-          data["PROD"][prod]["ORIGIN"][dir] = tool
+          if prod not in data["PROD"]: data["PROD"][prod] = {"ORIGIN":{dir:{tool}}}
         else:
           dc = c["BUILDTREE"][dir]["RAWDATA"]
           if "BUILDPRODUCTS" in dc["content"]:
@@ -117,10 +112,7 @@ def updateSCRAMTool(tool, base, data):
             for type in ("LIBRARY", "BIN"):
               if type in dc:
                 for prod in dc[type]:
-                  if prod not in data["PROD"]: data["PROD"][prod] = {}
-                  if "ORIGIN" not in data["PROD"][prod]: data["PROD"][prod]["ORIGIN"] = {}
-                  if dir not in data["PROD"][prod]["ORIGIN"]: data["PROD"][prod]["ORIGIN"][dir] = {} 
-                  data["PROD"][prod]["ORIGIN"][dir] = tool
+                  if prod not in data["PROD"]: data["PROD"][prod] = {"ORIGIN":{dir:{tool}}}
 
 
 def updateDeps(data, pack=None):
@@ -128,17 +120,12 @@ def updateDeps(data, pack=None):
     for d in data["DATA"]: updateDeps(data, d)
     return 0
   if pack in data["DEPS"]: return 0
-  if pack not in data["DEPS"]: data["DEPS"][pack] = {}
-  if "USES" not in data["DEPS"][pack]: data["DEPS"][pack]["USES"] = {}
-  data["DEPS"][pack]["USES"] = {}
-  data["DEPS"][pack]["USED_BY"] = {}
-  data["DEPS"][pack]["TYPE"] = data["DATA"][pack]["TYPE"]
+  if pack not in data["DEPS"]: data["DEPS"][pack] = { "USES": {}, "USED_BY": {}, "TYPE": data["DATA"][pack]["TYPE"] }
   for u in data["DATA"][pack]["USES"]:
     if u in data["DATA"]: updateDeps(data, u)
     data["DEPS"][pack]["USES"][u] = 1
     if u not in data["DEPS"]: data["DEPS"][u] = {}
-    if "USED_BY" not in data["DEPS"][u]: data["DEPS"][u]["USED_BY"] = {}
-    data["DEPS"][u]["USED_BY"][pack] = 1
+    if "USED_BY" not in data["DEPS"][u]: data["DEPS"][u]["USED_BY"] = {pack : 1}
     if "USES" not in data["DEPS"][u]: data["DEPS"][u]["USES"] = {}
     for d in data["DEPS"][u]["USES"]:
       data["DEPS"][pack]["USES"][d] = 1
@@ -149,25 +136,19 @@ def updateExternals():
   tfile = os.path.join(localtop, ".SCRAM", arch, "ToolCache.%s" % cacheext)
   global tools
   tools = data2json(tfile)
-  if tfile not in data["FILES"]: data["FILES"][tfile] = {}
-  data["FILES"][tfile] = 1
+  if tfile not in data["FILES"]: data["FILES"][tfile] = 1
   for t in tools["SETUP"]:
     file = os.path.join(localtop, ".SCRAM", arch, "timestamps", t)
     if not os.path.exists(file): print("No such file: %s" % file) & sys.exit(1)
-    if file not in data["FILES"]: data["FILES"][file] = 1
-    if t not in data["DATA"]: data["DATA"][t] = {}
-    if "USES" not in data["DATA"][t]: data["DATA"][t]["USES"] = {}
-    if "TYPE" not in data["DATA"][t]: data["DATA"][t]["TYPE"] = "tool"
+    data["FILES"][file] = 1
+    if t not in data["DATA"]: data["DATA"][t] = {"USES":{}, "TYPE": "tool"}
     tc = tools["SETUP"][t]
     if "USE" in tc:
       for d in tc["USE"]:
         data["DATA"][t]["USES"][FixToolName(d)] = 1
     if "LIB" in tc:
       for l in tc["LIB"]:
-        if l not in data["PROD"]: data["PROD"][l] = {}
-        if "ORIGIN" not in data["PROD"][l]: data["PROD"][l]["ORIGIN"] = {}
-        if t not in data["PROD"][l]["ORIGIN"]: data["PROD"][l]["ORIGIN"][t] = {}
-        data["PROD"][l]["ORIGIN"][t] = "tool"
+        if l not in data["PROD"]: data["PROD"][l] = {"ORIGIN": {}, t: "tool"}
   order_path = os.path.join(localtop, ".SCRAM", arch, "MakeData", "Tools", "SCRAMBased", "order")
   if os.path.exists(order_path):
     for t in check_output('sort -r %s' % order_path, shell=True).decode().rstrip().splitlines():
