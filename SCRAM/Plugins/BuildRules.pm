@@ -1111,7 +1111,7 @@ sub searchForSpecialFiles ()
   my $top=$ENV{LOCALTOP};
   my @files=split /\s+/,$core->productfiles();
   my $flag=0;
-  my $pack=$self->get("parent");
+  my $class = $self->get("class");
   if(scalar(@files)>0)
   {
     my $firstfile=$files[0];
@@ -1148,11 +1148,15 @@ sub searchForSpecialFiles ()
 	elsif($self->isAutoGenerateClassesH()){$xmldef{$xf}="\$(WORKINGDIR)/classes/$xf.h";}
 	else{$xmldef{$xf}="";}
       }
-      if (($xmldef{$xf} eq "") && (exists $self->{cache}{LCGDICT_PACKAGE}{$pack}))
+      if ($xmldef{$xf} eq "")
       {
-        $xf="\$(WORKINGDIR)/classes/classes_def.xml";
-        push @ox,$xf;
-        $xmldef{$xf}="\$(WORKINGDIR)/classes/classes.h";
+        my $pack=$self->get("parent");
+        if (($class eq "LIBRARY") && (exists $self->{cache}{LCGDICT_PACKAGE}{$pack}))
+        {
+          $xf="\$(WORKINGDIR)/classes/classes_def.xml";
+          push @ox,$xf;
+          $xmldef{$xf}="\$(WORKINGDIR)/classes/classes.h";
+        }
       }
     }
   }
@@ -1205,8 +1209,8 @@ sub searchForSpecialFiles ()
   $stash->set('classes_h', $lcgheader);
   $stash->set('genreflex_args', $genreflex_args);
   $stash->set('rootdictfile', $rootdict);
-  if (($self->get("class") eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
-  if (($self->get("class") eq "LIBRARY") && (-f "${path}/precompile.h")){$stash->set('precompile_header', "precompile.h");}
+  if (($class eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
+  if (($class eq "LIBRARY") && (-f "${path}/precompile.h")){$stash->set('precompile_header', "precompile.h");}
   return;
 }
 
