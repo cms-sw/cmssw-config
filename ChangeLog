@@ -1,3 +1,9 @@
+2020-08-27 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-05: Added biglib in to CLING_PREBUILT_MODULE_PATH.
+2020-08-24 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-04: only allow package/src to auto generate lcgdict.
+2020-08-05 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-03: Typo
 2020-08-04 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-02: Use CLING_MODULEMAP_FILES instead of CLING_MODULEMAP_PATH
 2020-08-03 Shahzad Muzaffar  <@smuzaffar>
