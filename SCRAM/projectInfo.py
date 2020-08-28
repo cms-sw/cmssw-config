@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-import os, sys, re, gzip, json
+import os, sys, re, gzip
 from os import environ
 from argparse import ArgumentParser
 from subprocess import  check_output
+
 sys.path.append(environ["SCRAM_TOOL_HOME"])
 from SCRAM.Core.Utils import readProducts
 from SCRAM.BuildSystem.ToolManager import ToolManager
 from SCRAM.Configuration.ConfigArea import ConfigArea
-from pprint import pprint
 
 
 help_text = "%s <localtop> <USES|USED_BY|ORIGIN> <tool|package> [<arch>]" % sys.argv[0]
