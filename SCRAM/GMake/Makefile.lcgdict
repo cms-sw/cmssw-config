@@ -82,7 +82,7 @@ $$(if $(2),$$(eval $$(call LCGDictRule,$(1),$(LCGDICT_FILE_PREFIX)$(firstword $(
 endef
 
 define LCG_ExtraRules
-$(WORKINGDIR)/rootpcms/$(1): $(foreach l, $($(1)_EX_USE) $($(1)_EX_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootpcms/$($l))
+$(WORKINGDIR)/rootpcms/$(1): $(foreach l,$($(1)_EX_USE) $($(1)_EX_FLAGS_USE_SOURCE_ONLY),$(if $(strip $($l)),$(WORKINGDIR)/rootpcms/$($l)))
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 endef
 
@@ -102,7 +102,7 @@ $(1)_ROOTPCMS += $(7)/$$($(1)_pcm_name)
 all_$(1)  += $(7)/$$($(1)_pcm_name)
 ALL_PCMS  += $(7)/$$($(1)_pcm_name)
 $$(eval $$(call AddBigObjLCGDICTRule,$1,$(6)/$(2),$(7),$$($(1)_pcm_name)))
-$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(WORKINGDIR)/rootpcms/$($l))
+$($(1)_objdir)/$(6)/$(2)r.cc: $(4) $$($(2)r_header) $($(1)_config) $(foreach l,$($(1)_LOC_USE) $($(1)_LOC_FLAGS_USE_SOURCE_ONLY),$(if $(strip $($l)),$(WORKINGDIR)/rootpcms/$($l)))
 	@$$(call generate_lcgdict_cxxmodule$($(1)_CXXMODULES),$(1),$(1),$(4),$$($(2)r_header),$(5),$7)
 	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$$($(1)_pcm_name) $(WORKINGDIR)/rootpcms/$(1)" > $$(call AutoCleanFile,$$@,lcgdict)
 $($(1)_objdir)/$(6)/$(2)r.cc.$(OBJEXT): $($(1)_objdir)/$(6)/$(2)r.cc
