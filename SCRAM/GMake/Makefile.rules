@@ -1701,7 +1701,7 @@ $(foreach r,$(strip $(sort $(EXTRA_TOP_LEVEL_BUILD_RULES))),$(eval $(call $r)))
 LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
-$(SCRAM_SOURCEDIR): prebuild $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR))
+$(SCRAM_SOURCEDIR): $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR)) | prebuild
 	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 prebuild: $(prebuild)
