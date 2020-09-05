@@ -1,5 +1,6 @@
 2020-09-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-06: Fix target rebuild issues
+	V06-00-07: Fix prebuodl rule ordering
 2020-08-27 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-05: Added biglib in to CLING_PREBUILT_MODULE_PATH.
 2020-08-24 Shahzad Muzaffar  <@smuzaffar>
