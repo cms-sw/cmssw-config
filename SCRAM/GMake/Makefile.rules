@@ -1019,20 +1019,21 @@ $(1)_install_scripts_rule: $(logfile_$(1))
 all_$(1) += $(1)_install_scripts_rule
 endif
 endif
-$(1)_CONFIGDEPS := $(CONFIGDEPS) $(WORKINGDIR)/$(2)/productautocleanup $$(sort $$(foreach u,$$(sort $$($(1)_LOC_USE) $($(1)_EX_USE)),$$($$($$(u))_XDEPS) $$(if $$($$($$(u))_BuildFile),$$($$($$(u))_BuildFile),$$(filter $(SCRAM_TOOLS_DIR)/$$(u),$(ToolTimeStamps)))))
+$(1)_CONFIGDEPS := $(CONFIGDEPS) $$(sort $$(foreach u,$$(sort $$($(1)_LOC_USE) $($(1)_EX_USE)),$$($$($$(u))_XDEPS) $$(if $$($$($$(u))_BuildFile),$$($$($$(u))_BuildFile),$$(filter $(SCRAM_TOOLS_DIR)/$$(u),$(ToolTimeStamps)))))
 ifneq ($$(strip $($(1)_BuildFile)),)
 ifeq ($(filter $($(1)_BuildFile),$(ALL_BUILDFILES)),)
 ALL_BUILDFILES += $($(1)_BuildFile)
-$($(1)_BuildFile): $$($(1)_CONFIGDEPS)
+$($(1)_BuildFile): $$($(1)_CONFIGDEPS) | $(WORKINGDIR)/$(2)/productautocleanup
 	@$(CMD_touch) $($(1)_BuildFile)
 endif
 $$($(1)_objdir)/config: $($(1)_BuildFile)
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 else
-$$($(1)_objdir)/config: $$($(1)_CONFIGDEPS)
+$$($(1)_objdir)/config: $$($(1)_CONFIGDEPS) | $(WORKINGDIR)/$(2)/productautocleanup
 	@$$(call BuildClean,$(2)/$(1),0[0-9],1); $(CMD_mkdir) -p $$(@D) ; $(CMD_touch) $$@
 endif
-$(1)_config += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $$($(1)_objdir)/config $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
+$(1)_config_msg += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
+$(1)_config += $$($(1)_objdir)/config
 ifneq ($(strip $($(1)_DNN_NAME)),)
 $$(eval $$(call AddDNNRules,$1,$2))
 endif
@@ -1102,7 +1103,7 @@ $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
 	@$$(startlog_$(1))[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@ $(if $(HOOK_PRODUCT), && $(HOOK_PRODUCT) -s -p $1) $$(endlog_$(1))
 precompile_$(6): $($(1)_objdir)/precompile $($(1)_extra_files)
 compile_$(6): $($(1)_objdir)/compile
-$($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1))
+$($(1)_objdir)/precompile: $($(1)_config) $($(1)_precompile) $(logfile_$(1)) | $($(1)_config_msg)
 	@$(CMD_touch) $$@
 ifeq ($(strip $(4)),lib)
 	@$(startlog_$(1))$(CMD_echo) "Entering library rule at $(patsubst $(SCRAM_SOURCEDIR)/%/src,%,$(2))" $(endlog_$(1))
@@ -1351,7 +1352,7 @@ endif
 ToolUpdated_%: ToolUpdated
 ExternalLinks ToolUpdated:
 	@$(EXTERNAL_LINK_SCRIPT) --arch $(SCRAM_ARCH)
-$(WORKINGDIR)/cache/xlibs: $(WORKINGDIR)/cache/xlibs.backup
+$(WORKINGDIR)/cache/xlibs: | $(WORKINGDIR)/cache/xlibs.backup
 	@$(CMD_touch) -t $(OLD_TIMESTAMP) $@
 $(WORKINGDIR)/cache/xlibs.backup: $(LOCALTOP)/external/$(SCRAM_ARCH)/links.DB 
 	@$(CMD_touch) $@
@@ -1778,7 +1779,7 @@ echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
 $(SCRAMSTORENAME_PYTHON)/__init__.py:
 	@$(CMD_touch) $@
-$(COMMON_WORKINGDIR)/cache/python_symlinks: $(COMMON_WORKINGDIR)/cache/project_links $(addsuffix __init__.py,$(addprefix python/,$(dir $(ALL_PYTHON_DIRS))))
+$(COMMON_WORKINGDIR)/cache/python_symlinks: $(addsuffix __init__.py,$(addprefix python/,$(dir $(ALL_PYTHON_DIRS)))) | $(COMMON_WORKINGDIR)/cache/project_links
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
