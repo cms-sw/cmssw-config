@@ -1389,6 +1389,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.binary_rules(autoPlugin)
 
     def library_template(self):
+        self.initTemplate_LIBRARY()
+        safename = self.get("safename")
+        self.core.contents["NAME"] = safename
         ex = self.core.get_data("EXPORT", True)
         parent = self.get("parent")
         if ex:
@@ -1399,7 +1402,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 self.set("safename", libs[0])
         elif self.getLocalBuildFile() and (not self.core.get_data("USE")) and (parent not in self.cache["LCGDICT_PACKAGE"]):
             return
-        self.initTemplate_LIBRARY()
         types = self.core.get_build_products()
         if types:
             for type in types:
