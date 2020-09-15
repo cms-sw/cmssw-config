@@ -2018,7 +2018,7 @@ sub library_template ()
       if ($libs->[0] ne "1"){$self->set("safename",$libs->[0]);}
     }
   }
-  elsif (($self->getLocalBuildFile() ne "") && (! defined $core->data("USE")) && (! exists $self->{cache}{LCGDICT_PACKAGE}{$parent}))
+  elsif (($self->getLocalBuildFile() ne "") && ($core->flags("USE_SOURCE_ONLY") eq "") && (! defined $core->data("USE")) && (! exists $self->{cache}{LCGDICT_PACKAGE}{$parent}))
   {
     return 1;
   }

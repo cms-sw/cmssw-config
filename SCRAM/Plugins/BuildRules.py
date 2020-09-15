@@ -1400,7 +1400,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 libs = ex["LIB"]
             if (len(libs) == 1) and (libs[0] != "1"):
                 self.set("safename", libs[0])
-        elif self.getLocalBuildFile() and (not self.core.get_data("USE")) and (parent not in self.cache["LCGDICT_PACKAGE"]):
+        elif self.getLocalBuildFile() and (not self.core.get_data("USE")) and (not self.core.get_flag_value("USE_SOURCE_ONLY")) and (parent not in self.cache["LCGDICT_PACKAGE"]):
             return
         types = self.core.get_build_products()
         if types:
