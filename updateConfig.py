@@ -64,12 +64,3 @@ with open("%s/scram_version" % dir, "w") as fh:
     fh.write(args.scram)
 delFiles = []
 reName = []
-
-ext = "pl"
-if int(args.scram[1:].split("_")[0]) > 2:
-    ext = "py"
-    for xf in ["Plugins/BuildRules.pm"]:
-        call("rm -rf %s/SCRAM/%s" % (dir, xf),  shell=True)
-
-for xf in ["linkexternal", "updateToolMK", "find-deps-tree", "projectAreaRename", "findDependencies", "projectInfo"]:
-    call("cd {0}/SCRAM; rm -f {1}; mv {1}.{2} {1}; rm -rf {1}.*".format(dir, xf, ext), shell=True)

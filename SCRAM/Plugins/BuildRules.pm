@@ -682,6 +682,7 @@ sub addAllVariables ()
   push @keys, "SRC_FILES_SUFFIXES        := \$(CXXSRC_FILES_SUFFIXES) \$(CSRC_FILES_SUFFIXES) \$(FORTRANSRC_FILES_SUFFIXES) \$(CUDASRC_FILES_SUFFIXES)";
   push @keys, "SCRAM_ADMIN_DIR           := .SCRAM/\$(SCRAM_ARCH)";
   push @keys, "SCRAM_TOOLS_DIR           := \$(SCRAM_ADMIN_DIR)/timestamps";
+  push @keys, "SCRAM_SCRIPT_EXT          := .pl";
   $self->dumpCompilersFlags(\@keys);
   my $f77deps=$self->getCompiler("F77");
   $self->{cache}{InvalidUses}={};
@@ -1652,7 +1653,7 @@ sub initTemplate_PROJECT ()
   else{$stash->set('releasearea',1);$self->{cache}{ReleaseArea}=1;}
   if(!-d "${ltop}/external/$ENV{SCRAM_ARCH}")
   {
-    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal --arch $ENV{SCRAM_ARCH}");
+    system("${ltop}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl --arch $ENV{SCRAM_ARCH}");
     system("mkdir -p ${ltop}/external/$ENV{SCRAM_ARCH}");
   }  
   if ((exists $ENV{RELEASETOP}) && ($ENV{RELEASETOP} ne ""))
