@@ -1,3 +1,5 @@
+2020-09-15 Shahzad Muzaffar  <@smuzaffar>
+	V06-00-08: Implementation of projectInfo for SCRAMV3
 2020-09-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-06: Fix target rebuild issues
 	V06-00-07: Fix prebuodl rule ordering
