@@ -2,6 +2,7 @@
 	V06-00-08: Implementation of projectInfo for SCRAMV3
 	V06-01-00: Do nit delete perl/python scripts. Use the correct version
 	based on scram version
+	V06-01-01: Generate PCM for header only packages too
 2020-09-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-06: Fix target rebuild issues
 	V06-00-07: Fix prebuodl rule ordering

@@ -1390,13 +1390,14 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
     def library_template(self):
         ex = self.core.get_data("EXPORT", True)
+        parent = self.get("parent")
         if ex:
             libs = []
             if "LIB" in ex:
                 libs = ex["LIB"]
             if (len(libs) == 1) and (libs[0] != "1"):
                 self.set("safename", libs[0])
-        elif self.getLocalBuildFile() and (not self.core.get_data("USE")):
+        elif self.getLocalBuildFile() and (not self.core.get_data("USE")) and (parent not in self.cache["LCGDICT_PACKAGE"]):
             return
         self.initTemplate_LIBRARY()
         types = self.core.get_build_products()
@@ -1407,7 +1408,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         path = self.get("path")
         safepath = self.get("safepath")
         safename = self.get("safename")
-        parent = self.get("parent")
         self.core.contents["NAME"] = safename
         fh = self.data["FH"]
         self.data["data"].branch["name"] = safename

@@ -2009,6 +2009,7 @@ sub library_template ()
   if($self->get("suffix") ne ""){return 1;}
   my $core=$self->core();
   my $ex=$core->data("EXPORT");
+  my $parent=$self->get("parent");
   if ($ex ne "")
   {
     my $libs= $core->value("LIB",$ex);
@@ -2017,7 +2018,7 @@ sub library_template ()
       if ($libs->[0] ne "1"){$self->set("safename",$libs->[0]);}
     }
   }
-  elsif (($self->getLocalBuildFile() ne "") && (! defined $core->data("USE")))
+  elsif (($self->getLocalBuildFile() ne "") && (! defined $core->data("USE")) && (! exists $self->{cache}{LCGDICT_PACKAGE}{$parent}))
   {
     return 1;
   }
@@ -2032,7 +2033,7 @@ sub library_template ()
     }
   }
   my $path=$self->get("path"); my $safepath=$self->get("safepath");my $safename=$self->get("safename");
-  my $parent=$self->get("parent");my $class=$self->get("class");
+  my $class=$self->get("class");
   my $fh=$self->{FH};
   $core->branchdata()->name($safename);
   print $fh "ifeq (\$(strip \$($parent)),)\n",
