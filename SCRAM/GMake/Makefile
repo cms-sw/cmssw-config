@@ -5,7 +5,7 @@ ifndef SCRAM_ADMIN_DIR
 SCRAM_ADMIN_DIR:= .SCRAM/$(SCRAM_ARCH)
 endif
 ifndef SCRAM_SCRIPT_EXT
-SCRAM_SCRIPT_EXT:=$(SCRAM_ADMIN_DIR)/$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),.pl,.py)
+SCRAM_SCRIPT_EXT:=$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),.pl,.py)
 endif
 ifndef SCRAM_TOOLS_DIR
 SCRAM_TOOLS_DIR:=$(SCRAM_ADMIN_DIR)/$(if $(strip $(filter V2_%,$(SCRAM_VERSION))),timestamps,tools)
