@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-import os, sys, re, gzip
-from os import environ
+#!/usr/bin/env python3
+import os, sys, re, json
+from os import environ, stat
 from argparse import ArgumentParser
 from subprocess import  check_output
 
@@ -27,15 +27,6 @@ tools = {}
 data = dict(DATA = {}, FILES = {}, PROD = {}, DEPS = {})
 
 
-def scramVersion(dir):
-  ver = ""
-  path = os.path.join(dir, "config", "scram_version")
-  if os.path.exists(path):
-    with open(path) as file:
-      ver = file.readline()
-  return ver
-
-
 def FixToolName(t):
   lct = t.lower()
   if lct in tools: 
@@ -56,9 +47,9 @@ def process_ORIGIN(data, prod):
 def process_USED_BY(data, pack):
   packs = []
   str = "%s_USED_BY = " % pack
-  if "USED_BY" in data[pack]:
-    for d in data[pack]["USED_BY"]:
-      packs.append(os.path.join(data[d]["TYPE"],d))
+  if "USED_BY" in data["DEPS"][pack]:
+    for d in data["DEPS"][pack]["USED_BY"]:
+      packs.append(os.path.join(data["DEPS"][d]["TYPE"],d))
     str += " ".join(sorted(packs))
   print(str)
 
@@ -66,11 +57,11 @@ def process_USED_BY(data, pack):
 def process_USES(data, pack):
   packs = []
   str = "%s_USES = " % pack
-  if "USES" in data[pack]:
-    for d in data[pack]["USES"]:
-      if "TYPE" not in data[d]:
-        data[d]["TYPE"] = "tool"
-      packs.append(os.path.join(data[d]["TYPE"],d))
+  if "USES" in data["DEPS"][pack]:
+    for d in data["DEPS"][pack]["USES"]:
+      if "TYPE" not in data["DEPS"][d]:
+        data["DEPS"][d]["TYPE"] = "tool"
+      packs.append(os.path.join(data["DEPS"][d]["TYPE"],d))
     str += " ".join(sorted(packs))
   print(str)
 
@@ -82,7 +73,7 @@ def updateSCRAMTool(tool, base, data):
   for dir in c:
     dc = c[dir]
     _class = dc["CLASS"]
-    prod = None
+    prod = ''
     if _class in ["LIBRARY"]:
       prod = dc["NAME"]
     if dir not in data["DATA"]: data["DATA"][dir] = {"USES":{}, "TYPE": tool}
@@ -106,17 +97,17 @@ def updateDeps(data, pack=None):
   if not pack:
     for d in data["DATA"]: updateDeps(data, d)
     return 0
-  if pack in data: return 0
-  if pack not in data: data[pack] = { "USES": {}, "USED_BY": {}, "TYPE": data["DATA"][pack]["TYPE"] }
+  if pack in data["DEPS"]: return
+  data["DEPS"][pack] = { "USES": {}, "USED_BY": {}, "TYPE": "tool" }
+  if pack not in data["DATA"]: return
+  data["DEPS"][pack]["TYPE"] = data["DATA"][pack]["TYPE"]
   for u in data["DATA"][pack]["USES"]:
-    if u in data["DATA"]: updateDeps(data, u)
-    data[pack]["USES"][u] = 1
-    if u not in data: data[u] = {}
-    if "USED_BY" not in data[u]: data[u]["USED_BY"] = {pack : 1}
-    if "USES" not in data[u]: data[u]["USES"] = {}
-    for d in data[u]["USES"]:
-      data[pack]["USES"][d] = 1
-      data[d]["USED_BY"][pack] = 1
+    updateDeps(data, u)
+    data["DEPS"][pack]["USES"][u] = 1
+    data["DEPS"][u]["USED_BY"][pack] = 1
+    for d in data["DEPS"][u]["USES"]:
+      data["DEPS"][pack]["USES"][d] = 1
+      data["DEPS"][d]["USED_BY"][pack] = 1
 
 
 def updateExternals():
@@ -124,10 +115,9 @@ def updateExternals():
   area.location(localtop)
   toolmgr = ToolManager(area)
   tools = toolmgr.loadtools()
+  pc = os.path.join(localtop, ".SCRAM", arch, "MakeData/Tools.mk")
+  if os.path.exists(pc): data["FILES"][pc] = 1
   for t in sorted(tools.keys()):
-    file = os.path.join(localtop, ".SCRAM", arch, "tools", t)
-    if not os.path.exists(file): print("No such file: %s" % file) & sys.exit(1)
-    data["FILES"][file] = 1
     if t not in data["DATA"]: data["DATA"][t] = {"USES":{}, "TYPE": "tool"}
     tc = tools[t]
     if "USE" in tc:
@@ -147,6 +137,8 @@ def updateExternals():
         base = "%s_BASE" % t.upper()
         base = tools[t][base]
       updateSCRAMTool(t, base, data)
+  pc = os.path.join(localtop, ".SCRAM", arch, "DirCache.json")
+  if os.path.exists(pc): data["FILES"][pc] = 1
   updateSCRAMTool("self", localtop, data)
   updateDeps(data)
   del data["DATA"]
@@ -157,8 +149,19 @@ def updateExternals():
 envfile = os.path.join(localtop, ".SCRAM", arch, "Environment")
 if not os.path.exists(envfile): envfile = os.path.join(localtop, ".SCRAM", "Environment")
 reltop = check_output("grep RELEASETOP= %s | sed 's|RELEASETOP=||'" % envfile, shell=True).decode().rstrip()
-cacheext="db"
-if re.search(r'^V[2-9]' ,scramVersion(localtop)): cacheext="db.gz"
-cache = updateExternals()
+cfile = os.path.join(localtop, ".SCRAM", arch, "ToolsDepsCache.json")
+if os.path.exists(cfile):
+  cache = json.load(open(cfile))
+  st = stat (cfile)
+  for f in cache["FILES"]:
+    if os.path.exists(f) and (st.st_mtime > stat(f).st_mtime):
+      continue
+    cache={}
+    break
+if not cache:
+  cache = updateExternals()
+  if reltop:
+    with open(cfile,"w") as j:
+      json.dump(data, j)
 func = globals()["process_" + cmd]
 for pk in pack.split(":"): func(cache, pk)

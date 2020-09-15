@@ -1763,17 +1763,17 @@ ufast xfast fast:
 %_USED_BY:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) USED_BY $(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo $(LOCALTOP) USED_BY $(patsubst %_USED_BY,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
 %_USES:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) USES $(patsubst %_USES,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo $(LOCALTOP) USES $(patsubst %_USES,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
 %_ORIGIN:
 	@var=$(call GetEchoVariable,$@);\
 	if [ "X$$var" != "X" ] ; then \
-	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo.pl $(LOCALTOP) ORIGIN $(patsubst %_ORIGIN,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
+	  $(SCRAM_CONFIGDIR)/SCRAM/projectInfo $(LOCALTOP) ORIGIN $(patsubst %_ORIGIN,%,$(call GetEchoVariable,$@)) $(SCRAM_ARCH);\
 	fi
 echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
