@@ -3,6 +3,7 @@
 	V06-01-00: Do nit delete perl/python scripts. Use the correct version
 	based on scram version
 	V06-01-01: Generate PCM for header only packages too
+	V06-01-02: Always set default library name
 2020-09-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-00-06: Fix target rebuild issues
 	V06-00-07: Fix prebuodl rule ordering
