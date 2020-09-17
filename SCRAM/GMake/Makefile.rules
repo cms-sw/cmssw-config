@@ -85,7 +85,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv perl python rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv perl python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -654,8 +654,8 @@ define processTmpMMDData
 endef
 define compile_python
   $(CMD_echo) ">> Compiling python modules $1" &&\
-  $(VERB_ECHO) "$(CMD_python) -m compileall -q $1" &&\
-  $(CMD_python) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
+  $(VERB_ECHO) "$(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)) -m compileall -q $1" &&\
+  $(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
 endef
 
 define run_postprocess
@@ -1212,6 +1212,7 @@ endef
 #safename,path,safepath
 define PythonProduct
 $(3) += all_$(1)
+$(2)_PRODDUCT_NAME:=$(1)
 .PHONY: $(1) all_$(1)
 ifeq ($(strip $(PYTHON_PACKAGE_SYMLINK)),YES)
 .PHONY: $(WORKINGDIR)/$2/init_links
@@ -1424,10 +1425,12 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	$(CMD_rm) -rf $(SCRAM_ADMIN_DIR)/MakeData $(SCRAM_ADMIN_DIR)/BuildFiles
 	$(CMD_rm) -f  $(LLVM_CCDB_EXT)
 	@if [ "X$(COMPILE_PYTHON_SCRIPTS)" = "Xyes" ] ; then \
-	  $(CMD_echo) "Cleaning up the compiled .pyc and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
+	  $(CMD_echo) "Cleaning up the compiled .pyc/__pycache__ and generated __init__.py files in the $(SCRAM_SOURCEDIR) directory." &&\
 	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '__init__.py' -type f | $(CMD_xargs) $(CMD_grep) '^#Automatically created by SCRAM' | $(CMD_sed) -e 's|/__init__.py:.*|/__init__.py|' | $(CMD_uniq) | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
 	  if [ -d $(SCRAMSTORENAME_CFIPYTHON) ] ; then $(CMD_find) $(SCRAMSTORENAME_CFIPYTHON)  -name '*.pyc' -type f | $(CMD_xargs) $(CMD_rm) -f ; fi &&\
-	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR)       -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi ;\
+	  if [ -d $(SCRAMSTORENAME_CFIPYTHON) ] ; then $(CMD_find) $(SCRAMSTORENAME_CFIPYTHON)  -name '__pycache__' -type d | $(CMD_xargs) $(CMD_rm) -rf ; fi &&\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR) -name '__pycache__' -type d | $(CMD_xargs) $(CMD_rm) -rf ; fi &&\
+	  if [ -d $(SCRAM_SOURCEDIR) ] ;      then $(CMD_find) $(SCRAM_SOURCEDIR) -name '*.pyc' -type f       | $(CMD_xargs) $(CMD_rm) -f ; fi ;\
 	fi
 	$(CMD_rm) -rf $(SCRAM_INTwork) $(COMMON_WORKINGDIR)/cache/packs
 
@@ -1814,11 +1817,11 @@ PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors $(if $(strip 
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%
-CompilePython: $(addprefix PyCompile_,$(wildcard $(SCRAMSTORENAME_CFIPYTHON)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR)) $(SCRAMSTORENAME_PYTHON)) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
+CompilePython: $(addprefix PyCompile_,$(wildcard $(SCRAMSTORENAME_CFIPYTHON)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR))) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
 	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
 PyCompile_$(SCRAM_SOURCEDIR)/% PyCompile_cfipython/% PyCompile_%: do_python_symlink
-	@$(call compile_python,$(patsubst PyCompile_%,%,$@))
+	@$(call compile_python,$(patsubst PyCompile_%,%,$@),$($(SCRAM_SOURCEDIR)/$*_PRODDUCT_NAME))
 do_python_symlink: $(COMMON_WORKINGDIR)/cache/python_symlinks
 	@$(CMD_rm) -f $(COMMON_WORKINGDIR)/cache/python_error
 	@$(CMD_echo) ">> Done python_symlink"
