@@ -1817,7 +1817,7 @@ PostBuild: CompilePython ProjectPluginRefresh $(WORKINGDIR)/errors $(if $(strip 
 	@:
 ifeq ($(strip $(COMPILE_PYTHON_SCRIPTS)),yes)
 .PHONY: do_python_symlink PyCompile_%
-CompilePython: $(addprefix PyCompile_,$(wildcard $(SCRAMSTORENAME_CFIPYTHON)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR))) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
+CompilePython: $(addprefix PyCompile_,$(wildcard $(SCRAMSTORENAME_CFIPYTHON)$(patsubst $(SCRAM_SOURCEDIR)%,%,$(THISDIR)) $(SCRAMSTORENAME_PYTHON)) $(filter $(THISDIR)%,$(addprefix $(SCRAM_SOURCEDIR)/,$(ALL_PYTHON_DIRS))))
 	@[ ! -f $(COMMON_WORKINGDIR)/cache/python_error ] || exit 1
 	@$(CMD_echo) ">> All python modules compiled"
 PyCompile_$(SCRAM_SOURCEDIR)/% PyCompile_cfipython/% PyCompile_%: do_python_symlink
