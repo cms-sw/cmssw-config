@@ -1531,10 +1531,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.dnn_template()
         self.opencl_template()
         if lib and localbf:
-            ex = self.core.get_data("EXPORT", True)
-            if self.isPublictype() and ex:
+            if self.isPublictype():
+                ex = self.core.get_data("EXPORT", True)
                 if not self.get("plugin_type"):
-                    for data in ["INCLUDE", "LIB"]:
+                    fvars = [ "INCLUES"]
+                    if ex:
+                        fvars.append("LIB")
+                    for data in fvars:
                         val = ""
                         if data in ex:
                             val = self.fixData([ex[data]], data, localbf, 1)
@@ -1564,7 +1567,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                         exptools = "$(filter-out %s,%s)" % (noexpstr, exptools)
                     fh.write("%s_EX_USE   := $(foreach d,%s,$(if $($(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,$d))\n" %
                              (safename, exptools))
-                else:
+                elif ex:
                     SCRAM.printerror("****WARNING: No need to export library once you have declared your "
                                      "library as plugin. Please cleanup %s by removing the "
                                      "<export></export> section.\n" % localbf)

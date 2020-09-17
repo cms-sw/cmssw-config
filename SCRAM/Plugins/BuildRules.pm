@@ -2136,12 +2136,14 @@ sub dumpBuildFileData ()
   $self->opencl_template();
   if (($lib) && ($localbf ne ""))
   {
-    my $ex=$core->data("EXPORT");
-    if(($core->publictype() == 1) && ($ex ne ""))
+    if($core->publictype() == 1)
     {
+      my $ex=$core->data("EXPORT");
       if ($self->get("plugin_type") eq "")
       {
-        foreach my $data ("INCLUDE","LIB")
+        my @fvars = ("INCLUDE");
+        if ($ex ne ""){push @fvars, "LIB";}
+        foreach my $data (@fvars)
         {
           my $dataval=$self->fixData($core->value($data,$ex),$data,$localbf,1);
           if($dataval ne "")
@@ -2173,7 +2175,7 @@ sub dumpBuildFileData ()
         if ($noexpstr ne ""){$exptools="\$(filter-out $noexpstr,$exptools)";}
 	print $fh "${safename}_EX_USE   := \$(foreach d,$exptools,\$(if \$(\$(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,\$d))\n";
       }
-      else{print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",}
+      elsif($ex ne ""){print STDERR "****WARNING: No need to export library once you have declared your library as plugin. Please cleanup $localbf by removing the <export></export> section.\n",}
     }
   }
   if ($localbf ne "")
