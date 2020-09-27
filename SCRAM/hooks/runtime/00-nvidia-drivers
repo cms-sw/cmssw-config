@@ -18,11 +18,9 @@ else
 fi
 
 if [ "$NVIDIA_VERSION" ]; then
-  # if a driver is available, assume that a library is available as well
-  true
-else
-  # otherwise, use the library packaged with CMSSW
-  if [ -e "${CUDA_BASE}/drivers" ] ; then
-    echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
+  CMS_NVIDIA_VERSION=$(readlink ${CUDA_BASE}/drivers/libcuda.so* | sed 's|libcuda.so.||' | sort | tail -1)
+  if [ $(python -c "from pkg_resources import parse_version;print(parse_version('${NVIDIA_VERSION}')>=parse_version('${CMS_NVIDIA_VERSION}'))") = "True" ] ; then
+    exit 0
   fi
 fi
+echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
