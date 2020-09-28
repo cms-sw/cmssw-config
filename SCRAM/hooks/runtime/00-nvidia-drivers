@@ -18,7 +18,7 @@ function library_version() {
 # extract the major, minor and patch version as a single number
 function parse_version() {
   if [ "$1" ]; then
-    echo "$1" | while IFS=. read MAJOR MINOR PATCH; do echo $(( MAJOR * 1000000 + MINOR * 1000 + PATCH)); done
+    echo "$1" | while IFS=. read MAJOR MINOR PATCH; do echo $(( 10#$MAJOR * 1000000 + 10#$MINOR * 1000 + 10#$PATCH)); done
   else
     echo 0
   fi
