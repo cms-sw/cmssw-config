@@ -1,7 +1,33 @@
-#!/bin/bash -e
+#! /bin/bash -e
+
+# find a shared library trying to emulate what ld.so would do
+function find_library() {
+  {
+    eval find $(echo $LD_LIBRARY_PATH | sed -e's/^/"/' -e's/:/" "/g' -e's/$/"/') -maxdepth 1 2> /dev/null
+    ldconfig -p | cut -s -d'>' -f2
+  } | grep "\<$1\>" | xargs -r -n1 readlink -f | uniq
+}
+
+# extract the version of the library
+function library_version() {
+  if [ "$1" ]; then
+    basename "$1" | sed -n -e's/.*\.so\.//p'
+  fi
+}
+
+# extract the major, minor and patch version as a single number
+function parse_version() {
+  if [ "$1" ]; then
+    echo "$1" | while IFS=. read MAJOR MINOR PATCH; do echo $(( MAJOR * 1000000 + MINOR * 1000 + PATCH)); done
+  else
+    echo 0
+  fi
+}
+
 CUDA_BASE=$(${SCRAM} tool tag cuda CUDA_BASE 2>&1 | grep -v 'SCRAM error' || true)
-if [ ! "${CUDA_BASE}" ] ; then exit 0; fi
-if [ ! -e "${CUDA_BASE}" ] ; then exit 0; fi
+if [ ! "${CUDA_BASE}" ] || [ ! -d "${CUDA_BASE}/" ] || [ ! -d "${CUDA_BASE}/drivers/" ]; then
+  exit 0
+fi
 
 NVIDIA_VERSION=
 
@@ -17,10 +43,13 @@ else
   fi
 fi
 
-if [ "$NVIDIA_VERSION" ]; then
-  CMS_NVIDIA_VERSION=$(readlink ${CUDA_BASE}/drivers/libcuda.so* | sed 's|libcuda.so.||' | sort | tail -1)
-  if [ $(python -c "from pkg_resources import parse_version;print(parse_version('${NVIDIA_VERSION}')>=parse_version('${CMS_NVIDIA_VERSION}'))") = "True" ] ; then
-    exit 0
-  fi
+# check the version of libcuda.so bundled with CMSSW
+CMS_NVIDIA_VERSION=$(library_version $(readlink -f ${CUDA_BASE}/drivers/libcuda.so))
+
+if [ "$NVIDIA_VERSION" ] && (( $(parse_version $CMS_NVIDIA_VERSION) <= $(parse_version $NVIDIA_VERSION) )); then
+  # if the CMSSW version of the library is older, use the system library
+  exit 0
 fi
+
+# otherwise, use the library packaged with CMSSW
 echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
