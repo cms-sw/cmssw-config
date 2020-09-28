@@ -1,3 +1,5 @@
+2020-09-28 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-05: Uses system cuda if system cuda version is >= cms cuda
 2020-09-17 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-03: Export dependencies for header only packages too.
 	V06-01-04: Adding <flags PYTHON_VERSION="3"/> in
