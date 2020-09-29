@@ -1,2 +1,3 @@
 #!/bin/bash
 echo "RUNTIME:path:remove:LD_LIBRARY_PATH=${RELEASETOP}/external/${SCRAM_ARCH}/lib"
+echo "RUNTIME:path:remove:PATH=${RELEASETOP}/external/${SCRAM_ARCH}/bin"
