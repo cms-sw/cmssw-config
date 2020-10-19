@@ -1,4 +1,8 @@
 #!/bin/bash
+[ $(uname -m) = "x86_64" ] || exit 0
+nehalem_flags="mmx sse sse2 ssse3 sse4.1 sse4.2 popcnt"
+sandybridge_flags="${nehalem_flags} avx aes"
+haswell_flags="${sandybridge_flags} movbe avx2 fma"
 
 #No need to overirde LD_LIBRARY_PATH if SCRAM_VECTOR is not set of set to "default"
 if [ "${SCRAM_VECTOR}" = "" ] || [ "${SCRAM_VECTOR}" = "default" ] ; then exit 0 ; fi
@@ -14,7 +18,16 @@ fi
 SCRAM_VECTOR=""
 CPUFLAGS=$(cat /proc/cpuinfo | grep flags | tail -1 | sed 's|.*: *||')
 for v in ${SELECTED_VECTORS} ; do
-  if [ $(echo " $CPUFLAGS " | grep " $v " | wc -l) -gt 0 ] ; then
+  flags=$(eval "echo \${${v}_flags}")
+  [ "${flags}" = "" ] && continue
+  OK=true
+  for f in ${flags} ; do
+    if [ $(echo " $CPUFLAGS " | grep " $f " | wc -l) -eq 0 ] ; then
+      OK=false
+      break
+    fi
+  done
+  if $OK ; then
     SCRAM_VECTOR=$v
     break
   fi
