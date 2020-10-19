@@ -1,3 +1,8 @@
+2020-10-19 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-07 Support haswell sandybridge nehalem vectorization.
+	Creat symlinks for under externals?arch/lib/<vectorization>
+2020-09-29 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-06: For full build also remove externals/bin path
 2020-09-28 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-05: Uses system cuda if system cuda version is >= cms cuda
 2020-09-17 Shahzad Muzaffar  <@smuzaffar>

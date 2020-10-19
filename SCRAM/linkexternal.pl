@@ -77,6 +77,23 @@ if (exists $cache{toolcache}{SETUP}{self}{FLAGS})
       if (exists $cache{validlinks}{$ux}){$cache{defaultlinks}{$ux}=1;}
     }
   }
+  if (exists $flags->{SCRAM_VECTORIZE})
+  {
+    foreach my $x (@{$flags->{SCRAM_VECTORIZE}})
+    {
+      my $cf = "LIBDIR";
+      if (exists $cache{defaultlinks}{$cf})
+      {
+        my $ux=uc($x)+"_${cf}";
+        $cache{validlinks}{$ux}=$cache{validlinks}{$cf}+"/$x";
+        $cache{defaultlinks}{$ux}=1;
+        if (exists $cache{ignorefiles}{$cf})
+        {
+          $cache{ignorefiles}{$ux}=$cache{ignorefiles}{$cf};
+        }
+      }
+    }
+  }
   if (exists $flags->{SKIP_TOOLS_SYMLINK})
   {
     foreach my $t (@{$flags->{SKIP_TOOLS_SYMLINK}}){$cache{skipTools}{lc($t)}=1;}

@@ -230,6 +230,15 @@ def main():
             for x in flags["EXTERNAL_SYMLINK"]:
                 if x.upper() in cache["validlinks"]:
                     cache["defaultlinks"][x.upper()] = 1
+        if "SCRAM_VECTORIZE" in flags:
+            for x in flags["SCRAM_VECTORIZE"]:
+                cf = "LIBDIR"
+                if cf in cache["defaultlinks"]:
+                    ux = "%s_%s" %  (x.upper(), cf)
+                    cache["validlinks"][ux] = join(cache["validlinks"][cf], x)
+                    cache["defaultlinks"][ux] = 1
+                    if cf in cache["ignorefiles"]:
+                        cache["ignorefiles"][ux] = cache["ignorefiles"][cf]
         if "SKIP_TOOLS_SYMLINK" in flags:
             for t in flags["SKIP_TOOLS_SYMLINK"]:
                 cache["skipTools"][t.lower()] = 1

@@ -1,6 +1,7 @@
 <tool name="SELF" version="SELF">
  <client>
   <flags DEFAULT_COMPILER="@SCRAM_COMPILER@"/>
+  <environment name="LIBDIR"        value="$LOCALTOP/biglib/$SCRAM_ARCH" handler="warn"/>
   <environment name="LIBDIR"        value="$LOCALTOP/lib/$SCRAM_ARCH"/>
   <environment name="LIBDIR"        value="$LOCALTOP/external/$SCRAM_ARCH/lib" handler="warn"/>
   <environment name="INCLUDE"       value="$LOCALTOP/src"/>
@@ -21,7 +22,7 @@
   <flags NO_EXTERNAL_RUNTIME="CMSSW_SEARCH_PATH"/>
   <flags SYMLINK_DEPTH_CMSSW_SEARCH_PATH="2"/>
   <flags LLVM_ANALYZER="llvm-analyzer"/>
-  <flags SCRAM_VECTORIZE="avx512f fma avx2"/>
+  <flags SCRAM_VECTORIZE="haswell sandybridge nehalem"/>
   <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS CUDA_FLAGS CUDA_LDFLAGS"/>
  </client>
  <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
