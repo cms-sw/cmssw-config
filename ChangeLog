@@ -1,6 +1,8 @@
 2020-10-19 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-08 Allow to provide flags for header checks use
 	HEADER_CHECKS flag in BuildFile
+	V06-01-09 Do not drop Optimization flags. GCC9 seems to work with
+	-Ox flags for header checks.
 2020-10-19 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-07 Support haswell sandybridge nehalem vectorization.
 	Creat symlinks for under externals?arch/lib/<vectorization>
