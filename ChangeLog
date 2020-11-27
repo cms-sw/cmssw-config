@@ -1,4 +1,7 @@
 2020-10-19 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-08 Allow to provide flags for header checks use
+	HEADER_CHECKS flag in BuildFile
+2020-10-19 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-07 Support haswell sandybridge nehalem vectorization.
 	Creat symlinks for under externals?arch/lib/<vectorization>
 2020-09-29 Shahzad Muzaffar  <@smuzaffar>
