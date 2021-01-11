@@ -1,5 +1,6 @@
 #!/bin/bash
 [ $(uname -m) = "x86_64" ] || exit 0
+if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 nehalem_flags="mmx sse sse2 ssse3 sse4.1 sse4.2 popcnt"
 sandybridge_flags="${nehalem_flags} avx aes"
 haswell_flags="${sandybridge_flags} movbe avx2 fma"
@@ -7,7 +8,7 @@ haswell_flags="${sandybridge_flags} movbe avx2 fma"
 #No need to overirde LD_LIBRARY_PATH if SCRAM_VECTOR is not set of set to "default"
 if [ "${SCRAM_VECTOR}" = "" ] || [ "${SCRAM_VECTOR}" = "default" ] ; then exit 0 ; fi
 
-SUPPORTED_VECTORS="$(scram tool info self | grep '^SCRAM_VECTORIZE+=' | sed 's|.*=||')"
+SUPPORTED_VECTORS="$(${SCRAM} tool info self | grep '^SCRAM_VECTORIZE+=' | sed 's|.*=||')"
 SELECTED_VECTORS="${SCRAM_VECTOR}"
 if [ "${SCRAM_VECTOR}" = "auto" ] ; then
   SELECTED_VECTORS="${SUPPORTED_VECTORS}"
@@ -38,7 +39,7 @@ if [ "${SCRAM_VECTOR}" = "" ] ; then
 fi
 
 echo "IMPORTANT: Setting CMSSW environment to use '${SCRAM_VECTOR}' instructions set." 1>&2
-for d in $(scram tool tag self LIBDIR) ; do
+for d in $(${SCRAM} tool tag self LIBDIR) ; do
   v=""
   case $d in
     ${LOCALTOP}/* ) v=$d ;;
