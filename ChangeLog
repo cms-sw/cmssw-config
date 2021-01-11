@@ -1,3 +1,5 @@
+2021-01-11 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-10 Runtime hook updated to drop data externals for release
 2020-10-19 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-08 Allow to provide flags for header checks use
 	HEADER_CHECKS flag in BuildFile
