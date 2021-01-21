@@ -24,7 +24,7 @@ function parse_version() {
   fi
 }
 if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
-CUDA_BASE=$(${SCRAM} tool tag cuda CUDA_BASE 2>&1 | grep -v 'SCRAM error' || true)
+CUDA_BASE=$(${SCRAM} tool tag cuda CUDA_BASE 2>&1 | grep -v '^SCRAM' || true)
 if [ ! "${CUDA_BASE}" ] || [ ! -d "${CUDA_BASE}/" ] || [ ! -d "${CUDA_BASE}/drivers/" ]; then
   exit 0
 fi

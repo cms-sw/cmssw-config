@@ -1,6 +1,7 @@
 #!/bin/bash
 #Create local module.modulemap is exists in RELEASETOP
-if [ "$(scram tool info root | grep '^CXXMODULES+=' | sed 's|.*=||')" != "1" ] ; then
+if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
+if [ "$(${SCRAM} tool info root 2>&1 | grep '^CXXMODULES+=' | sed 's|.*=||')" != "1" ] ; then
   exit 0
 fi
 CXXMODULE_DIR="include/${SCRAM_ARCH}/cxxmodules"

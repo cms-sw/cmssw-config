@@ -1,3 +1,6 @@
+2021-01-21 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-11 use scram if SCRAM not set. set LC_ALL to avoid perl
+	warninsg on cc8
 2021-01-11 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-10 Runtime hook updated to drop data externals for release
 2020-10-19 Shahzad Muzaffar  <@smuzaffar>

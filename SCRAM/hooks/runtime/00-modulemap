@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
-if [ "$(${SCRAM} tool info root | grep '^CXXMODULES+=' | sed 's|.*=||')" != "1" ] ; then
+if [ "$(${SCRAM} tool info root 2>&1 | grep '^CXXMODULES+=' | sed 's|.*=||')" != "1" ] ; then
   exit 0
 fi
 CXXMODULES_DIR="include/${SCRAM_ARCH}/cxxmodules"
