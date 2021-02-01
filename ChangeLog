@@ -1,3 +1,6 @@
+2021-02-01 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-12 Allow to override dd4hep listcomponents via toolfile flag
+	LISTCOMPONENTS
 2021-01-21 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-11 use scram if SCRAM not set. set LC_ALL to avoid perl
 	warninsg on cc8
