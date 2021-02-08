@@ -1,3 +1,6 @@
+2021-02-08 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-13 Do not run dxr for generated genrated files
+
 2021-02-01 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-12 Allow to override dd4hep listcomponents via toolfile flag
 	LISTCOMPONENTS

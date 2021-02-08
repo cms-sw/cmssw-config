@@ -1264,6 +1264,7 @@ $(1) all_$(1): $($(1))
 	@:
 endef
 
+ifneq ($(strip $(SCRAM_DXR_RUN)),yes)
 ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
 ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/cuda)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.cuda
@@ -1284,6 +1285,7 @@ include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.aocx
 endif
 AUTO_GENERATED_SOURCES:=$(addsuffix /%,$(sort $(AUTO_GENERATED_SOURCES)))
 endif  #Finish CODE_ANALYSIS_RULES
+endif
 ##############################################################################
 define SetTargetType
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
