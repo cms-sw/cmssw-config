@@ -52,10 +52,5 @@
   <runtime name="CLING_PREBUILT_MODULE_PATH" value="$LOCALTOP/lib/$SCRAM_ARCH"       type="path"/>
  <elif name="_ASAN"/>
   <runtime name="ASAN_OPTIONS"         value="detect_leaks=0:alloc_dealloc_mismatch=0"/>
-  <runtime name="LD_PRELOAD" value="$GCC_RUNTIME_ASAN" type="path"/>
- <elif name="_UBSAN"/>
-  <runtime name="LD_PRELOAD" value="$GCC_RUNTIME_UBSAN" type="path"/>
- <elif name="_TSAN"/>
-  <runtime name="LD_PRELOAD" value="$GCC_RUNTIME_TSAN" type="path"/>
  </ifrelease>
 </tool>

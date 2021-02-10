@@ -1,5 +1,6 @@
 2021-02-10 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-15 Set LD_PRELOAD for [A|UB|T|SAN IBs
+	V06-01-16 Set LD_PRELOAD for *SAN from gcc toolfile
 2021-02-09 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-14 Remove GCC8 compiler condition for ASAN/UBSAN IBs
 2021-02-08 Shahzad Muzaffar  <@smuzaffar>
