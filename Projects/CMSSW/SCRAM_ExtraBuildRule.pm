@@ -47,18 +47,6 @@ sub Project()
     print $fh "EDM_WRITE_CONFIG:=edmWriteConfigs\n";
     print $fh "EDM_CHECK_CLASS_VERSION:=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n";  
     print $fh "EDM_CHECK_CLASS_TRANSIENTS=\$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassTransients\n";
-    if ($ENV{SCRAM_PROJECTVERSION}=~/_ASAN_/)
-    {
-      print $fh "EDM_TOOLS_PREFIX:=LD_PRELOAD=\$(GCC_CXXCOMPILER_BASE)/lib64/libasan.so\n";
-    }
-    if ($ENV{SCRAM_PROJECTVERSION}=~/_UBSAN_/)
-    {
-      print $fh "EDM_TOOLS_PREFIX:=LD_PRELOAD=\$(GCC_CXXCOMPILER_BASE)/lib64/libubsan.so\n";
-    }
-    if ($ENV{SCRAM_PROJECTVERSION}=~/_TSAN_/)
-    {
-      print $fh "EDM_TOOLS_PREFIX:=LD_PRELOAD=\$(GCC_CXXCOMPILER_BASE)/lib64/libtsan.so\n";
-    }
   }
   print $fh "COMPILE_PYTHON_SCRIPTS:=yes\n";
   print $fh "self_EX_FLAGS_CPPDEFINES+=-DCMSSW_GIT_HASH='\"\$(CMSSW_GIT_HASH)\"' -DPROJECT_NAME='\"\$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"\$(SCRAM_PROJECTVERSION)\"'\n";
