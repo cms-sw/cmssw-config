@@ -1,6 +1,14 @@
+2021-02-11 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-17 Looks like setting LD_PRELOAD=libasan.so hangs a lot of
+	system commands. Revert the changes and explicitly set LD_PRELOAD
+	while running dd4hep and unit tests
+2021-02-10 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-15 Set LD_PRELOAD for [A|UB|T|SAN IBs
+	V06-01-16 Set LD_PRELOAD for *SAN from gcc toolfile
+2021-02-09 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-14 Remove GCC8 compiler condition for ASAN/UBSAN IBs
 2021-02-08 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-13 Do not run dxr for generated genrated files
-
 2021-02-01 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-12 Allow to override dd4hep listcomponents via toolfile flag
 	LISTCOMPONENTS
