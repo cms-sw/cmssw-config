@@ -6,7 +6,7 @@ define dd4hep_register_plugin
   @$(startlog_$(2)) \
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(DD4HEP_CORE_LISTCOMPONENTS) $< > $(<D)/$(@F).tmp &&\
+    $(EDM_TOOLS_PREFIX) $(DD4HEP_CORE_LISTCOMPONENTS) $< > $(<D)/$(@F).tmp &&\
     $(CMD_cat) $(<D)/$(@F).tmp | $(CMD_sed) 's|$<:|$(<F):|' > $(<D)/$(@F) &&\
     $(CMD_rm) -f $(<D)/$(@F).tmp &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
