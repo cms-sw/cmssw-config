@@ -20,6 +20,7 @@ if not path.isdir(path.join(rel, ".SCRAM")):
 
 if args.olddir != args.newtop:
     qod = re.escape(args.olddir)
+    runtime = None
     for d in [path.join(rel, ".SCRAM", args.arch), path.join(rel, "config")]:
         for f in check_output("find %s -type f" % d, shell=True).decode().rstrip().splitlines():
             ftime = 0
@@ -55,4 +56,9 @@ if args.olddir != args.newtop:
                 call("gzip -S.gz %s" % f, shell=True)
                 f = "%s.gz" % f
             if ftime > 0:
+                if (not runtime) and f.endswith("RuntimeCache.json"):
+                    runtime = f
                 utime(f,(ftime, ftime))
+
+    if runtime:
+        utime(runtime, None)
