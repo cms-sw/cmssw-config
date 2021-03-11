@@ -16,8 +16,8 @@ if [ "${SCRAM_VECTOR}" = "auto" ] ; then
   if [ $(echo " ${SUPPORTED_ARCHS} " | grep " ${NATIVE_ARCH} " | wc -l) -eq 0 ] ; then
     echo "WARNING: Native architecure ${NATIVE_ARCH} does not match the supported archs '${SUPPORTED_ARCHS}'. Using default instruction set." 1>&2
     exit 0
- fi
- SCRAM_VECTOR="${NATIVE_ARCH}"
+  fi
+  SCRAM_VECTOR="${NATIVE_ARCH}"
 elif [ $(echo " ${SUPPORTED_ARCHS} " | grep " ${SCRAM_VECTOR} " | wc -l) -eq 0 ] ; then
   echo "WARNING: Selected architecture '${SCRAM_VECTOR}' does not match supported archs '${SUPPORTED_ARCHS}'. Using default instruction set." 1>&2
   exit 0
