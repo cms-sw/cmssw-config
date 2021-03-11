@@ -2,7 +2,7 @@
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/vectorize)),)
 SCRAM_VECTORIZATION:=1
-$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr '[a-z.]' '[A-Z_]'))$(eval VECTORIZE_FLAG_$v:=$u))
+$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr [a-z-] [A-Z_] | tr '.' '_'))$(eval VECTORIZE_FLAG_$v:=$u))
 else
 SCRAM_VECTORIZATION:=0
 endif
