@@ -100,26 +100,26 @@ $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRuleBigObj,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRuleBigObj,$(1),$(ext),$(1))))
 $(if $(strip $(CUDASRC_FILES_SUFFIXES)),$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call CudeCompileRuleBigObj,$(1),$(ext),$(1)))))
-$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),
+$(foreach v,$($(1)_LOC_FLAGS_TARGETS),
   $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),  $($(1)_files_exts)),$(eval $(call CXXCompileRuleBigObj,$(1),$(ext),$(1),$($(1)_BUILDRULES),$v/)))
 )
 endef
 #############################################################################
-define VectorizeLcgDict
+define TargetLcgDict
 $(SCRAMSTORENAME_BIGLIB)/$1/$2: $(SCRAMSTORENAME_BIGLIB)/$2
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_ln) -sf ../$$(@F) $$@
 endef
-define VectorizeBigObj
+define TargetBigObj
 all_$(1) += $(SCRAMSTORENAME_OBJS)/$(3)/$(1).$(BIGLIB_OBJEXT)
 $(SCRAMSTORENAME_OBJS)/$(3)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/bigobj/$(3)/$(1).$(BIGLIB_OBJEXT)
 	@$$(startlog_$(1)) [ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_cp) -fp $$^ $$@ $$(endlog_$(1))
-$($(1)_objdir)/bigobj/$(3)/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/$3/,$(call VectorizeObjs,$1)) \
-                                                  $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$(call NonVectorizeObjs,$1))
+$($(1)_objdir)/bigobj/$(3)/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/$3/,$(call TargetObjs,$1)) \
+                                                  $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$(call NonTargetObjs,$1))
 	$$(call big_obj,$(2),$(1),$$^,$(SCRAMSTORENAME_OBJS),$3)
 endef
-define VectorizeBigPlugin
+define TargetBigPlugin
 $(1)_objs_$3:=$(foreach o,$($(1)_objs),$(eval n:=$(basename $(notdir $o)))\
-                  $(if $(strip $(filter $3,$($(n)_LOC_FLAGS_VECTORIZE))),\
+                  $(if $(strip $(filter $3,$($(n)_LOC_FLAGS_TARGETS))),\
                        $(subst /$(n).$(BIGLIB_OBJEXT),/$3/$(n).$(BIGLIB_OBJEXT),$o),\
                     $o))
 $(SCRAMSTORENAME_BIGLIB)/$3/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/$3/plugin$(1).$(SHAREDSUFFIX) $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX) \
@@ -128,7 +128,7 @@ $(SCRAMSTORENAME_BIGLIB)/$3/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/$3/pl
 	$(CMD_cp) -f $$< $$@
 $(WORKINGDIR)/$(2)/$3/plugin$(1).$(SHAREDSUFFIX): $$($(1)_objs_$3) $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs_$3),$3)
-$(foreach l,$($(1)_xr_dicts),$(eval $(call VectorizeLcgDict,$3,$l)))
+$(foreach l,$($(1)_xr_dicts),$(eval $(call TargetLcgDict,$3,$l)))
 endef
 
 define AddBigObjRule
@@ -138,13 +138,13 @@ $(SCRAMSTORENAME_OBJS)/$(1).$(BIGLIB_OBJEXT): $($(1)_objdir)/bigobj/$(1).$(BIGLI
 	@$$(startlog_$(1))$(CMD_cp) -fp $$^ $$@ $$(endlog_$(1))
 $($(1)_objdir)/bigobj/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)_objdir)/bigobj/,$($(1)_objs))
 	$$(call big_obj,$(2),$(1),$$^,$(SCRAMSTORENAME_OBJS))
-$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizeBigObj,$1,$2,$$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetBigObj,$1,$2,$$v)))
 endif
 endef
 define AddBigObjCompileRule
 ifneq ($(strip $($(1)_bigobj)),)
-$($(1)_bigobj)_LOC_FLAGS_VECTORIZE+=$($(1)_LOC_FLAGS_VECTORIZE)
-$(WORKINGDIR)/cache/prod/bigobj$(1): $($(1)_objdir)/bigobj/$(1).$(BIGLIB_OBJEXT) $(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$($(1)_objdir)/bigobj/$(v)/$(1).$(BIGLIB_OBJEXT))
+$($(1)_bigobj)_LOC_FLAGS_TARGETS+=$($(1)_LOC_FLAGS_TARGETS)
+$(WORKINGDIR)/cache/prod/bigobj$(1): $($(1)_objdir)/bigobj/$(1).$(BIGLIB_OBJEXT) $(foreach v,$($(1)_LOC_FLAGS_TARGETS),$($(1)_objdir)/bigobj/$(v)/$(1).$(BIGLIB_OBJEXT))
 	@:
 $$(eval $$(call CompileRulesBigObj,$(1)))
 endif
@@ -166,13 +166,13 @@ define BigProductRule
 ifneq ($(strip $(foreach o,$($(1)_BIGOBJS),$($(o)_bigobj))),)
 $(eval $(call LogFile,$(1),$(2)))
 .PHONY: all_$(3) $(3) $(1)
-$(eval $(1)_LOC_FLAGS_VECTORIZE:=$(sort $($(1)_LOC_FLAGS_VECTORIZE)))
+$(eval $(1)_LOC_FLAGS_TARGETS:=$(sort $($(1)_LOC_FLAGS_TARGETS)))
 $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) $(WORKINGDIR)/cache/log/$(2)/build.log FORCE_TARGET
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(2)" $$(redirectlog_$(1)) &&\
 	$(CMD_echo) ">> Entering Package $(2)" &&\
 	[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(2) $(patsubst $(SCRAM_SOURCEDIR)/%,%,$(2)) $(1) $(3): $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX) \
-                                                        $(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$(SCRAMSTORENAME_BIGLIB)/$(v)/plugin$(1).$(SHAREDSUFFIX))
+                                                        $(foreach v,$($(1)_LOC_FLAGS_TARGETS),$(SCRAMSTORENAME_BIGLIB)/$(v)/plugin$(1).$(SHAREDSUFFIX))
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(2)"  $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_echo) ">> Package $(2) built" $$(redirectlog_$(1)) &&\
 	$(DO_BUILD_LOG) $(CMD_cat) $(WORKINGDIR)/cache/log/$(2)/$(1) &&\
@@ -190,7 +190,7 @@ $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/plugin$(
 	$$(call bigedm_register_plugin,$1)
 $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX): $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs))
-$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizeBigPlugin,$1,$2,$$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetBigPlugin,$1,$2,$$v)))
 else
 $(3):
 	@:

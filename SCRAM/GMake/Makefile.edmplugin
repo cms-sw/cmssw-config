@@ -219,7 +219,7 @@ $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
 
 poisoned_edmplugins: $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins) \
                      $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache \
-                          $(foreach v,$(SCRAM_VECTORIZE),$(SCRAMSTORENAME_LIB)/$v/.poisonededmplugincache))
+                          $(foreach v,$(SCRAM_TARGETS),$(SCRAMSTORENAME_LIB)/$v/.poisonededmplugincache))
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:

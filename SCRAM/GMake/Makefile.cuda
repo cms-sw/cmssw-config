@@ -1,4 +1,4 @@
-NonVectorizeExt+=%_cudadlink.$(OBJEXT)
+NonTargetExt+=%_cudadlink.$(OBJEXT)
 SET_PRODUCT_VARIABLES += CUDA_DLINK_LIB
 AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))

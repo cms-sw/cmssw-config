@@ -1,14 +1,14 @@
 -include $(TOOLS_MKDIR).mk
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
-ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/vectorize)),)
-SCRAM_VECTORIZATION:=1
-$(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),$(eval u:=$(shell echo $v | tr [a-z-] [A-Z_] | tr '.' '_'))$(eval VECTORIZE_FLAG_$v:=$u))
+ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
+SCRAM_MULTI_TARGET:=1
+$(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr [a-z-] [A-Z_] | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
 else
-SCRAM_VECTORIZATION:=0
+SCRAM_MULTI_TARGET:=0
 endif
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
-ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_VECTORIZE_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
+ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_TARGETS_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
@@ -268,31 +268,31 @@ CFLAGS_COMPILER:=ccompiler
 FFLAGS_COMPILER:=f77compiler
 GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
-GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_VECTORIZE_$2)))
+GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2)))
 
-define SetCompilerVectorizationFlag
-  $(eval $(1)_SCRAM_VECTORIZE:=)
-  $(foreach v,$(self_EX_FLAGS_SCRAM_VECTORIZE),\
-      $(eval u:=$(VECTORIZE_FLAG_$(v)))\
-      $(if $(strip $($(1)-cxxcompiler_EX_FLAGS_CXXFLAGS_VECTORIZE_$(u))),\
-          $(eval $(1)_SCRAM_VECTORIZE+=$v),\
-          $(warning Vectorization flag '$v' is not supported as Compiler '$(1)' does not set 'CXXFLAGS_VECTORIZE_$u' flag.)))
+define SetCompilerTargetsFlag
+  $(eval $(1)_SCRAM_TARGETS:=)
+  $(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),\
+      $(eval u:=$(TARGETS_FLAGS_$(v)))\
+      $(if $(strip $($(1)-cxxcompiler_EX_FLAGS_CXXFLAGS_TARGETS_$(u))),\
+          $(eval $(1)_SCRAM_TARGETS+=$v),\
+          $(warning Targets flag '$v' is not supported as Compiler '$(1)' does not set 'CXXFLAGS_TARGETS_$u' flag.)))
 endef
 
-define SetCompilerVectorization
-ifeq ($(strip $($(1)_SCRAM_VECTORIZE_SET)),)
-  $(1)_SCRAM_VECTORIZE_SET:=1
-  $$(eval $$(call SetCompilerVectorizationFlag,$1))
+define SetCompilerTargets
+ifeq ($(strip $($(1)_SCRAM_TARGETS_SET)),)
+  $(1)_SCRAM_TARGETS_SET:=1
+  $$(eval $$(call SetCompilerTargetsFlag,$1))
 endif
 endef
 
 #type,flag
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 #$1,  $2,   $3,   $4,     $5
-#prod,types,flags,compiler,compiler_type,vectorize
-AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(VECTORIZE_FLAG_$6))))
+#prod,types,flags,compiler,compiler_type,target
+AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(TARGETS_FLAGS_$6))))
 #$1,  $2,  $3,  $4,      $5,      $6,            $7,             $8,          $9
-#prod,type,flag,compiler,filename,types_one_word,over_file_flags,compile_type,vectorize
+#prod,type,flag,compiler,filename,types_one_word,over_file_flags,compile_type,target
 define AdjustFlagsImp
 $(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)),$(ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3),\
   $(eval ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3:=\
@@ -922,7 +922,7 @@ runpython_$(2): runpython_$(2)_python
 endif
 endef
 
-define VectorizePlugin
+define TargetPlugin
 all_$(2) += $(5)/$(10)/$(8)
 $(5)/$(10)/$(8): $($(2)_objdir)/$(10)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9),$(10))
@@ -947,7 +947,7 @@ endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
 	$$(call $(3)_register_plugin,$(1),$(9))
-$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizePlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetPlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$$v)))
 endef
 
 ifeq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
@@ -1039,14 +1039,14 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
-NonVectorizeExt:=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)))
-VectorizeObjs=$(filter-out $(NonVectorizeExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
-NonVectorizeObjs=$(filter-out $(call VectorizeObjs,$1),$($(1)_objs))
+NonTargetExt:=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)))
+TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
+NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
-define VectorizeLib
+define TargetLib
 $1:: $($(1)_objdir)/$4/$($(1)_product)
 all_$(1)+=$($(1)_objdir)/$4/$($(1)_product)
-$(1)_objs_$4:=$(subst $($(1)_objdir)/,$($(1)_objdir)/$4/,$(call VectorizeObjs,$1)) $(call NonVectorizeObjs,$1)
+$(1)_objs_$4:=$(subst $($(1)_objdir)/,$($(1)_objdir)/$4/,$(call TargetObjs,$1)) $(call NonTargetObjs,$1)
 $($(1)_objdir)/$4/compile: $($(1)_objdir)/precompile $$($(1)_objs_$4) $($(1)_compile)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $($(1)_objdir)/$4/$($(1)_product): $($(1)_objdir)/$4/compile $$($(1)_objs_$4) $($(1)_libdeps)
@@ -1083,7 +1083,7 @@ unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/test
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 ifeq ($(strip $(4)),lib)
-$$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),$$(eval $$(call VectorizeLib,$1,$2,$3,$$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetLib,$1,$2,$3,$$v)))
 endif
 .PHONY: precompile_$(6) compile_$(6)
 ifneq ($(strip $(4)$($(1)_files)),test1)
@@ -1156,7 +1156,7 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
-$(foreach v,$($(1)_LOC_FLAGS_VECTORIZE),
+$(foreach v,$($(1)_LOC_FLAGS_TARGETS),
   $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES),$v/)))
 )
 endef
@@ -1173,16 +1173,16 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
 $(1)_plugintype:=$(8)
-ifeq ($(SCRAM_VECTORIZATION),1)
-ifeq ($(strip $(USER_VECTORIZE_ALL)),1)
-$(1)_LOC_FLAGS_VECTORIZE:=$(call GetCompilerData,$1,SCRAM_VECTORIZE)
-else ifeq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),1)
-$(1)_LOC_FLAGS_VECTORIZE:=$(call GetCompilerData,$1,SCRAM_VECTORIZE)
-else ifneq ($(strip $($(1)_LOC_FLAGS_VECTORIZE)),)
-$(1)_LOC_FLAGS_VECTORIZE:=$(filter $($(1)_LOC_FLAGS_VECTORIZE),$(call GetCompilerData,$1,SCRAM_VECTORIZE))
+ifeq ($(SCRAM_MULTI_TARGET),1)
+ifeq ($(strip $(USER_TARGETS_ALL)),1)
+$(1)_LOC_FLAGS_TARGETS:=$(call GetCompilerData,$1,SCRAM_TARGETS)
+else ifeq ($(strip $($(1)_LOC_FLAGS_TARGETS)),1)
+$(1)_LOC_FLAGS_TARGETS:=$(call GetCompilerData,$1,SCRAM_TARGETS)
+else ifneq ($(strip $($(1)_LOC_FLAGS_TARGETS)),)
+$(1)_LOC_FLAGS_TARGETS:=$(filter $($(1)_LOC_FLAGS_TARGETS),$(call GetCompilerData,$1,SCRAM_TARGETS))
 endif
 else
-$(1)_LOC_FLAGS_VECTORIZE:=
+$(1)_LOC_FLAGS_TARGETS:=
 endif
 $$(eval $$(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
 $$(eval $$(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
@@ -1294,7 +1294,7 @@ endif
 ifneq ($(strip $(filter PostBuild,$(MAKECMDGOALS))),)
 RESET_BUILD_LOGS:=no
 endif
-ifeq ($(strip $(filter-out help enable-vectorize disable-vectorize check-vectorize enable-biglib enable-biglib enable-biglib outputlog clean ProjectRename projectrename PROJECTRENAME ExternalLinks ToolUpdated ToolUpdated_%,$(MAKECMDGOALS))),)
+ifeq ($(strip $(filter-out help enable-multi-targets disable-multi-targets check-multi-targets enable-biglib enable-biglib enable-biglib outputlog clean ProjectRename projectrename PROJECTRENAME ExternalLinks ToolUpdated ToolUpdated_%,$(MAKECMDGOALS))),)
   ONLYECHOTARGETS:=yes
   FAST :=yes
   XFAST:=yes
@@ -1519,8 +1519,8 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "enable-biglib disable-biglib check-biglib"
 	@$(CMD_echo) "  Disable/enable/check big EDM plugins"
 	@$(CMD_echo) ""
-	@$(CMD_echo) "enable-vectorize disable-vectorize check-vectorize"
-	@$(CMD_echo) "  Disable/enable/check vectorization build support"
+	@$(CMD_echo) "enable-multi-targets disable-multi-targets check-multi-targets"
+	@$(CMD_echo) "  Disable/enable/check multiple targets build support"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "deps-tree <package1> <package2>"
 	@$(CMD_echo) "  To find the dependencies paths from <package1> to <package2>"
@@ -1673,9 +1673,9 @@ ifeq ($(strip $(filter check-headers,$(MAKECMDGOALS))),check-headers)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.chk_headers
 endif
 ifeq ($(strip $(UFAST)),)
-ifeq ($(SCRAM_VECTORIZATION),1)
+ifeq ($(SCRAM_MULTI_TARGET),1)
 $(foreach c,$(sort $(SCRAM_COMPILER) $(foreach x,$(ALL_PRODS),$($(x)_LOC_FLAGS_COMPILER))),\
-            $(eval $(call SetCompilerVectorization,$(c))))
+            $(eval $(call SetCompilerTargets,$(c))))
 endif
 $(foreach x,$(ALL_TOOLS),$(foreach err,$($(x)_USE_ERR),$(eval $(call UseError,$(err),$(x)))))
 ifeq ($(strip $(XFAST)),)
@@ -1871,15 +1871,15 @@ else
 dxr:
 	@$(CMD_echo) "**** ERROR: py2-dxr tool not available."
 endif
-disable-vectorize:
-	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/vectorize && $(CMD_echo) "Building with vectorization is disabled."
-enable-vectorize:
-	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/vectorize && $(CMD_echo) "Building with vectorization is enabled."
-check-vectorize:
-	@if [ -f $(SCRAM_ADMIN_DIR)/vectorize ] ; then \
-	  $(CMD_echo) Building with vectorization is enabled ;\
+disable-multi-targets:
+	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is disabled."
+enable-multi-targets:
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is enabled."
+check-multi-targets:
+	@if [ -f $(SCRAM_ADMIN_DIR)/multi-targets ] ; then \
+	  $(CMD_echo) Building with multi-targets is enabled ;\
 	else \
-	  $(CMD_echo) Building with vectorization is disabled ;\
+	  $(CMD_echo) Building with multi-targets is disabled ;\
 	fi
 enable-biglib:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/no-bigproduct && $(CMD_echo) "Building big products is activated."

@@ -77,9 +77,9 @@ if (exists $cache{toolcache}{SETUP}{self}{FLAGS})
       if (exists $cache{validlinks}{$ux}){$cache{defaultlinks}{$ux}=1;}
     }
   }
-  if (exists $flags->{SCRAM_VECTORIZE})
+  if (exists $flags->{SCRAM_TARGETS})
   {
-    foreach my $x (@{$flags->{SCRAM_VECTORIZE}})
+    foreach my $x (@{$flags->{SCRAM_TARGETS}})
     {
       my $cf = "LIBDIR";
       if (exists $cache{defaultlinks}{$cf})

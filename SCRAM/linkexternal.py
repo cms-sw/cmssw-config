@@ -230,8 +230,8 @@ def main():
             for x in flags["EXTERNAL_SYMLINK"]:
                 if x.upper() in cache["validlinks"]:
                     cache["defaultlinks"][x.upper()] = 1
-        if "SCRAM_VECTORIZE" in flags:
-            for x in flags["SCRAM_VECTORIZE"]:
+        if "SCRAM_TARGETS" in flags:
+            for x in flags["SCRAM_TARGETS"]:
                 cf = "LIBDIR"
                 if cf in cache["defaultlinks"]:
                     ux = "%s_%s" %  (x.upper(), cf)
