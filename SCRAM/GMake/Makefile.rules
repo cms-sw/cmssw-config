@@ -4,7 +4,7 @@ SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
 SCRAM_TARGETS:=$(self_EX_FLAGS_SCRAM_TARGETS)
-$(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr [a-z-] [A-Z_] | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
+$(foreach v,$(SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
 else
 SCRAM_MULTI_TARGET:=0
 endif

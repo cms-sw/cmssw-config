@@ -1,5 +1,6 @@
 #!/bin/bash
 
+[ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
 #No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set of set to "default"
 if [ "${SCRAM_TARGET}" = "" ] || [ "${SCRAM_TARGET}" = "default" ] ; then exit 0 ; fi

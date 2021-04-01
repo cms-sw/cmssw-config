@@ -1,5 +1,6 @@
 2021-04-01 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-22 Create edmplug cache file for extra taregts
+	V06-01-23 Always use default target during build phase
 2021-03-23 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-20 Use TARGETS keyword instead of VECTOR(IZE) for micro-
 	instructions set builds
