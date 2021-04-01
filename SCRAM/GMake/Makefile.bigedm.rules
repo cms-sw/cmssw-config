@@ -204,6 +204,10 @@ $(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPlugi
 	$(call run_plugin_refresh_cmd,edmPluginRefresh)
 $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh:
 	@:
+ifneq ($(strip $(SCRAM_TARGETS)),)
+  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_BIGLIB)/.edmplugincache)))
+  $(foreach v,$(SCRAM_TARGETS),$(eval bigedmPluginRefresh_cache+=$(SCRAMSTORENAME_BIGLIB)/$v/.edmplugincache))
+endif
 endif
 .PHONY: check_biglib_dependents
 check_dependents_%:

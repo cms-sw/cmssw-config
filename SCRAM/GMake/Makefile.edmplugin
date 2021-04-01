@@ -9,6 +9,13 @@ endef
 else
 run_edm_checks:=
 endif
+ifneq ($(strip $(SCRAM_TARGETS)),)
+  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_LIB)/.poisonededmplugincache)))
+  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_LIB)/.edmplugincache)))
+  ifneq ($(strip $(edmPluginRefresh_cache)),)
+    $(foreach v,$(SCRAM_TARGETS),$(eval edmPluginRefresh_cache+=$(SCRAMSTORENAME_LIB)/$v/.edmplugincache))
+  endif
+endif
 
 ifndef SCRAM_NOEDMWRITECONFIG
 EDM_WRITE_CONFIG_DB:=edm_write_config
@@ -238,9 +245,6 @@ $(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/
 	    $(CMD_cat) $$c >> $@;\
 	  done;\
 	done
-
-$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(SCRAMSTORENAME_LIB)/.poisonededmplugincache
-	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_ln) -sf ../$(@F) $@
 endif
 endif
 
