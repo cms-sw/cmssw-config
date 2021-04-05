@@ -84,8 +84,9 @@ if (exists $cache{toolcache}{SETUP}{self}{FLAGS})
       my $cf = "LIBDIR";
       if (exists $cache{defaultlinks}{$cf})
       {
-        my $ux=uc($x)+"_${cf}";
-        $cache{validlinks}{$ux}=$cache{validlinks}{$cf}+"/$x";
+        my $ux=uc($x)."_${cf}";
+        $ux=~s/-/_/g;
+        $cache{validlinks}{$ux}=$cache{validlinks}{$cf}."/$x";
         $cache{defaultlinks}{$ux}=1;
         if (exists $cache{ignorefiles}{$cf})
         {
