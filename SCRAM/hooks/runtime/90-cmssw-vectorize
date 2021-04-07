@@ -2,26 +2,37 @@
 
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
-#No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set of set to "default"
+#No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set or set to "default"
+if  [ "${SCRAM_TARGET}" = "" ] ; then
+  SCRAM_TARGET="$(${SCRAM} tool info self | grep '^SCRAM_TARGET=' | sed 's|.*=||')"
+fi
 if [ "${SCRAM_TARGET}" = "" ] || [ "${SCRAM_TARGET}" = "default" ] ; then exit 0 ; fi
 
-nehalem="core2"
-westmore="nehalem ${nehalem}"
+nocona=""
+core2="nocona ${nocona}"
+nehalem="core2 ${core2}"
+westmere="nehalem ${nehalem}"
+bonnell="core2 ${core2}"
+silvermont="westmere bonnell ${westmere} ${bonnell}"
 sandybridge="westmere ${westmere}"
 ivybridge="sandybridge ${sandybridge}"
-haswell="ivybridge ${ivybridge}"
-broadwell="haswell ${haswell}"
-skylake="broadwell ${broadwell}"
+haswell="bonnell ivybridge ${bonnell} ${ivybridge}"
+skylake="silvermont haswell ${silvermont} ${haswell}"
 skylake_avx512="skylake ${skylake}"
-
-bonnell="core2"
-
-silvermont="westmere ${westmere}"
+cascadelake="skylake-avx512 ${skylake_avx512}"
+cannonlake="skylake ${skylake}"
+icelake_client="cascadelake cannonlake ${cascadelake} ${cannonlake}"
+icelake_server="icelake-client ${icelake_client}"
+tigerlake="icelake-server ${icelake_server}"
 goldmont="silvermont ${silvermont}"
+cooperlake="cascadelake ${cascadelake}"
+sapphirerapids="cooperlake ${cooperlake}"
+broadwell="silvermont haswell ${silvermont} ${haswell}"
 goldmont_plus="goldmont ${goldmont}"
-tremont="goldmont_plus ${goldmont_plus}"
-knl="tremont ${tremont}"
+knl="silvermont haswell ${silvermont} ${haswell}"
 knm="knl ${knl}"
+alderlake="skylake ${skylake}"
+tremont="goldmont-plus ${goldmont_plus}"
 
 if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 LD_ENV=$(${SCRAM} tool info gcc-cxxcompiler | grep '^LD_LIBRARY_PATH='):${LD_LIBRARY_PATH}

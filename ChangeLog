@@ -1,6 +1,7 @@
+2021-04-07 Shahzad Muzaffar  <@smuzaffar>
+	V06-01-25 Added more targets matching set SCRAM_TARGET via Self.xml
 2021-04-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-24 Fix for externals symlinks for multiple targets
-
 2021-04-01 Shahzad Muzaffar  <@smuzaffar>
 	V06-01-22 Create edmplug cache file for extra taregts
 	V06-01-23 Always use default target during build phase
