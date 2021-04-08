@@ -1292,10 +1292,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.pushstash()
             self.lcgdict_template()
             self.popstash()
-        if self.get("rootdictfile"):
-            self.pushstash()
-            self.rootdict_template()
-            self.popstash()
         if self.get("cond_serialization"):
             self.pushstash()
             self.cond_serialization_template()
@@ -1304,18 +1300,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.pushstash()
             self.precompile_header_template()
             self.popstash()
-        return
-
-    def rootdict_template(self):
-        rootdict = self.get("rootdictfile")
-        xr = "y "
-        for i in range(1, len(rootdict) - 1):
-            xr += "y%s " % i
-        fh = self.data["FH"]
-        safename = self.get("safename")
-        fh.write("%s_ROOTDICTS  := %s\n" % (safename, xr))
-        fh.write("{0}_PRE_INIT_FUNC += $$(eval $$(call RootDict,{0},{1},{2},$({3})))\n".format(
-            safename, self.get("path"), " ".join(rootdict), self.getProductStore("lib")))
         return
 
     def cond_serialization_template(self):
@@ -1606,7 +1590,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         lcgheader = []
         lcgxml = []
         genreflex_args = "$(GENREFLEX_ARGS)"
-        rootdict = []
         path = self.get('path')
         dir = path
         files = self.core.get_product_files()
@@ -1680,13 +1663,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         elif(xc > 0):
             SCRAM.printerror("****WARNING: Not going to generate LCG DICT from '%s' because "
                              "NO. of .h (%s) does not match NO. of .xml (%s) files.\n" % (path, hfile, xfile))
-        for file in all_files:
-            if file.endswith("LinkDef.h"):
-                rootdict.append(file.replace(path, "").strip("/"))
         self.set('classes_def_xml', lcgxml)
         self.set('classes_h', lcgheader)
         self.set('genreflex_args', genreflex_args)
-        self.set('rootdictfile', rootdict)
         serial_file = "headers.h"
         precomp_file = "precompile.h"
         if stubdir:

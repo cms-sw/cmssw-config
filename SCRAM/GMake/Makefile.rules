@@ -1276,7 +1276,6 @@ ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/cuda)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.cuda
 endif
 ifneq ($(strip $(ROOTRFLX_BASE)),)
-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.rootdict
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
 endif
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization

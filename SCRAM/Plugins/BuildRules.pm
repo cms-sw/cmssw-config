@@ -1106,7 +1106,6 @@ sub searchForSpecialFiles ()
   my $lcgheader=[];
   my $lcgxml=[];
   my $genreflex_args="\$(GENREFLEX_ARGS)";
-  my $rootdict=[];
   my $path=$stash->get('path');
   my $dir=$path;
   my $top=$ENV{LOCALTOP};
@@ -1194,22 +1193,9 @@ sub searchForSpecialFiles ()
     }
   }
   elsif($xc>0){print STDERR "****WARNING: Not going to generate LCG DICT from \"$path\" because NO. of .h (\"$hfile\") does not match NO. of .xml (\"$xfile\") files.\n";}
-  my $dref;
-  my $bn=$self->{cache}{BuildFile};
-  opendir($dref, $dir) || die "ERROR: Can not open \"$dir\" directory. \"${path}/${bn}\" is refering for files in this directory.";
-  foreach my $file (readdir($dref))
-  {
-    if($file=~/.*?LinkDef\.h$/)
-    {
-      if($stubdir ne ""){$file="${stubdir}/${file}";}
-      push @$rootdict,$file;
-    }
-  }
-  closedir($dref);
   $stash->set('classes_def_xml', $lcgxml);
   $stash->set('classes_h', $lcgheader);
   $stash->set('genreflex_args', $genreflex_args);
-  $stash->set('rootdictfile', $rootdict);
   if (($class eq "LIBRARY") && (-f "${path}/headers.h")){$stash->set('cond_serialization', "${path}/headers.h");}
   if (($class eq "LIBRARY") && (-f "${path}/precompile.h")){$stash->set('precompile_header', "precompile.h");}
   return;
@@ -1932,13 +1918,6 @@ sub dict_template()
     $self->lcgdict_template();
     $self->popstash();
   }
-  $x = $self->get("rootdictfile");
-  if (scalar(@$x)>0)
-  {
-    $self->pushstash();
-    $self->rootdict_template();
-    $self->popstash();
-  }
   if ($self->get("cond_serialization") ne "")
   {
     $self->pushstash();
@@ -1952,19 +1931,6 @@ sub dict_template()
     $self->popstash();
   }
   return 1;
-}
-
-sub rootdict_template()
-{
-  my $self=shift;
-  my $safename=$self->get("safename");
-  my $fh=$self->{FH};
-  my $x = $self->get("rootdictfile");
-  my $xr = "y ";
-  my $xf = join(" ",@$x);
-  for(my $i=1;$i<scalar(@$x);$i++){$xr.="y${i} ";}
-  print $fh "${safename}_ROOTDICTS  := $xr\n";
-  print $fh "${safename}_PRE_INIT_FUNC += \$\$(eval \$\$(call RootDict,${safename},",$self->get("path"),",$xf,\$(",$self->getProductStore("lib"),")))\n";
 }
 
 sub cond_serialization_template()
