@@ -1615,8 +1615,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         h = [join(path, x) for x in hfile.split(" ")]
         x = [join(path, x) for x in xfile.split(" ")]
         xc = len(x)
+        xclass = self.get('class')
         if (len(h) == xc) and (xc > 0):
-            pack = self.get("parent")
             for i in range(xc):
                 xf = x[i]
                 if xf in all_files:
@@ -1626,8 +1626,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                         xmldef[xf] = "$(WORKINGDIR)/classes/%s.h" % xf
                     else:
                         xmldef[xf] = ""
-                elif (xf not in xmldef) and (pack in self.cache["LCGDICT_PACKAGE"]):
-                    xmldef["$(WORKINGDIR)/classes/classes_def.xml"] = "$(WORKINGDIR)/classes/classes.h"
+                if (xf not in xmldef) or (xmldef[xf] == ""):
+                    if (xclass == "LIBRARY") and (self.get("parent") in self.cache["LCGDICT_PACKAGE"]):
+                        xmldef["$(WORKINGDIR)/classes/classes_def.xml"] = "$(WORKINGDIR)/classes/classes.h"
         h = []
         x = []
         for f in xmldef:
@@ -1671,7 +1672,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         if stubdir:
             serial_file = join(stubdir, serial_file)
             precomp_file = join(stubdir, precomp_file)
-        if self.get("class") == "LIBRARY":
+        if xclass == "LIBRARY":
             serial_file = "headers.h"
             precomp_file = "precompile.h"
             if stubdir:

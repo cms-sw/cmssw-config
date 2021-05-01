@@ -1,5 +1,6 @@
 2021-05-01 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-01 Fix EDM_TOOL_PREFIX issue for SCRAM V3
+	V06-02-02 Fix lcgdict rules for CXXMODULE IBs
 2021-04-07 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-00 Disable rootdict rule for LinkDef.h files. One should use
 	classes.h and classes_def.xml files for declaring dictionaries
