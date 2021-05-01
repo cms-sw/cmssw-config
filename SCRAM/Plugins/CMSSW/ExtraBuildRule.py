@@ -1,13 +1,6 @@
 from os import environ
 from re import compile
 
-re_check = {
-    "_mic_": compile(r"_mic_"),
-    "_ASAN_": compile(r"_ASAN_"),
-    "_UBSAN_": compile(r"_UBSAN_"),
-    "_TSAN_": compile(r"_TSAN_")
-}
-
 
 class ExtraBuildRule:
 
@@ -35,7 +28,7 @@ class ExtraBuildRule:
         fh.write("COND_SERIALIZATION:=$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python"
                  "/condformats_serialization_generate.py\n")
         fh.write("ALL_EXTRA_PRODUCT_RULES+=LCG\n")
-        if re_check["_mic_"].match(environ["SCRAM_ARCH"]):
+        if "_mic_" in environ["SCRAM_ARCH"]:
             fh.write("EDM_WRITE_CONFIG:=true\n"
                      "EDM_CHECK_CLASS_VERSION:=true\n"
                      "EDM_CHECK_CLASS_TRANSIENTS=true\n")
@@ -45,11 +38,11 @@ class ExtraBuildRule:
                 "EDM_CHECK_CLASS_VERSION:=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n"
                 "EDM_CHECK_CLASS_TRANSIENTS=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassTransients\n"
             )
-            if re_check["_ASAN_"].match(environ["SCRAM_PROJECTVERSION"]):
+            if "_ASAN_" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libasan.so\n")
-            if re_check["_UBSAN_"].match(environ["SCRAM_PROJECTVERSION"]):
+            if "_UBSAN_" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libubsan.so\n")
-            if re_check["_TSAN_"].match(environ["SCRAM_PROJECTVERSION"]):
+            if "_TASAN_" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libtsan.so\n")
 
         fh.write("COMPILE_PYTHON_SCRIPTS:=yes\n"
