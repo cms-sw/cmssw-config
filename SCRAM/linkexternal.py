@@ -213,9 +213,6 @@ def main():
     if (not all) and ("RELEASETOP" not in projdata):
         all = True
 
-    if not exists(join(localtop, ".SCRAM", args.arch, "ProductCache.txt")):
-        SCRAM.run_command("%s build -r echo_CXX >/dev/null 2>&1" % SCRAM_CMD)
-
     area = ConfigArea()
     area.location(localtop)
     tm = ToolManager(area)
