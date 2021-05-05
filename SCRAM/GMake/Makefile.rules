@@ -407,10 +407,10 @@ define biglib_setup
   for tool in $(SCRAM_CONFIGDIR)/Self.xml $(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/$$proj_tool.xml ; do \
     [ -f $$tool ] || continue ;\
     if [ $@ = "disable-biglib" ] ; then \
-      [ `grep '#:DISABLED_BIGLIB:#' $$tool | $(CMD_wc) -l` -eq 0 ] || continue ;\
-      $(CMD_sed) -i -e 's|^\( *<runtime .*/biglib/\)|#:DISABLED_BIGLIB:#\1|' $$tool ;\
-    elif [ `grep '#:DISABLED_BIGLIB:#' $$tool | $(CMD_wc) -l` -gt 0 ] ; then \
-      $(CMD_sed) -i -e 's|#:DISABLED_BIGLIB:#||' $$tool ;\
+      [ `grep ':DISABLED_BIGLIB:' $$tool | $(CMD_wc) -l` -eq 0 ] || continue ;\
+      $(CMD_sed) -i -e 's|^\( *<runtime .*/biglib/.*\)|<!--:DISABLED_BIGLIB: \1 :DISABLED_BIGLIB:-->|' $$tool ;\
+    elif [ `grep ':DISABLED_BIGLIB:' $$tool | $(CMD_wc) -l` -gt 0 ] ; then \
+      $(CMD_sed) -i -e 's|<!--:DISABLED_BIGLIB: ||;s| :DISABLED_BIGLIB:-->||' $$tool ;\
     else \
       continue ;\
     fi ;\
