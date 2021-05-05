@@ -1,5 +1,5 @@
 2021-05-05 Shahzad Muzaffar  <@smuzaffar>
-	V06-02-05 Fix biglib enable/disable rule. SCRAMV3 does not recognize
+	V06-02-04 Fix biglib enable/disable rule. SCRAMV3 does not recognize
 	'#' as valid comment tag.
 2021-05-03 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-03 Fix for recursive scram build for link externals
