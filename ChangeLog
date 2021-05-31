@@ -1,3 +1,5 @@
+2021-05-31 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-05: Fix issue with newly added package compilation
 2021-05-05 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-04 Fix biglib enable/disable rule. SCRAMV3 does not recognize
 	'#' as valid comment tag.

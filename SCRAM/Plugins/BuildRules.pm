@@ -1713,6 +1713,7 @@ sub SubSystem_template()
   my $path = $self->get("path"); $path=~s/^$src\///;
   print $fh "ALL_SUBSYSTEMS+=$path\n";
   print $fh "subdirs_",$self->get("safepath")," = ",$self->core()->safesubdirs(),"\n";
+  print $fh "subdirs_${src} += ",$self->get("safepath"),"\n";
   return 1;
 }
 
@@ -1831,9 +1832,7 @@ sub Project_template()
             "\$(error Release area has been removed/modified as \$(RELEASETOP)/\$(PUB_DIRCACHE_MKDIR)/DirCache.mk is missing.)\n",
             "endif\n",
             "endif\n",
-            "LIBTYPE:= ",$core->data("LIBTYPE"),"\n",
-	    "\n",
-            "subdirs_${safepath}+=\$(filter-out Documentation, ",$core->safesubdirs(),")\n\n";
+            "LIBTYPE:= ",$core->data("LIBTYPE"),"\n\n";
 
   $self->processTemplate("Project");
   $self->createSymLinks();

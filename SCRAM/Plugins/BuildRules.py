@@ -1072,6 +1072,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         path = path[len(src):]
         fh.write("ALL_SUBSYSTEMS+=%s\n" % path)
         fh.write("subdirs_%s = %s\n" % (self.get("safepath"), subdirs))
+        fh.write("subdirs_%s += %s\n" % (src[:-1], self.get("safepath")))
 
     def Package_template(self):
         self.initTemplate_common2all()
@@ -1145,10 +1146,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  "$(error Release area has been removed/modified as $(RELEASETOP)/$(PUB_DIRCACHE_MKDIR)/DirCache.mk "
                  "is missing.)\n"
                  "endif\n"
-                 "endif\n\n"
-                 "subdirs_{}+=$(filter-out Documentation, {})\n\n".format(
-                     self.getGenReflexPath(), self.getRootClingPath(),
-                     safepath, self.getSafeSubPaths(path)))
+                 "endif\n\n".format(
+                     self.getGenReflexPath(), self.getRootClingPath()))
 
         self.processTemplate("Project")
         self.createSymLinks()
