@@ -19,48 +19,54 @@ localtop = environ["CMSSW_BASE"]
 files = [ "/src/"+f.split(argv[1],1)[-1][:-5].strip("/") for f in o.split("\n") ]
 ignore_files=[]
 track_changes = {}
-print ("Changed files:  ",'\n  '.join(files))
 for f in o.split("\n"):
-  print ("Working on",f)
+  print (">> Processing",f)
   obj = yaml.load(open(f), Loader=yaml.SafeLoader)
   if not obj: obj={"Diagnostics":[]}
-  change = 0
-  new_dia = []
-  if (not "Diagnostics" in obj) or (not obj["Diagnostics"]):
+  if ("Diagnostics" not in obj) or (not obj["Diagnostics"]):
+    print("  Deleting: No Diagnostics found")
     run_cmd("rm -f %s" % f)
     continue
+  change = 0
+  new_dia = []
   atN = False
   for d in obj["Diagnostics"]:
-    new_rep = []
     d1 = d
     if 'DiagnosticMessage' in d: d1 = d['DiagnosticMessage']
-    if (not "Replacements" in d1) or (not d1["Replacements"]): continue
+    if ("FilePath" not in d1): continue
+    rf = "/"+d1["FilePath"].split(localtop,1)[-1].strip("/")
+    if rf not in files:
+      if rf not in ignore_files:
+        ignore_files.append(rf)
+        print ("  Ignoring file",rf," as it is not part of changed fileset")
+      change+=1
+      continue
+    if ("FileOffset" not in d1): continue
     dia_key='%s:%s:%s' % (d["DiagnosticName"], d1['FilePath'], d1['FileOffset'])
     if dia_key in track_changes:
-      print ("Dropping %s from %s. found in %s" % (dia_key, f, track_changes[dia_key]))
+      print ("  Dropping %s from %s. found in %s" % (dia_key, f, track_changes[dia_key]))
       change+=1
       continue
     track_changes[dia_key] = f
-    for r in d1["Replacements"]:
-      rf = "/"+r["FilePath"].split(localtop,1)[-1].strip("/")
-      if rf in files:
+    ds = [d1]
+    if ("Notes" in d): ds = d["Notes"]
+    new_rep = False
+    for xd in ds:
+      if ("Replacements" not in xd) or (not xd["Replacements"]): continue
+      new_rep = True
+      for r in xd["Replacements"]:
         if d["DiagnosticName"] in ['readability-braces-around-statements']:
           if r['ReplacementText'] == ' }':
             r['ReplacementText']='@N@}'
             atN = True
+            change+=1
         elif d["DiagnosticName"] in ['performance-inefficient-vector-operation']:
           r['ReplacementText'] = r['ReplacementText'].replace('\n','@N@ ')
           atN = True
           change+=1
-        new_rep.append(r)
-      else:
-        if not rf in ignore_files:
-          ignore_files.append(rf)
-          print ("  Ignoring file",rf," as it is not part of changed fileset")
-        change+=1
     if new_rep: new_dia.append(d)
   if new_dia:
-    print ("Clang Tidy cleanup: ",f,change)
+    print ("  Clang Tidy cleanup: ",f,change)
     if change>0:
       obj["Diagnostics"]=new_dia
       ref = open(f,"w")
