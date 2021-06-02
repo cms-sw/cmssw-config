@@ -61,6 +61,7 @@ code-checks-run: llvm-ccdb
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-internal
 	@$(NO_CODE_CHECKS_APPLY_MSG) $(CMD_echo) "You can run 'scram build code-checks-apply' to apply the changes"
 code-checks-all: code-checks-run
+	@if [ "$(USER_CODE_CHECKS_FILES)$(USER_CODE_CHECKS_FILE)" = "" ] ; then $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/code-checks-header-yaml ;fi
 	@$(MAKE) -f $(SCRAM_MAKEFILE) code-checks-apply
 code-checks-apply:
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
@@ -88,7 +89,7 @@ endif
 ifneq ($(strip $(filter code-checks-internal,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
   ifeq ($(strip $(USER_CODE_CHECKS_FILES)$(USER_CODE_CHECKS_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in  json.load(open("compile_commands.json"))])'))
+    CODE_CHECK_FILES:=$(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in json.load(open("compile_commands.json")) if "/test/" not in x["file"] ])'))
   else ifneq ($(strip $(USER_CODE_CHECKS_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_CHECKS_FILE)))
   else
