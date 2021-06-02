@@ -1,3 +1,7 @@
+2021-06-02 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-06: Fix code-checks rules
+	- Process all headers files for code-checks-all
+	- Fix clang-tidy apply script to make use of Notes Diagnostics
 2021-05-31 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-05: Fix issue with newly added package compilation
 2021-05-05 Shahzad Muzaffar  <@smuzaffar>
