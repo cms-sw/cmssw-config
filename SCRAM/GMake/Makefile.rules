@@ -39,6 +39,7 @@ ALL_BUILDFILES     :=
 ALL_PRODS          :=
 ALL_MODULEMAPS     :=
 AUTO_GENERATED_SOURCES :=
+UNIT_TEST_DEPS     :=
 RESET_BUILD_LOGS:=yes
 TOP_LEVEL_VARIABLES:= BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
@@ -1085,7 +1086,7 @@ runtests_$(6) += runtests_$(1)
 unittests_$(6) += unittests_$(1)
 runtests_$(1): all_$(1) $(patsubst %,runtests_%,$($(1)_PRE_TEST)) unittests_$(1)
 	@:
-unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log
+unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS)
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 ifeq ($(strip $(4)),lib)
@@ -1296,6 +1297,11 @@ define SetTargetType
 ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
   UPDATE_CLASSVERSION:=yes
 endif
+ifneq ($(strip $(filter use-ibeos,$(MAKECMDGOALS))),)
+export CMS_PATH=/cvmfs/cms-ib.cern.ch
+export PATH=$(LOCALTOP)/$(WORKINGDIR)/das_client:$(PATH)
+UNIT_TEST_DEPS+=use-ibeos
+endif
 ifneq ($(strip $(filter PostBuild,$(MAKECMDGOALS))),)
 RESET_BUILD_LOGS:=no
 endif
@@ -1464,6 +1470,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) ""
 	@$(CMD_echo) "unittests"
 	@$(CMD_echo) "  Same as runtests but does not try to build the test first."
+	@$(CMD_echo) ""
+	@$(CMD_echo) "use-ibeos runtests"
+	@$(CMD_echo) "  Same as runtests but uses IBEOS area for DAS queries and root files."
 	@$(CMD_echo) ""
 	@$(CMD_echo) "skiptest_<testname>"
 	@$(CMD_echo) "  To skip running <testname> unit test during the unittests or runtests"
@@ -1915,7 +1924,15 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted emit-llvm
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos
+use-ibeos: $(WORKINGDIR)/das_client/dasgoclient
+$(WORKINGDIR)/das_client/dasgoclient: $(WORKINGDIR)/das_client/das_client
+	@ln -sf das_client $@
+	@$(CMD_echo) ">> Created $@"
+$(WORKINGDIR)/das_client/das_client:
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+	curl -L -s --connect-timeout 10 https://raw.githubusercontent.com/cms-sw/cms-bot/master/das-utils/das_client  > $@ &&\
+        chmod +x $@
 emit-llvm:
 	SCRAM_APPLY_BIGLIB_RULES=no \
         SCRAM_SYNTAX_ONLY=yes \

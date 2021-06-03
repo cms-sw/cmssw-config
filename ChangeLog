@@ -1,5 +1,7 @@
 2021-06-03 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-07: More fixes for clang-tidy Notes Diagnostics
+	V06-02-08: Added use-ibeos run which should be used with runtests
+	so DAS queries and root files are picked up from IBEOS area.
 2021-06-02 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-06: Fix code-checks rules
 	- Process all headers files for code-checks-all
