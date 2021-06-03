@@ -49,7 +49,7 @@ for f in o.split("\n"):
       continue
     track_changes[dia_key] = f
     ds = [d1]
-    if ("Notes" in d): ds = d["Notes"]
+    if ("Notes" in d): ds = ds + d["Notes"]
     new_rep = False
     for xd in ds:
       if ("Replacements" not in xd) or (not xd["Replacements"]): continue
