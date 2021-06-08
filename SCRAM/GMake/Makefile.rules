@@ -1879,8 +1879,10 @@ endif
 ifneq ($(strip $(PY2_DXR_BASE)),)
 dxr:    $(SCRAM_SOURCEDIR)/dxr.config
 	@$(CMD_mkdir) -p dxr && SCRAM_DXR_RUN=yes $(PY2_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
-$(SCRAM_SOURCEDIR)/dxr.config: $(SCRAM_CONFIGDIR)/dxr.config
-	@$(CMD_sed) -e "s|@LOCALTOP@|$$LOCALTOP|g" $< > $@ && $(CMD_echo) ">> Regenerated $@"
+$(SCRAM_SOURCEDIR)/dxr.config: $(SCRAM_CONFIGDIR)/dxr.config FORCE_TARGET
+	@MKJOBS=$$(echo $(MAKEFLAGS) | sed 's|.* -j||;s| .*||') &&\
+	if [ "$$MKJOBS" = "" ] ; then MKJOBS=1; fi ;\
+	$(CMD_sed) -e "s|@LOCALTOP@|$$LOCALTOP|g;s|@JOBS@|$$MKJOBS|g" $< > $@ && $(CMD_echo) ">> Regenerated $@"
 else
 dxr:
 	@$(CMD_echo) "**** ERROR: py2-dxr tool not available."

@@ -1,3 +1,5 @@
+2021-06-08 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-10 Do not run too many python threads for processing DXR files.
 2021-06-04 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-09: Typo, fixed TSAN EDM_TOOLS_PREFIX issue
 2021-06-03 Shahzad Muzaffar  <@smuzaffar>
