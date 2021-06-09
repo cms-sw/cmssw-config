@@ -409,7 +409,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 continue
             if key in ["SCRAM_BUILDVERBOSE", "SCRAM_NOPLUGINREFRESH", "SCRAM_NOSYMCHECK", "SCRAM_NOLOADCHECK",
                        "SCRAM", "SCRAM_TOOL_HOME", "SCRAM_VERSION", "SCRAM_LOOKUPDB", "SCRAM_SYMLINKS",
-                       "SCRAM_TEST_RUNNER_PREFIX"]:
+                       "SCRAM_TEST_RUNNER_PREFIX", "SCRAM_NOEDM_CHECKS"]:
                 continue
             if not self.shouldAddToolVariables(key):
                 continue

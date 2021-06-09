@@ -1,3 +1,5 @@
+2021-06-10 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-11 Do not persist SCRAM_NOEDM_CHECKS
 2021-06-08 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-10 Do not run too many python threads for processing DXR files.
 2021-06-04 Shahzad Muzaffar  <@smuzaffar>
