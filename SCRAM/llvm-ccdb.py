@@ -1,21 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from sys import exit, stdout, stderr, argv
 from os import getenv
 from os.path import join, exists, basename
 try: import json
 except:import simplejson as json
-
-try: from commands import getstatusoutput as run_cmd
-except:
-  try: from subprocess import getstatusoutput  as run_cmd
-  except:
-    def run_cmd(command2run):
-      from subprocess import Popen, PIPE, STDOUT
-      cmd = Popen(command2run, shell=True, stdout=PIPE, stderr=STDOUT)
-      (output, errout) = cmd.communicate()
-      if isinstance(output,bytes): output =  output.decode()
-      if output[-1:] == '\n': output = output[:-1]
-      return (cmd.returncode, output)
+from subprocess import getstatusoutput  as run_cmd
 
 def print_msg(msg,stream=stdout,newline="\n"): stream.write(msg+newline)
 try: LLVM_CCDB_NAME = argv[1]

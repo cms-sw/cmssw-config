@@ -1,14 +1,10 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 import yaml
 import json
 from os import environ
 from sys import argv, exit
 from os.path import join
-try:
-  from commands import getstatusoutput as run_cmd
-except:
-  from subprocess import getstatusoutput as run_cmd
+from subprocess import getstatusoutput as run_cmd
 
 e, o = run_cmd ("find %s -name '*.yaml' -type f" % argv[1])
 if e:

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#!/usr/bin/env python3
 import sys, re, os, json, gzip, shutil
 from argparse import ArgumentParser
 from os import path, environ, stat, unlink, utime

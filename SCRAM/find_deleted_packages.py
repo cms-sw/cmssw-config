@@ -1,12 +1,8 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 from sys import argv, exit, stderr
 from os.path import exists
 import re
-try:
-  from commands import getstatusoutput as run_cmd
-except:
-  from subprocess import getstatusoutput as run_cmd
+from subprocess import getstatusoutput as run_cmd
 
 
 try:    tag = argv[1]
