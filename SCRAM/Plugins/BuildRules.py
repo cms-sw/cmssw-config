@@ -1,9 +1,10 @@
 import SCRAM
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from SCRAM.BuildSystem import get_safename
-from os import environ, rename, symlink, listdir, makedirs, unlink, stat
+from os import environ, symlink, listdir, makedirs, unlink, stat
 from os.path import normpath, exists, join, isdir, islink, dirname, basename
 from os.path import sep as dirsep
+from shutil import move
 import importlib
 import re
 
@@ -67,7 +68,7 @@ class BuildRules(object):
             unlink(ofile)
         elif self.data["swap_prod_mkfile"]:
             nfile = ofile.replace(self.cache["toolcache"].area.admindir(), environ["SCRAM_TMP"])
-            rename(ofile, nfile)
+            move(ofile, nfile)
             ofile = nfile
         if remake:
             self.addRemakeDirectory(dirname(ofile))
