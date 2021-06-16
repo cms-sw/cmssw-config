@@ -1,3 +1,5 @@
+2021-06-16 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-13 Use shutil.move which works for cross-device
 2021-06-11 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-12 Use python3 for scripts
 2021-06-10 Shahzad Muzaffar  <@smuzaffar>
