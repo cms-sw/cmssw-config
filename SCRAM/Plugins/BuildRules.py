@@ -1202,6 +1202,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                             err = True
                             SCRAM.printerror('****ERROR: Only allowed values for "%s" flag are "0|1". '
                                              'Please fix this for "%s" library in "%s" file' % (pflag, libname, bf))
+                        else:
+                            plugin = int(plugin)
             if len(xflags) > 1:
                 SCRAM.printerror('****ERROR: More than one plugin flags')
                 for f in xflags:

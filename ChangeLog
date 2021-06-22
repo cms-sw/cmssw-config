@@ -1,3 +1,5 @@
+2021-06-22 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-15 Bug fix: properly handle EDM_PLUGIN=0 flags
 2021-06-20 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-14 Add unit test time in the log
 2021-06-16 Shahzad Muzaffar  <@smuzaffar>
