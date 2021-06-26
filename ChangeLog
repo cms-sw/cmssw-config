@@ -1,3 +1,5 @@
+021-06-26 Shahzad Muzaffar  <@smuzaffar>
+	V06-02-16 Added detect_odr_violation=0 to ASAN_OPTIONS
 2021-06-22 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-15 Bug fix: properly handle EDM_PLUGIN=0 flags
 2021-06-20 Shahzad Muzaffar  <@smuzaffar>
