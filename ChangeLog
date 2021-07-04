@@ -1,4 +1,6 @@
-021-06-26 Shahzad Muzaffar  <@smuzaffar>
+2021-07-04 Shahzad Muzaffar  <@smuzaffar>
+        V06-02-17 Use python3 for boost serialization
+2021-06-26 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-16 Added detect_odr_violation=0 to ASAN_OPTIONS
 2021-06-22 Shahzad Muzaffar  <@smuzaffar>
 	V06-02-15 Bug fix: properly handle EDM_PLUGIN=0 flags
