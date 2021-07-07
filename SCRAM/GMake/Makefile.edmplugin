@@ -22,7 +22,7 @@ EDM_WRITE_CONFIG_DB:=edm_write_config
 define edm_write_config
   $(CMD_rm) -rf $(<D)/$(EDM_WRITE_CONFIG_DB) && $(CMD_mkdir) -p $(<D)/$(EDM_WRITE_CONFIG_DB) &&\
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
-  ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
+  ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) python3 $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   $(CMD_touch) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/.$(EDM_WRITE_CONFIG_DB) &&\
   for file in `$(CMD_ls) $(<D)/$(EDM_WRITE_CONFIG_DB)`; do \
     $(CMD_cp) -f $(<D)/$(EDM_WRITE_CONFIG_DB)/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE) &&\
@@ -108,8 +108,8 @@ define update_edm_class_version
     fname=`$(CMD_basename) $$x` &&\
     $(CMD_echo) ">> Checking $$x for EDM Class Version update" &&\
     [ -d $(@D)/$$fname ] || $(CMD_mkdir) -p $(@D)/$$fname &&\
-    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $@ -x $$x &&\
-    (($(CMD_cd) $(@D)/$$fname && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(LOCALTOP)/$@ -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
+    $(VERB_ECHO)  python3 $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $@ -x $$x &&\
+    (($(CMD_cd) $(@D)/$$fname && python3 $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(LOCALTOP)/$@ -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
     if [ -f $(@D)/$$fname/classes_def.xml.generated ] ; then \
       if [ "X`$(CMD_diff) $(@D)/$$fname/classes_def.xml.generated $$x | $(CMD_wc) -l`" != "X0" ] ; then \
         $(CMD_cp) $(@D)/$$fname/classes_def.xml.generated  $$x.generated &&\
@@ -127,8 +127,8 @@ endif
 define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    $(VERB_ECHO) python3 $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x &&\
+    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) python3 $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
