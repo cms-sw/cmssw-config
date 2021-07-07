@@ -22,7 +22,7 @@ EDM_WRITE_CONFIG_DB:=edm_write_config
 define edm_write_config
   $(CMD_rm) -rf $(<D)/$(EDM_WRITE_CONFIG_DB) && $(CMD_mkdir) -p $(<D)/$(EDM_WRITE_CONFIG_DB) &&\
   $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
-  ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) python3 $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
+  ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   $(CMD_touch) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/.$(EDM_WRITE_CONFIG_DB) &&\
   for file in `$(CMD_ls) $(<D)/$(EDM_WRITE_CONFIG_DB)`; do \
     $(CMD_cp) -f $(<D)/$(EDM_WRITE_CONFIG_DB)/$$file $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE) &&\
