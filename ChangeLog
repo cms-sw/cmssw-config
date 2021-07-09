@@ -1,5 +1,5 @@
 2021-07-09 Shahzad Muzaffar  <@smuzaffar>
-	V06-02-20 set SCRAM_TEST_NAME, SCRAM_TEST_PATH, SCRAM_TEST_PACKAGE and
+	V06-02-22 set SCRAM_TEST_NAME, SCRAM_TEST_PATH, SCRAM_TEST_PACKAGE and
 	SCRAM_TEST_PRE_TEST env for each unit test.
 	Cleanup explicit python3 class to edm tools. tools has been fixed in
 	cmssw
