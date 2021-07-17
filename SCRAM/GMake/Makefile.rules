@@ -1879,9 +1879,9 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 endif
 endif
 endif
-ifneq ($(strip $(PY2_DXR_BASE)),)
+ifneq ($(strip $(PY3_DXR_BASE)),)
 dxr:    $(SCRAM_SOURCEDIR)/dxr.config
-	@$(CMD_mkdir) -p dxr && SCRAM_DXR_RUN=yes $(PY2_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
+	@$(CMD_mkdir) -p dxr && SCRAM_DXR_RUN=yes $(PY3_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
 $(SCRAM_SOURCEDIR)/dxr.config: $(SCRAM_CONFIGDIR)/dxr.config FORCE_TARGET
 	@MKJOBS=$$(echo $(MAKEFLAGS) | sed 's|.* -j||;s| .*||') &&\
 	if [ "$$MKJOBS" = "" ] ; then MKJOBS=1; fi ;\
