@@ -38,6 +38,9 @@ ALL_EMPTY_PACKAGES :=
 ALL_BUILDFILES     :=
 ALL_PRODS          :=
 ALL_MODULEMAPS     :=
+#Default python to use, leave it empty for python 2
+DEFAULT_PYTHON     := 3
+PYTHON_COMPILE     := $(PYTHON$(DEFAULT_PYTHON)_COMPILE)
 AUTO_GENERATED_SOURCES :=
 UNIT_TEST_DEPS     :=
 RESET_BUILD_LOGS:=yes
@@ -88,7 +91,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv perl python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -139,6 +142,7 @@ $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetLocalCMDs,$(subst :,$(comma)
 $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
 PYTHON_RELPATH := $(shell $(CMD_echo) $(SCRAMSTORENAME_PYTHON) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
+CMD_python := $(CMD_python$(DEFAULT_PYTHON))
 ###################################
 UNAME                       := $(CMD_uname)
 ifndef CXX_MF
@@ -252,9 +256,6 @@ find_project_file=$(call find_release_file,$1,$(LOCALTOP))
 find_release_file=$(strip $(eval scram_pfp:=)$(foreach d,$(strip $2 $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(scram_pfp)),,$(eval scram_pfp:=$(wildcard $(d)/$(1)))))$(scram_pfp))
 do_rsort=$(if $(wordlist 2,2,$(1)),$(call do_rsort,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)),$(1))
 rsort=$(call do_rsort,$(sort $1))
-define GetTimeStamp
-$(CMD_perl) -e '@d=stat "$(1)"; print "$$d[9]\n";'
-endef
 define Uniq
 $(eval uniq_string_:=)$(strip $(foreach v,$(1),$(if $(filter $(v),$(uniq_string_)),,$(eval uniq_string_+=$(v))))$(uniq_string_))
 endef
@@ -326,8 +327,7 @@ Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFI
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
-CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_perl) \-e '@z=($(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))); \
-                     @z=sort {$$a <=> $$b} @z;$$x=$$z[0];$$x--;print "$$x";'),$(2))
+CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
 FindToolDependency=$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
@@ -660,9 +660,9 @@ define processTmpMMDData
   [ -f $(basename $@).d ] && $(CMD_sed) -e 's# $1# $3#g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
 endef
 define compile_python
-  $(CMD_echo) ">> Compiling python modules $1" &&\
-  $(VERB_ECHO) "$(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)) -m compileall -q $1" &&\
-  $(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
+  $(CMD_echo) ">> Compiling python$(if $(strip $($2_LOC_FLAGS_PYTHON_VERSION)),$($2_LOC_FLAGS_PYTHON_VERSION),$(DEFAULT_PYTHON)) modules $1" &&\
+  $(VERB_ECHO) "$(if $(strip $($2_LOC_FLAGS_PYTHON_VERSION)),$(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)),$(CMD_python)) -m compileall -q $1" &&\
+  $(if $(strip $($2_LOC_FLAGS_PYTHON_VERSION)),$(CMD_python$($2_LOC_FLAGS_PYTHON_VERSION)),$(CMD_python)) -m compileall -q $1 || $(CMD_touch) $(COMMON_WORKINGDIR)/cache/python_error
 endef
 
 define run_postprocess
@@ -727,14 +727,6 @@ define script_copy
   $(CMD_cp) -rp $< $@	&&\
   $(CMD_echo) ">> Copied $(@F)" $(endlog_$(2))
 endef
-define generate_python_bytecode
-  if [ "X$(PYTHON_COMPILE)" != X ] ; then \
-    $(CMD_echo) ">> Generating python byte-code: $(1)" && \
-    python $(PYTHON_COMPILE) -f $(1) >/dev/null 2>&1; \
-  else \
-    $(CMD_echo) "Python tool is not used. So not going to generate byte-code." ; \
-  fi
-endef
 define copy_src_scripts
   @$(startlog_$(2))$(CMD_echo) "------- copying scripts from $(1) -------" &&\
   for f in $(3); do \
@@ -784,24 +776,11 @@ define run_test
 endef
 
 ##############################################################################
-define bf_update
-  @if [ ! -f $@ ] || [ "X$($(1)_BuildFile)" = X ] ; then \
-    $(CMD_touch) $@;\
-  elif [ "X`$(call get_time_stamp,$@)`" != "X`$(call get_time_stamp,$($(1)_BuildFile))`" ] ; then \
-      $(CMD_touch) $@;\
-  fi
-endef
 define config_update
   @[ -d  $(@D)] || $(CMD_mkdir) -p $(@D) ; $(CMD_touch) $@ ;\
   if [ "X$($(1)_BuildFile)" != X ] ; then \
     $(CMD_touch) -r $($(1)_BuildFile) $(WORKINGDIR)/cache/bf/$(1);\
   fi
-endef
-define timestamp_cmp
-  $(CMD_perl) -e "my @s1=stat '$1'; my @s2=stat '$2';"'print $$s1[9]<=>$$s2[9];'
-endef
-define get_time_stamp
-  $(CMD_perl) -e 'my @d=stat "$(1)"; print "$$d[9]\n";'
 endef
 define libdeps
 $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
@@ -1284,8 +1263,6 @@ include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
 endif
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pch
-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lexyacc
-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.codegen
 ifneq ($(strip $(TFCOMPILE)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.dnn
 endif
