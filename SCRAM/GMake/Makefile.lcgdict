@@ -18,15 +18,6 @@ define compile_lcgdict
   @$(startlog_$(2))$(call processTmpMMDData,$(1)/$(patsubst $($(1)_objdir)/%,%,$<),$(1)/$(patsubst $($(1)_objdir)/%,%,$@),$3)$(endlog_$(2))
 endef
 
-#LCG dictionary generation
-define generate_classes_h
-  $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
-  $(CMD_echo) ">> Generating LCG reflex dict header file $(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$<)" &&\
-  $(VERB_ECHO) $(CLASSES_H_GENERATOR) $< &&\
-  (            $(CLASSES_H_GENERATOR) $< > $@ || ($(CMD_rm) -f $@ && exit 1)) \
-  $(endlog_$(2))
-endef
-
 define generate_lcgdict_cxxmodule0
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
