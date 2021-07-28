@@ -22,6 +22,7 @@ if args.olddir != args.newtop:
     runtime = None
     for d in [path.join(rel, ".SCRAM", args.arch), path.join(rel, "config")]:
         for f in check_output("find %s -type f" % d, shell=True).decode().rstrip().splitlines():
+            if f.endswith(".pyc"): continue
             ftime = 0
             gzip = 0
             if re.search('.db.gz$', f):

@@ -1,3 +1,5 @@
+2021-07-28 Shahzad Muzaffar  <@smuzaffar>
+	V06-03-01 Fix proect rename/move issue
 2021-07-18 Shahzad Muzaffar  <@smuzaffar>
 	V06-03-00 Remove Perl dependency use python3 as default
 2021-07-17 Shahzad Muzaffar  <@smuzaffar>

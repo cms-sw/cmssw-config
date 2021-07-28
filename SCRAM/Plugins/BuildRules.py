@@ -410,7 +410,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 continue
             if key in ["SCRAM_BUILDVERBOSE", "SCRAM_NOPLUGINREFRESH", "SCRAM_NOSYMCHECK", "SCRAM_NOLOADCHECK",
                        "SCRAM", "SCRAM_TOOL_HOME", "SCRAM_VERSION", "SCRAM_LOOKUPDB", "SCRAM_SYMLINKS",
-                       "SCRAM_TEST_RUNNER_PREFIX", "SCRAM_NOEDM_CHECKS"]:
+                       "SCRAM_TEST_RUNNER_PREFIX", "SCRAM_NOEDM_CHECKS", "LOCALTOP"]:
                 continue
             if not self.shouldAddToolVariables(key):
                 continue
@@ -479,7 +479,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.addVirtualCompilers(keys)
         selfbase = "%s_BASE" % environ['SCRAM_PROJECTNAME']
         self.shouldAddToolVariables(selfbase)
-        keys.append("%s:=%s" % (selfbase, environ['LOCALTOP']))
         self.addVariables("self", keys, True)
         skipTools['self'] = 1
         for t in self.getTools():
