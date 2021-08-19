@@ -79,6 +79,13 @@ DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
+ifeq ($(strip $(RELEASETOP)),)
+IS_DEV_AREA:=0
+IS_RELEASE_AREA:=1
+else
+IS_DEV_AREA:=1
+IS_RELEASE_AREA:=0
+endif
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 IS_DARWIN:=no
 IS_LINUX:=yes
@@ -186,6 +193,19 @@ UC_PROJECTNAME:=$(SCRAM_PROJECTNAME)
 LC_PROJECTNAME:=$(shell $(CMD_echo) $(UC_PROJECTNAME) | $(CMD_tr) '[A-Z]' '[a-z]')
 SELF_LIBDIRS:=$(subst $(path_seperator),$(space),$($(OS_RUNTIME_LIBRARY_PATH)))
 self_EX_LIBDIR:=$(foreach d,$(self_EX_LIBDIR),$(if $(strip $(filter $d,$(SELF_LIBDIRS))),$d))
+
+#Check for private headers
+CHECK_PRIVATE_HEADERS:=
+ifeq ($(strip $(self_EX_FLAGS_CHECK_PRIVATE_HEADERS)),1)
+CHECK_PRIVATE_HEADERS:=1
+ifeq ($(strip $(IS_RELEASE_AREA)),1)
+IGNORE_PRIVATE_HEADER_ERRORS:=$(CMD_true)
+else
+IGNORE_PRIVATE_HEADER_ERRORS:=$(CMD_false)
+endif
+endif
+#FIXME: Once cmssw is clean of private header usange then remove the line below
+IGNORE_PRIVATE_HEADER_ERRORS:=true
 ##############################################################################
 ifndef RUN_LLVM_ANALYZER_ON_ALL
 RUN_LLVM_ANALYZER_ON_ALL:=no
@@ -676,7 +696,8 @@ define processMMDData
   for dep in $4 ; do \
     if [ -f $$dep ] ; then $(CMD_sed) -e 's|: *|: \\\'$$'\n|' $$dep |  $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' | $(CMD_grep) -v '^ *\\$$' | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
   done &&\
-  $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) $(endlog_$(2))
+  $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) &&\
+  $(if $(strip $(CHECK_PRIVATE_HEADERS),($(CHECK_PRIVATE_HEADERS_SCRIPT) $3 || $(IGNORE_PRIVATE_HEADER_ERRORS)),$(CMD_true)) $(endlog_$(2))
 endef
 define addMMDDepsRules
   $(CMD_tr) ' ' '\012' <  $1 | $(CMD_sed) -e 's/^'\\\\'$$//;/^$$/ d;/:$$/ d;s/$$/ :/' > $1.new &&\
@@ -694,9 +715,8 @@ define link_lib_common
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
   true $(if $(strip $6),&& $(CMD_echo) ">> Skipping EDM Checks for $1/$6",$(call run_edm_checks,$1,$2,$3,$4)) $(endlog_$(2))
-  @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d)) && \
-  [ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && \
-  $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1)
+  @($(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))) &&\
+  ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1))
 endef
 define link_lib
   $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS,,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
