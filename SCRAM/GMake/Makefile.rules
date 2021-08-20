@@ -697,7 +697,7 @@ define processMMDData
     if [ -f $$dep ] ; then $(CMD_sed) -e 's|: *|: \\\'$$'\n|' $$dep |  $(CMD_sed) -e 's|.*$(LOCALTOP)/| |g$(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),;s|^  */.*||,)' | $(CMD_grep) -v '^ *\\$$' | $(CMD_grep) -v '^ *$$' >> $3 ; $(CMD_echo) "" >> $3; fi ; \
   done &&\
   $(if $(strip $(DROP_EXTERNAL_HEADER_MMD_DEPS)),$(CMD_true),$(call addMMDDepsRules,$3)) &&\
-  $(if $(strip $(CHECK_PRIVATE_HEADERS),($(CHECK_PRIVATE_HEADERS_SCRIPT) $3 || $(IGNORE_PRIVATE_HEADER_ERRORS)),$(CMD_true)) $(endlog_$(2))
+  $(if $(strip $(CHECK_PRIVATE_HEADERS)),($(CHECK_PRIVATE_HEADERS_SCRIPT) $3 || $(IGNORE_PRIVATE_HEADER_ERRORS)),$(CMD_true)) $(endlog_$(2))
 endef
 define addMMDDepsRules
   $(CMD_tr) ' ' '\012' <  $1 | $(CMD_sed) -e 's/^'\\\\'$$//;/^$$/ d;/:$$/ d;s/$$/ :/' > $1.new &&\
