@@ -204,6 +204,8 @@ else
 IGNORE_PRIVATE_HEADER_ERRORS:=$(CMD_false)
 endif
 endif
+$(info Debug: CHECK_PRIVATE_HEADERS=$(CHECK_PRIVATE_HEADERS) IGNORE_PRIVATE_HEADER_ERRORS=$(IGNORE_PRIVATE_HEADER_ERRORS))
+$(info Debug: IS_RELEASE_AREA=$(IS_RELEASE_AREA) IS_DEV_AREA=$(IS_DEV_AREA))
 #FIXME: Once cmssw is clean of private header usange then remove the line below
 IGNORE_PRIVATE_HEADER_ERRORS:=true
 ##############################################################################
