@@ -1,3 +1,5 @@
+2021-08-26 Shahzad Muzaffar  <@smuzaffar>
+	V06-03-04 Remove debug messages
 2021-08-19 Shahzad Muzaffar  <@smuzaffar>
 	V06-03-02 Added private header usage check. For now just ignore such usage.
 	Once cmssw is clean of such errors then enable it.
