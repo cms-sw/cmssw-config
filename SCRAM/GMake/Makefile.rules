@@ -204,8 +204,6 @@ else
 IGNORE_PRIVATE_HEADER_ERRORS:=$(CMD_false)
 endif
 endif
-#FIXME: Once cmssw is clean of private header usange then remove the line below
-IGNORE_PRIVATE_HEADER_ERRORS:=true
 ##############################################################################
 ifndef RUN_LLVM_ANALYZER_ON_ALL
 RUN_LLVM_ANALYZER_ON_ALL:=no

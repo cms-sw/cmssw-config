@@ -1,3 +1,5 @@
+2021-09-02 Shahzad Muzaffar  <@smuzaffar>
+	V06-03-05 In dev area, fail build on private header usage
 2021-08-26 Shahzad Muzaffar  <@smuzaffar>
 	V06-03-04 Remove debug messages
 2021-08-19 Shahzad Muzaffar  <@smuzaffar>
