@@ -1,55 +1,53 @@
 #! /bin/bash -e
 
-# find a shared library trying to emulate what ld.so would do
-function find_library() {
-  {
-    eval find $(echo $LD_LIBRARY_PATH | sed -e's/^/"/' -e's/:/" "/g' -e's/$/"/') -maxdepth 1 2> /dev/null
-    ldconfig -p | cut -s -d'>' -f2
-  } | grep "\<$1\>" | xargs -r -n1 readlink -f | uniq
+# Check if the system supports the CUDA runtime, either natively, or through the
+# use of the compatibility drivers, and set up the environment accordingly.
+#
+# If the CUDA runtime is not supported, make the CUDA stub libraries available
+# in the environment to keep the compilation and link test working.
+
+# SCRAM environment
+if [ -z "${SCRAM}" ]; then
+  SCRAM=scram
+fi
+
+function scram_tag() {
+  TOOL="$1"
+  TAG="$2"
+  ${SCRAM} tool tag $TOOL $TAG 2> /dev/null || true
 }
 
-# extract the version of the library
-function library_version() {
-  if [ "$1" ]; then
-    basename "$1" | sed -n -e's/.*\.so\.//p'
-  fi
-}
+CUDA_BASE=$(scram_tag cuda CUDA_BASE)
+RUNTIME_TEST=$(scram_tag cuda-compatible-runtime CUDA_COMPATIBLE_RUNTIME_BASE)/test/cuda-compatible-runtime
 
-# extract the major, minor and patch version as a single number
-function parse_version() {
-  if [ "$1" ]; then
-    echo "$1" | while IFS=. read MAJOR MINOR PATCH; do echo $(( 10#$MAJOR * 1000000 + 10#$MINOR * 1000 + 10#$PATCH)); done
-  else
-    echo 0
-  fi
-}
-if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
-CUDA_BASE=$(${SCRAM} tool tag cuda CUDA_BASE 2>&1 | grep -v '^SCRAM' || true)
-if [ ! "${CUDA_BASE}" ] || [ ! -d "${CUDA_BASE}/" ] || [ ! -d "${CUDA_BASE}/drivers/" ]; then
+# check for the CUDA external
+if [ ! "${CUDA_BASE}" ] || [ ! -d "${CUDA_BASE}/" ]; then
   exit 0
 fi
 
-NVIDIA_VERSION=
-
-# first, check if the module is loaded and exported on /proc
-if [ -f /proc/driver/nvidia/version ]; then
-  NVIDIA_VERSION=`cat /proc/driver/nvidia/version | sed -ne's/.*Kernel Module *\([0-9.]\+\).*/\1/p'`
-else 
-  # check if a kernel module is available, even if not currently loaded (e.g. for an OPTIMUS system)
-  # if there are multiple modules, pick the newest one
-  NVIDIA_MODULE=`modprobe -q -R nvidia 2>/dev/null || true`
-  if [ "$NVIDIA_MODULE" ]; then
-    NVIDIA_VERSION=`modinfo "$NVIDIA_MODULE" | grep '^version:' | sed 's|.*:\s*||;s|\s*$||'`
-  fi
-fi
-
-# check the version of libcuda.so bundled with CMSSW
-CMS_NVIDIA_VERSION=$(library_version $(readlink -f ${CUDA_BASE}/drivers/libcuda.so))
-
-if [ "$NVIDIA_VERSION" ] && (( $(parse_version $CMS_NVIDIA_VERSION) <= $(parse_version $NVIDIA_VERSION) )); then
-  # if the CMSSW version of the library is older, use the system library
+# check for the cuda-compatible-runtime test
+if [ ! -x "${RUNTIME_TEST}" ]; then
   exit 0
 fi
 
-# otherwise, use the library packaged with CMSSW
-echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_BASE}/drivers"
+# check if the system supports the CUDA runtime in the current environment
+if $RUNTIME_TEST &> /dev/null; then
+  # yes: do not use the compatibility drivers
+  exit 0
+fi
+
+# check if the system supports the CUDA runtime using the compatibility drivers
+CUDA_COMPATIBILITY=${CUDA_BASE}/drivers
+if [ -d "${CUDA_COMPATIBILITY}" ] && LD_LIBRARY_PATH=$CUDA_COMPATIBILITY:$LD_LIBRARY_PATH $RUNTIME_TEST &> /dev/null; then
+  # yes: use the compatibility drivers
+  echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_COMPATIBILITY}"
+  exit 0
+fi
+
+# the system does not support the CUDA runtime; if the CUDA stub libraries are
+# available, add them to the environment to support the link-time build tests
+CUDA_STUBS=${CUDA_BASE}/lib64/stubs
+if [ -d "${CUDA_STUBS}" ]; then
+  echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_STUBS}"
+  exit 0
+fi
