@@ -1,3 +1,5 @@
+2021-09-29 Shahzad Muzaffar  <@smuzaffar>
+	V06-03-07 Build rules without private header file usage check enabled.
 2021-09-09 Shahzad Muzaffar  <@smuzaffar>
 	V06-03-06 Rewrite the checks for the CUDA runtime compatibility
 2021-09-02 Shahzad Muzaffar  <@smuzaffar>
