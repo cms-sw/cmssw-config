@@ -31,14 +31,14 @@ if [ ! -x "${RUNTIME_TEST}" ]; then
 fi
 
 # check if the system supports the CUDA runtime in the current environment
-if $RUNTIME_TEST &> /dev/null; then
+if $RUNTIME_TEST -k &> /dev/null; then
   # yes: do not use the compatibility drivers
   exit 0
 fi
 
 # check if the system supports the CUDA runtime using the compatibility drivers
 CUDA_COMPATIBILITY=${CUDA_BASE}/drivers
-if [ -d "${CUDA_COMPATIBILITY}" ] && LD_LIBRARY_PATH=$CUDA_COMPATIBILITY:$LD_LIBRARY_PATH $RUNTIME_TEST &> /dev/null; then
+if [ -d "${CUDA_COMPATIBILITY}" ] && LD_LIBRARY_PATH=$CUDA_COMPATIBILITY:$LD_LIBRARY_PATH $RUNTIME_TEST -k &> /dev/null; then
   # yes: use the compatibility drivers
   echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_COMPATIBILITY}"
   exit 0
