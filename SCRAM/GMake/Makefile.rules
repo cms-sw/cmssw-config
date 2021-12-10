@@ -57,6 +57,7 @@ AREXT:=a
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
+UNITTEST_DIR := unit_tests
 PRECOMPILE_FLAGS_EXTENSION  := cxxflags
 PRECOMPILE_EXTENSION        := gch
 YACC                        := bison
@@ -85,6 +86,10 @@ IS_RELEASE_AREA:=1
 else
 IS_DEV_AREA:=1
 IS_RELEASE_AREA:=0
+ifneq ($(strip DISABLE_CMS_DEPRECATED),true)
+self_EX_FLAGS_CXXFLAGS+=-DUSE_CMS_DEPRECATED
+endif
+
 endif
 IS_MIC:=$(if $(strip $(filter mic,$(subst _, ,$(SCRAM_ARCH)))),yes,no)
 IS_DARWIN:=no
@@ -782,8 +787,8 @@ define run_test
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
     STIME=$$(date +%s) &&\
-    export SCRAM_TEST_NAME="$1" &&export SCRAM_TEST_PATH="$(LOCALTOP)/$4" && export SCRAM_TEST_PACKAGE="$($(1)_PROD_PACKAGE)" && export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip ${${1}_LOC_FLAGS_NO_TEST_PREFIX}),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) $($(1)_TEST_RUNNER_CMD) && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
+    export SCRAM_TEST_NAME="$1" && export SCRAM_TEST_PATH="$(LOCALTOP)/$4" && export SCRAM_TEST_PACKAGE="$($(1)_PROD_PACKAGE)" && export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && cd $(UNITTEST_DIR)/$1 &&,) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) $($(1)_TEST_RUNNER_CMD) && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
@@ -1001,6 +1006,17 @@ redirectlog_$(1) :=
 endif
 endef
 
+define UnitTestBuildDirectory
+${1}_USE_UNITTEST_DIR:=$(USE_UNITTEST_DIR)
+ifneq ($(strip $(${1}_LOC_FLAGS_USE_UNITTEST_DIR)),)
+ifneq ($(strip $(lastword $(${1}_LOC_FLAGS_USE_UNITTEST_DIR))),1)
+${1}_USE_UNITTEST_DIR:=
+else
+${1}_USE_UNITTEST_DIR:=1
+endif
+endif
+endef
+
 #safename,path,safepath,scriptstore,scripts,plugintype
 define CommonBinaryHead
 $(1)_PROD_PACKAGE  := $(patsubst $(SCRAM_SOURCEDIR)/%/,%,$(dir $2))
@@ -1040,6 +1056,7 @@ $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS) | $(WORKINGDIR)/$(2)/productautoclea
 endif
 $(1)_config_msg += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
 $(1)_config += $$($(1)_objdir)/config
+$(eval $(call UnitTestBuildDirectory,$1))
 ifneq ($(strip $($(1)_DNN_NAME)),)
 $$(eval $$(call AddDNNRules,$1,$2))
 endif
@@ -1058,6 +1075,7 @@ $($(1)_objdir)/$4/compile: $($(1)_objdir)/precompile $$($(1)_objs_$4) $($(1)_com
 $($(1)_objdir)/$4/$($(1)_product): $($(1)_objdir)/$4/compile $$($(1)_objs_$4) $($(1)_libdeps)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname),$4)
 endef
+
 #safename,path,productstore,type,logprodstore,safepath
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
@@ -1085,7 +1103,7 @@ runtests_$(6) += runtests_$(1)
 unittests_$(6) += unittests_$(1)
 runtests_$(1): all_$(1) $(patsubst %,runtests_%,$($(1)_PRE_TEST)) unittests_$(1)
 	@:
-unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS)
+unittests_$(1): $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS) | cleanup-runtest
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 ifeq ($(strip $(4)),lib)
@@ -1923,7 +1941,7 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos cleanup-runtest
 use-ibeos: $(WORKINGDIR)/das_client/dasgoclient
 $(WORKINGDIR)/das_client/dasgoclient: $(WORKINGDIR)/das_client/das_client
 	@ln -sf das_client $@
@@ -1945,6 +1963,8 @@ scripts_%:
 	@:
 skip-scripts-copy: all
 	@:
+cleanup-runtest:
+	@[ ! -d "$(LOCALTOP)/$(UNITTEST_DIR)" ] || $(CMD_rm) -rf $(LOCALTOP)/$(UNITTEST_DIR)
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
 %:
