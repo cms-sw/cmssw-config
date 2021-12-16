@@ -52,7 +52,8 @@
 </architecture>
 <release name="_ASAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address"/>
-  <flags CXXFLAGS="-fsanitize=pointer-compare -fsanitize=pointer-subtract"/>
+  <!-- See https://github.com/cms-sw/cmssw/issues/36480 <flags CXXFLAGS="-fsanitize=pointer-compare"/> -->
+  <flags CXXFLAGS="-fsanitize=pointer-subtract"/>
 </release>
 <release name="_UBSAN_">
   <flags CXXFLAGS="-fno-omit-frame-pointer -fsanitize=undefined"/>
