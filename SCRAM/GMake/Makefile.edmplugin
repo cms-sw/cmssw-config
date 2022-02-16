@@ -128,7 +128,7 @@ define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
     $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
     $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) ;\
+    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) || exit 1;\
   done &&\
   $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
 endef
