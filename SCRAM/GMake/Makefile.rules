@@ -792,6 +792,7 @@ define run_test
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
+    $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi
