@@ -894,19 +894,9 @@ $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WOR
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-ifeq ($(strip $(origin $2_python_parent)),undefined)
-$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
-	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) || $(CMD_true)
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$$(call add_package_py_init,$1) &&\
-	$$(call add_project_py_dir,$1,$(SCRAMSTORENAME_CFIPYTHON)/$(1))
-else
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$$(call add_package_py_init,$1) &&\
-        $$(call add_project_py_dir,$1,$(SCRAM_SOURCEDIR)/$(1)/python) &&\
-        $$(call add_project_py_dir,$1,$(SCRAMSTORENAME_CFIPYTHON)/$(1))
-endif
+	$(CMD_ln) -sf ../../../config/SCRAM/pyinit.py $$@
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
