@@ -1470,7 +1470,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     if m:
                         v = self.core.get_flag_value(flag)
                         if v:
-                            fh.write("%s_%s_LOC_FLAGS_%s   := %s" % (safename, m.group(1), m.group(2), v))
+                            fh.write("%s_%s_LOC_FLAGS_%s   := %s\n" % (safename, m.group(1), m.group(2), v))
                         flags_added[flag] = 1
             for flag in flags:
                 if flag not in flags_added:
