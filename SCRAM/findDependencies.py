@@ -28,7 +28,7 @@ def doexec():
   reCC = re.compile(r'(\.o|\.cc)\s*:$')
   re1 = re.compile(r'^[^:]+ :\s*$')
   re2 = re.compile(r'\s*\\$')
-  with open(name, 'r') as file:
+  with open(name, 'r', encoding="utf-8") as file:
     for l in file:
       l = l.rstrip('\n')
       if re1.search(l): break
@@ -99,7 +99,7 @@ def pythonDeps(rel):
         file = re.sub(r"^%s\/+src\/+" % rel, r'', file)
         if not re.search(r'\/python\/', fpath):
           continue
-        with open(fpath, 'r') as f:
+        with open(fpath, 'r', encoding="utf-8") as f:
           for line in f.readlines():
             if 'import ' in line:
               line = line.rstrip('\n')
