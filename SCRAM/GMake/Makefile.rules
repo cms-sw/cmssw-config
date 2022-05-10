@@ -896,7 +896,7 @@ $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$(CMD_ln) -sf ../../../config/SCRAM/pyinit.py $$@
+	cp $(LOCALTOP)/config/SCRAM/pyinit.py $$@
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
