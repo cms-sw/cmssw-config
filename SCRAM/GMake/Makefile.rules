@@ -809,23 +809,18 @@ define libdeps
 $(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
 endef
 ##############################################################################
-define create_subdir_init
-  for d in `find $1 -mindepth 1 -name '*' -type d` ; do \
-    [ -e $$d/__init__.py ] || $(CMD_echo) "#Automatically created by SCRAM" > $$d/__init__.py ;\
-  done
+define add_package_py_init
+  $(CMD_echo) -e  "from os.path import dirname,abspath\ncmssw_base_dir=dirname(abspath(__file__).rsplit('/$(1)/',1)[0])" > $@
 endef
-define create_package_init
-  $(CMD_echo) "#Automatically created by SCRAM" > $@ &&\
-  $(CMD_echo) "import os" >> $@ &&\
-  $(CMD_echo) "__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/$(1)/',1)[0])+'/$(SCRAMSTORENAME_CFIPYTHON)/$(1)')" >> $@
+define add_project_py_dir
+  $(CMD_echo) "__path__.append(cmssw_base_dir+'/$2')" >> $@
 endef
+
 define create_subsystem_init
   if [ "X${RELEASETOP}" = "X" ] ; then \
-    $(CMD_echo) "import os" > $@ ;\
-    $(CMD_echo) "localrt=os.getenv('LOCALRT', None)" >> $@ ;\
-    $(CMD_echo) "if localrt != None:__path__.insert(0,localrt+'/$(@D)')" >> $@ ;\
+    $(CMD_echo) -e "import os\nlocalrt=os.getenv('LOCALRT', None)\nif localrt != None:__path__.insert(0,localrt+'/$(@D)')";\
   else \
-    $(CMD_echo) "__path__.append('${RELEASETOP}/$(@D)')" > $@ ;\
+    $(CMD_echo) "__path__.append('${RELEASETOP}/$(@D)')";\
   fi
 endef
 #############################################################################
@@ -844,6 +839,8 @@ endif
 $(call add_postprocessing,$1,99,FinalizeSubSystem)
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $$(subdirs_$(2))
 	@$$(call run_postprocess,$1)
+$(SCRAMSTORENAME_PYTHON)/$1/__init__.py: $(SCRAMSTORENAME_PYTHON)/__init__.py
+	@[ -L $$(@D) ] || ([ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && ($$(call create_subsystem_init)) > $$@)
 runtests_$(2): $$(addprefix runtests_,$$(subdirs_$(2)))
 	@:
 unittests_$(2): $$(addprefix unittests_,$$(subdirs_$(2)))
@@ -858,8 +855,6 @@ edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
 scripts_$(2): $$(addprefix scripts_,$$(subdirs_$(2)))
 	@:
-$(SCRAMSTORENAME_PYTHON)/$1/__init__.py: $(SCRAMSTORENAME_PYTHON)/__init__.py
-	@[ -L $$(@D) ] || ([ -d $$(@D) ] || $(CMD_mkdir) $$(@D) && $$(call create_subsystem_init))
 endef
 define EmptyPackage
 $(1)_libdeps      := $$(call libdeps,$1)
@@ -899,21 +894,9 @@ $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WOR
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-ifeq ($(strip $(origin $2_python_parent)),undefined)
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
-	@[ -L $$(@D) ] && $(CMD_rm) -f $$(@D) || $(CMD_true)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$$(call create_package_init,$1)
-else
-$(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py $(SCRAM_SOURCEDIR)/$1/python/__init__.py
-	@[ -d $$(@D) ] && $(CMD_rm) -rf $$(@D) || $(CMD_true)
-	@[ -e $$(@D) ] || $(CMD_ln) -s  ../$(PYTHON_RELPATH)/$(SCRAM_SOURCEDIR)/$1/python $(SCRAMSTORENAME_PYTHON)/$1
-	@$(CMD_touch) $$@
-endif
-$(SCRAM_SOURCEDIR)/$(1)/python/__init__.py:
-	@$$(call create_package_init,$1) &&\
-	[ -d $(WORKINGDIR)/$$(@D) ] || $(CMD_mkdir) -p $(WORKINGDIR)/$$(@D) &&\
-	$(CMD_echo) "01:$(CMD_rm) -f $$(@D)/__init__.py $$(@D)/__init__.pyc" > $(call AutoCleanFile,$(WORKINGDIR)/$$(@D)/__init__.py,python)
+	cp $(LOCALTOP)/config/SCRAM/pyinit.py $$@
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
 	@$(CMD_echo) ">> Tests for package $(1) ran."
@@ -928,10 +911,8 @@ edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
 scripts_$(2): all_$(2)_scripts
 	@:
-ifeq ($$(filter $(2)_python,$$(subdirs_$(2))),$(2)_python)
-runpython_$(2): runpython_$(2)_python
-	@$(CMD_echo) ">> Python for package $(1) ran."
-endif
+runpython_$(2): $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
+	@:
 endef
 
 define TargetPlugin
@@ -1239,15 +1220,7 @@ define PythonProduct
 $(3) += all_$(1)
 $(2)_PRODDUCT_NAME:=$(1)
 .PHONY: $(1) all_$(1)
-ifeq ($(strip $(PYTHON_PACKAGE_SYMLINK)),YES)
-.PHONY: $(WORKINGDIR)/$2/init_links
-$(WORKINGDIR)/$2/init_links:
-	@$$(call create_subdir_init,$2)
-all_$(1) += $(WORKINGDIR)/$2/init_links $(SCRAMSTORENAME_PYTHON)/$(dir $(subst $(SCRAM_SOURCEDIR)/,,$(2)))__init__.py
-endif
-runpython_$(3): $$(all_$(1))
-	@:
-$(1) all_$(1): runpython_$(3)
+$(1) all_$(1):
 	@:
 endef
 
