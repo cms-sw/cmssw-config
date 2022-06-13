@@ -29,6 +29,7 @@ prebuild       :=
 postbuild      :=
 prelibdeps     :=
 prebindeps     :=
+EXTRA_FILE_EXT :=
 ALL_EXTRA_PRODUCT_RULES:=
 ALL_SCRAM_PROJECTS :=
 ALL_SUBSYSTEMS     :=
@@ -80,6 +81,7 @@ DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
+FILE_EXT_CC_MAP:=
 ifeq ($(strip $(RELEASETOP)),)
 IS_DEV_AREA:=0
 IS_RELEASE_AREA:=1
@@ -1010,7 +1012,7 @@ $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
 $(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
 $(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)_files))
-$(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$($(1)_files))))
+$(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$(filter-out $$(addprefix %.,$(FILE_EXT_CC_MAP)),$$(notdir $$($(1)_files))))) $$(foreach e,$(FILE_EXT_CC_MAP),$$(if $$(strip $$(filter %.$$e,$$(notdir $$($(1)_files)))),$$e,)))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
 $$(eval $$(call AddCudaRules,$1,$6))
@@ -1044,7 +1046,7 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
-NonTargetExt:=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)))
+NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT)))
 TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
@@ -1246,6 +1248,7 @@ define CommonDataRules
 $(1) all_$(1): $($(1)_data_copy_rule)
 endef
 
+#safepath, path, class, parent_safepath
 define CommonProductRules
 .PHONY: $(1) all_$(1) edm_checks_$(1)
 ifeq ($(strip $(3)),TEST)
@@ -1260,12 +1263,18 @@ edm_checks_$(1): $(edm_checks_$(1))
 	@:
 $(1) all_$(1): $($(1))
 	@:
+ifneq ($(strip $4),)
+all_$4 += all_$1
+endif
 endef
 
 ifneq ($(strip $(SCRAM_DXR_RUN)),yes)
 ifeq ($(strip $(CODE_ANALYSIS_RULES)),NO)
 ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/cuda)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.cuda
+endif
+ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/alpaka)),)
+include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.alpaka
 endif
 ifneq ($(strip $(ROOTRFLX_BASE)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict

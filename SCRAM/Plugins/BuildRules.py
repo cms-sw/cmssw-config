@@ -309,6 +309,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return ""
 
     def getLocalBuildFile(self):
+        bf = self.get("buildfile_path")
+        if bf: return bf
         path = self.get("path")
         if path in self.cache["BuildFileMap"]:
             return self.cache["BuildFileMap"][path]
@@ -942,6 +944,11 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def safename_JoinAll(self, path):
         return path.replace(dirsep, "")
 
+    def alpaka_safename(self, backend):
+        if backend=="cuda": return "CudaAsync"
+        if backend=="serial": return "SerialSync"
+        return ""
+
 ###############################################
 ######################################
 # Template initialization for different levels
@@ -992,6 +999,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             if 'OVERRIDABLE_FLAGS' in stool['FLAGS']:
                 for flag in stool['FLAGS']['OVERRIDABLE_FLAGS']:
                     comFlags[flag] = 1
+            if 'ALPAKA_BACKENDS' in stool['FLAGS']:
+                self.set('ALPAKA_BACKENDS', " ".join(stool['FLAGS']['ALPAKA_BACKENDS']))
         self.cache['Compiler'] = defcompiler
         self.cache['CompilerTypes'] = ["CXX", "C", "F77"]
         self.cache['DefaultCompilerFlags'] = []
@@ -1127,10 +1136,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 fh.write("self_EX_FLAGS_%s+=%s\n" % (flag, val))
             else:
                 fh.write("%s+=%s\n" % (flag, val))
-        # Makefile section of toplevel BuildFile
-        for mk in self.core.get_data("MAKEFILE"):
-            for line in mk:
-                fh.write("%s\n" % line)
         fh.write("\n\nifeq ($(strip $(GENREFLEX)),)\n"
                  "GENREFLEX:={}\n"
                  "endif\n"
@@ -1346,6 +1351,40 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def library_template_generic(self):
         self.dumpBuildFileData(1)
 
+    def alpaka_template_generic(self):
+        fh = self.data["FH"]
+        path = join(self.get("path"),"alpaka")
+        if not exists(path): return
+        parent = self.get("parent")
+        pname = self.get("safename")
+        backend = self.core.get_flag_value("ALPAKA_BACKENDS")
+        if backend=="1": backend = self.get('ALPAKA_BACKENDS')
+        self.pushstash()
+        self.set('buildfile_path',self.getLocalBuildFile())
+        self.set('path', path)
+        for bend in backend.split(" "):
+            alpaka_bend = "alpaka_" + bend
+            bend_name = self.alpaka_safename(bend)
+            if not bend_name: continue
+            safename = pname+bend_name
+            safepath = self.get("safepath")+"_"+alpaka_bend
+            fh.write("ALL_COMMONRULES += {1}\n"
+                     "{1}_parent := {2}\n"
+                     "{1}_INIT_FUNC := $$(eval $$(call CommonProductRules,{1},{3},{4},{6}))\n"
+                     "{0} := self/{2}\n"
+                     "{2}/alpaka/{5} := {0}\n"
+                     "{0}_files := $(patsubst {3}/%,%,$(wildcard $(foreach dir,{3},"
+                     "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
+                     format(safename, safepath, parent, path, self.get("class"), bend, pname))
+            self.pushstash()
+            self.set('use', "%s alpaka-%s $(%s_LOC_FLAGS_USE_%s)" % (parent, bend, safename, alpaka_bend.upper()))
+            self.set('safename',safename)
+            self.set('safepath',safepath)
+            self.dumpBuildFileData(1)
+            self.popstash()
+        self.popstash()
+        return
+
     def binary_template_generic(self):
         self.dumpBuildFileData()
 
@@ -1410,6 +1449,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         if parent.startswith("LCG/"):
             fh.write("%s := %s\n" % (parent[4:], safename))
         self.library_template_generic()
+        self.alpaka_template_generic()
         fh.write("endif\n")
         return
 
@@ -1488,7 +1528,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 val = self.fixData(self.core.get_data(data), data, localbf)
                 if val:
                     fh.write("%s_LOC_%s   := %s\n" % (safename, data, " ".join(val)))
-            val = self.fixData(self.core.get_data("USE"), "USE", localbf)
+            val = self.fixData(self.core.get_data("USE"), "USE", localbf) + self.get("use").split(" ")
             if val:
                 locuse = " ".join(val)
                 if lib:
@@ -1556,10 +1596,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     SCRAM.printerror("****WARNING: No need to export library once you have declared your "
                                      "library as plugin. Please cleanup %s by removing the "
                                      "<export></export> section.\n" % localbf)
-        if localbf:
-            for mk in self.core.get_data("MAKEFILE"):
-                for line in mk:
-                    fh.write("%s\n" % line)
         self.setValidSourceExtensions()
         fh.write("{0}_PACKAGE := self/{1}\nALL_PRODS += {0}\n".format(safename, path))
         safepath = self.get("safepath")

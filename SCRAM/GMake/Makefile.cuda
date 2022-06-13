@@ -1,3 +1,6 @@
+CUDA_EXTRA_EXT:=cuda.cc dev.cc
+EXTRA_FILE_EXT+=$(CUDA_EXTRA_EXT)
+FILE_EXT_CC_MAP+=$(CUDA_EXTRA_EXT)
 NonTargetExt+=%_cudadlink.$(OBJEXT)
 SET_PRODUCT_VARIABLES += CUDA_DLINK_LIB
 AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
@@ -24,7 +27,7 @@ $(eval $(call GenerateReleaseCudaDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
 $(eval $(call GenerateReleaseCudaDlink,$(RELEASETOP),base))
 
 define compile_cuda_common
-  $(call run_compile_command,$2,$4,$5,$(NVCC) -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
+  $(call run_compile_command,$2,$4,$5,$(NVCC) -x cu -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
   $(if $(6),,@$(startlog_$(2)) ($(NVCC) -M $(3) --compiler-options \
      '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d) $(endlog_$(2)))
 endef
@@ -80,10 +83,10 @@ endef
 
 #safename, plugin_type
 define AddCudaRules
-$(1)_cudafiles    := $(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES),%.$e),$($(1)_files))
+$(1)_cudafiles    := $(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES) $(CUDA_EXTRA_EXT),%.$e),$($(1)_files))
 $(1)_cuda_dlink_deps := $$(call cuda_dlink_deps,$1)
 ifneq ($$(strip $$($(1)_cudafiles)),)
-$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES),$($(1)_files_exts)),$$(eval $$(call CudeCompileRule,$(1),$(ext),$(1))))
+$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES) $(CUDA_EXTRA_EXT),$($(1)_files_exts)),$$(eval $$(call CudeCompileRule,$(1),$(ext),$(1))))
 ifeq ($(strip $(SYNTAX_ONLY)),)
 $(1)_cudadlink    := $($(1)_objdir)/$(1)_cudadlink.$(OBJEXT)
 $(1)_objs         += $$($(1)_cudadlink)
