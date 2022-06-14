@@ -1549,24 +1549,25 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def dumpBuildFileData(self, lib=False, check_alpaka=True):
         fh = self.data["FH"]
         safename = self.get("safename")
+        path = self.get("path")
         backend = self.core.get_flag_value("ALPAKA_BACKENDS")
         if backend=="1": backend =  self.cache["ALPAKA_BACKENDS"]
         if backend and check_alpaka:
             psafename = safename
+            ptype = self.get("ptype")
             for bend in backend.split(" "):
                 self.pushstash()
-                safename = safename+self.alpaka_safename(bend)
-                safepath = self.get("safepath")+"_alpaka_"+bend
+                safename = psafename+self.alpaka_safename(bend)
                 self.set("safename", safename)
-                self.set("safepath", safepath)
                 self.set("use_private", "alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)" % (bend, safename, bend.upper()))
+                fh.write("%s := %s\n" % (safename, path))
+                fh.write("%s_CLASS := %s\n" % (safename, ptype))
                 fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
                 self.dumpBuildFileData(lib, False)
                 self.popstash()
             return
         localbf = self.getLocalBuildFile()
         no_export = {}
-        path = self.get("path")
         self.dumpBuildFileLOC(localbf, safename, path, no_export, lib)
         if lib:
             self.processTemplate("Extra_template")
@@ -1849,6 +1850,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                  format(safename, path, prodfiles, localbf[:-4]))
                     self.set("type", types[ptype][prod]["TYPE"])
                     self.pushstash()
+                    self.set("ptype",ptype)
                     self.library_template_generic()
                     self.popstash()
                     if xclass == "TEST":
