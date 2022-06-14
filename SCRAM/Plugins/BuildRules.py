@@ -1377,10 +1377,11 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                      "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
                      format(safename, safepath, parent, path, self.get("class"), bend, pname))
             self.pushstash()
-            self.set('use', "%s alpaka-%s $(%s_LOC_FLAGS_USE_%s)" % (parent, bend, safename, alpaka_bend.upper()))
+            self.set('use', parent)
             self.set('safename',safename)
             self.set('safepath',safepath)
             self.dumpBuildFileData(1)
+            fh.write("%s_LOC_USE += alpaka-%s $(%s_LOC_FLAGS_USE_%s)\n" % (safename, bend, safename, alpaka_bend.upper()))
             self.popstash()
         self.popstash()
         return
