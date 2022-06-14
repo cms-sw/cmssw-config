@@ -1248,7 +1248,7 @@ define CommonDataRules
 $(1) all_$(1): $($(1)_data_copy_rule)
 endef
 
-#safepath, path, class, parent_safepath
+#safepath, path, class
 define CommonProductRules
 .PHONY: $(1) all_$(1) edm_checks_$(1)
 ifeq ($(strip $(3)),TEST)
@@ -1263,9 +1263,6 @@ edm_checks_$(1): $(edm_checks_$(1))
 	@:
 $(1) all_$(1): $($(1))
 	@:
-ifneq ($(strip $4),)
-all_$4 += all_$1
-endif
 endef
 
 ifneq ($(strip $(SCRAM_DXR_RUN)),yes)
