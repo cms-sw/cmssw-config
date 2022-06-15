@@ -125,8 +125,8 @@ class BuildRules(object):
 
 #################################################
 
-    def get(self, key):
-        return self.data["context"].get(key)
+    def get(self, key, default=""):
+        return self.data["context"].get(key, default)
 
     def set(self, key, value):
         return self.data["context"].set(key, value)
@@ -1376,6 +1376,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.pushstash()
             self.set('safename',safename)
             self.set('use_private', 'alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)' % (bend, safename, bend.upper()))
+            self.set("classes_file", "classes_%s" % bend)
             self.dumpBuildFileData(1, check_alpaka=False)
             self.popstash()
         self.popstash()
@@ -1656,12 +1657,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         hfile = self.core.get_flag_value("LCG_DICT_HEADER")
         xfile = self.core.get_flag_value("LCG_DICT_XML")
         xmldef = {}
+        class_file = self.get("classes_file","classes")
         if not hfile:
-            hfile = "classes.h"
+            hfile = class_file+".h"
             if stubdir:
                 hfile = join(stubdir, hfile)
         if not xfile:
-            xfile = "classes_def.xml"
+            xfile = class_file+"_def.xml"
             if stubdir:
                 xfile = join(stubdir, xfile)
         h = [join(path, x) for x in hfile.split(" ")]
