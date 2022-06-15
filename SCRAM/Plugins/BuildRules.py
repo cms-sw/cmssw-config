@@ -1363,24 +1363,18 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.pushstash()
         self.set('buildfile_path',self.getLocalBuildFile())
         self.set('path', path)
+        self.set('use', "$(if $(strip $(filter $(%s),$(ALL_LIBRARIES))),%s,)" %  (parent, parent))
         for bend in backend.split(" "):
             bend_name = self.alpaka_safename(bend)
             if not bend_name: continue
             safename = pname+bend_name
-            safepath = self.get("safepath")+"_alpaka_"+bend
-            fh.write("ALL_COMMONRULES += {1}\n"
-                     "{1}_parent := {2}\n"
-                     "{1}_INIT_FUNC := $$(eval $$(call CommonProductRules,{1},{3},{4}))\n"
-                     "all_{6} += all_{0}\n"
-                     "{0} := self/{2}\n"
-                     "{2}/alpaka/{5} := {0}\n"
-                     "{0}_files := $(patsubst {3}/%,%,$(wildcard $(foreach dir,{3},"
+            fh.write("{0} := self/{1}/alpaka/{3}\n"
+                     "{1}/alpaka/{3} := {0}\n"
+                     "{0}_files := $(patsubst {2}/%,%,$(wildcard $(foreach dir,{2},"
                      "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
-                     format(safename, safepath, parent, path, self.get("class"), bend, pname))
+                     format(safename, parent, path, bend))
             self.pushstash()
-            self.set('use', parent)
             self.set('safename',safename)
-            self.set('safepath',safepath)
             self.set('use_private', 'alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)' % (bend, safename, bend.upper()))
             self.dumpBuildFileData(1, check_alpaka=False)
             self.popstash()
