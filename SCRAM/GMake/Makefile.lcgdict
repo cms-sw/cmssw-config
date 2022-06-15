@@ -21,8 +21,8 @@ endef
 define generate_lcgdict_cxxmodule0
   $(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $@ &&\
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
-  $(VERB_ECHO)                $(ROOTRFLX_BASE)/bin/genreflex $(4) -s $(3) -o $@ $(subst -failOnWarnings,--fail_on_warnings,$($(5)_GENREFLEX_ARGS)) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
-  (($(SCRAM_GENREFLEX_PREFIX) $(ROOTRFLX_BASE)/bin/genreflex $(4) -s $(3) -o $@ $(subst -failOnWarnings,--fail_on_warnings,$($(5)_GENREFLEX_ARGS)) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  $(VERB_ECHO)                $(ROOTRFLX_BASE)/bin/genreflex $(4) -s $(3) -o $@ $(subst -failOnWarnings,--fail_on_warnings,$($(5)_GENREFLEX_ARGS)) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(call AdjustFlags,$1,LCGDICT,GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
+  (($(SCRAM_GENREFLEX_PREFIX) $(ROOTRFLX_BASE)/bin/genreflex $(4) -s $(3) -o $@ $(subst -failOnWarnings,--fail_on_warnings,$($(5)_GENREFLEX_ARGS)) --rootmap=$(basename $@).rootmap --rootmap-lib=$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(call AdjustFlags,$1,LCGDICT,GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) &&\
   $(CMD_touch) -r $@ $(basename $@).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@)*.pcm $(6)/) || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
