@@ -15,6 +15,7 @@ class BuildRules(object):
         self.make_dir = join(toolmanager.area.archdir(), "MakeData")
         self.project_bf = None
         self.cache = {"toolcache": toolmanager}
+        self.cache["SUPPORTED_ALPAKA_BACKENDS"] = {"cuda": "CudaAsync", "serial": "SerialSync", "tbb": "TbbAsync", "rocm": "ROCmAsync"}
         for x in ["ToolVariables", "Compilers", "ProductTypes", "SourceExtensions", "CacheData",
                   "RemakeDir", "SymLinks", "SupportedPlugins", "BuildFileMap"]:
             self.cache[x] = {}
@@ -945,9 +946,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return path.replace(dirsep, "")
 
     def alpaka_safename(self, backend):
-        if backend=="cuda": return "CudaAsync"
-        if backend=="serial": return "SerialSync"
-        return ""
+        return self.cache["SUPPORTED_ALPAKA_BACKENDS"][backend] if (backend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]) else ""
 
 ###############################################
 ######################################
@@ -993,7 +992,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         comFlags = {}
         for flag in ["CXXFLAGS", "CFLAGS", "FFLAGS", "CPPDEFINES", "LDFLAGS", "CPPFLAGS"]:
             comFlags[flag] = 1
-        self.cache['ALPAKA_BACKENDS'] = ""
+        if ("cuda" in self.cache["SUPPORTED_ALPAKA_BACKENDS"]) and (not self.isToolAvailable("cuda-gcc-support")):
+            del self.cache["SUPPORTED_ALPAKA_BACKENDS"]["cuda"]
+        self.cache['SELECTED_ALPAKA_BACKENDS'] = ""
         if 'FLAGS' in stool:
             if 'DEFAULT_COMPILER' in stool['FLAGS']:
                 defcompiler = stool['FLAGS']['DEFAULT_COMPILER'][0]
@@ -1001,7 +1002,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 for flag in stool['FLAGS']['OVERRIDABLE_FLAGS']:
                     comFlags[flag] = 1
             if 'ALPAKA_BACKENDS' in stool['FLAGS']:
-                self.cache['ALPAKA_BACKENDS'] = " ".join(stool['FLAGS']['ALPAKA_BACKENDS'])
+                self.cache['SELECTED_ALPAKA_BACKENDS'] = " ".join([bend for bend in stool['FLAGS']['ALPAKA_BACKENDS'] if bend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]])
         self.cache['Compiler'] = defcompiler
         self.cache['CompilerTypes'] = ["CXX", "C", "F77"]
         self.cache['DefaultCompilerFlags'] = []
@@ -1353,13 +1354,16 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.dumpBuildFileData(1, check_alpaka)
 
     def alpaka_template_generic(self):
+        if not self.cache["SELECTED_ALPAKA_BACKENDS"]: return
         fh = self.data["FH"]
         path = join(self.get("path"),"alpaka")
         if not exists(path): return
+        backend = self.core.get_flag_value("ALPAKA_BACKENDS")
+        if backend=="1": backend = self.cache["SELECTED_ALPAKA_BACKENDS"]
+        else: backend = " ".join([bend for bend in backend.split(" ") if bend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]]).strip()
+        if not backend: return
         parent = self.get("parent")
         pname = self.get("safename")
-        backend = self.core.get_flag_value("ALPAKA_BACKENDS")
-        if backend=="1": backend = self.cache["ALPAKA_BACKENDS"]
         self.pushstash()
         self.set('buildfile_path',self.getLocalBuildFile())
         self.set('path', path)
@@ -1545,22 +1549,24 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         fh = self.data["FH"]
         safename = self.get("safename")
         path = self.get("path")
-        backend = self.core.get_flag_value("ALPAKA_BACKENDS")
-        if backend=="1": backend =  self.cache["ALPAKA_BACKENDS"]
-        if backend and check_alpaka:
-            psafename = safename
-            ptype = self.get("ptype")
-            for bend in backend.split(" "):
-                self.pushstash()
-                safename = psafename+self.alpaka_safename(bend)
-                self.set("safename", safename)
-                self.set("use_private", "alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)" % (bend, safename, bend.upper()))
-                fh.write("%s := %s\n" % (safename, path))
-                fh.write("%s_CLASS := %s\n" % (safename, ptype))
-                fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
-                self.dumpBuildFileData(lib, False)
-                self.popstash()
-            return
+        if check_alpaka and self.cache["SELECTED_ALPAKA_BACKENDS"]:
+            backend = self.core.get_flag_value("ALPAKA_BACKENDS")
+            if backend=="1": backend =  self.cache["SELECTED_ALPAKA_BACKENDS"]
+            else: backend = " ".join([bend for bend in backend.split(" ") if bend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]]).strip()
+            if backend:
+                psafename = safename
+                ptype = self.get("ptype")
+                for bend in backend.split(" "):
+                    self.pushstash()
+                    safename = psafename+self.alpaka_safename(bend)
+                    self.set("safename", safename)
+                    self.set("use_private", "alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)" % (bend, safename, bend.upper()))
+                    fh.write("%s := %s\n" % (safename, path))
+                    fh.write("%s_CLASS := %s\n" % (safename, ptype))
+                    fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
+                    self.dumpBuildFileData(lib, False)
+                    self.popstash()
+                return
         localbf = self.getLocalBuildFile()
         no_export = {}
         self.dumpBuildFileLOC(localbf, safename, path, no_export, lib)
