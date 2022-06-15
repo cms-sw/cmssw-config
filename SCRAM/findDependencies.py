@@ -123,11 +123,14 @@ def import2CMSSWDir(str, cache):
     if s in cache["pymodule"]:
       pyfiles.append(cache["pymodule"][s])
     elif s not in cache["noncmsmodule"]:
-      if os.path.exists("%s/python/%s.py" % (rel, s)):
-        match = re.search(r'^([^\/]+\/+[^\/]+)\/+(.+)$', s)
-        if match:
-          cache["pymodule"][s] = "%s/python/%s.py" % (match.group(1), match.group(2))
-          pyfiles.append("%s/python/%s.py" % (match.group(1), match.group(2)))
+      pkg = s.split("/")
+      if len(pkg)<3:
+        cache["noncmsmodule"][s] = 1
+        continue
+      srcpy = "/".join(pkg[:2]+["python"]+pkg[2:])+".py"
+      if os.path.exists("%s/src/%s" % (rel, srcpy)):
+        cache["pymodule"][s] = srcpy
+        pyfiles.append(srcpy)
       else: cache["noncmsmodule"][s] = 1
   return pyfiles
 
