@@ -9,7 +9,7 @@ define HeaderChecks
 ifeq ($(strip $($(1)_CLASS)$($(1)_EX_LIB)),LIBRARY$(1))
 $(eval $(1)_interfacedir:=$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface)
 ifneq ($(strip $(wildcard $($(1)_interfacedir))),)
-$(eval $(1)_headers:=$(patsubst $($(1)_interfacedir)/%,%,$(wildcard $(foreach ext,$(HEADER_FILES_SUFFIXES),$($(1)_interfacedir)/*.$(ext)))))
+$(eval $(1)_headers:=$(patsubst $($(1)_interfacedir)/%,%,$(wildcard $(foreach ext,$(HEADER_FILES_SUFFIXES),$(strip $(foreach xdir,$($(1)_interfacedir) $($(1)_interfacedir)/alpaka,$(xdir)/*.$(ext)))))))
 $(eval $(1)_headers_exts:=$(sort $(patsubst .%,%,$(suffix $($(1)_headers)))))
 ifneq ($(strip $($(1)_headers_exts)),)
 $(1)_headers_chks:=$(addprefix $($(1)_objdir)/, $(addsuffix .chk_header,$($(1)_headers)))
