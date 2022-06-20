@@ -119,15 +119,25 @@ toolvar = ["INCLUDE","LIB"]
 skline=0
 mkprocess = {"skiplines": [], "editlines": []}
 mkprocess["skiplines"].append(re.compile("^.+_(files|XDEPS|SKIP_FILES|libcheck|parent)\s+[:+]=.*"))
-mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS)).+)\s+[:+]=.*"))
+mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS_USE)).+)\s+[:+]=.*"))
 mkprocess["skiplines"].append(re.compile("^.+_EX_((?!LIB).+)\s+[:+]=.*"))
 mkprocess["skiplines"].append(re.compile("^(ALL_COMMONRULES|NON_XML_BUILDFILE)\s+\+=.*"))
 mkprocess["skiplines"].append(re.compile("^.+_PACKAGE\s+:=\s+self\/.*"))
 mkprocess["skiplines"].append(re.compile("^.+\$\(call\s+.*"))
+mkprocess["skiplines"].append(re.compile("^.+LOC_FLAGS_ALPAKA_BACKENDS\s*:=.*"))
+
+
+mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_FLAGS_USE_(.+\s*:=\s*.+)$")})
+mkprocess["editlines"][-1]["cont"] = 1
+mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_FLAGS_USE_%s" % (m.group(1), m.group(2))';
 
 mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_USE\s*:=\s*(.+)$")})
 mkprocess["editlines"][-1]["cont"] = 1
 mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_USE := $(foreach d, %s,$(if $($(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,$d))" % (m.group(1), m.group(2))';
+
+mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_USE\s*[+]=\s*(.+)_LOC_FLAGS_USE_(.+)$")})
+mkprocess["editlines"][-1]["cont"] = 1
+mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_USE += %s_EX_FLAGS_USE_%s" % (m.group(1), m.group(2), m.group(3))';
 
 mkprocess["editlines"].append({"reg": re.compile("^\s*ALL_PRODS(\s+\+=.+)$")})
 mkprocess["editlines"][-1]["value"] = 'eline="ALL_EXTERNAL_PRODS%s" % m.group(1)'
