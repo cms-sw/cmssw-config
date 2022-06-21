@@ -1379,7 +1379,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                      format(safename, parent, path, bend))
             self.pushstash()
             self.set('safename',safename)
-            self.set('use_private', 'alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)' % (bend, safename, bend.upper()))
+            self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
             self.set("classes_file", "classes_%s" % bend)
             self.dumpBuildFileData(1, check_alpaka=False)
             self.popstash()
@@ -1495,7 +1495,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             for f in ['ADD_SUBDIR', 'DD4HEP_PLUGIN', 'EDM_PLUGIN', 'EDM_PLUGIN',
                       'GENREFLEX_ARGS', 'LCG_DICT_HEADER', 'LCG_DICT_XML',
                       'NO_LIB_CHECKING', 'RIVET_PLUGIN', 'SKIP_FILE', 'DNN_NAME',
-                      'NO_TESTRUN', 'PRE_TEST', 'SETENV', 'TEST_RUNNER_ARGS']:
+                      'NO_TESTRUN', 'PRE_TEST', 'SETENV', 'TEST_RUNNER_ARGS',
+                      'ALPAKA_BACKENDS']:
                 flags_added[f] = 1
             for xpre in ["", "_REM"]:
                 for xflag in self.cache["DefaultCompilerFlags"] + self.cache["DefaultBuildFileFlagsToDump"]:
@@ -1514,6 +1515,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                             fh.write("%s_%s_LOC_FLAGS_%s   := %s\n" % (safename, m.group(1), m.group(2), v))
                         flags_added[flag] = 1
             for flag in flags:
+                if flag.startswith('USE_ALPAKA_'): continue
                 if flag not in flags_added:
                     v = self.core.get_flag_value(flag)
                     fh.write("%s_LOC_FLAGS_%s   := %s\n" % (safename, flag, v))
@@ -1560,7 +1562,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     self.pushstash()
                     safename = psafename+self.alpaka_safename(bend)
                     self.set("safename", safename)
-                    self.set("use_private", "alpaka-%s $(%s_LOC_FLAGS_USE_ALPAKA_%s)" % (bend, safename, bend.upper()))
+                    self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
                     fh.write("%s := %s\n" % (safename, path))
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
