@@ -2,7 +2,7 @@ import SCRAM
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from SCRAM.BuildSystem import get_safename
 from os import environ, symlink, listdir, makedirs, unlink, stat
-from os.path import normpath, exists, join, isdir, islink, dirname, basename
+from os.path import normpath, exists, join, isdir, islink, dirname, basename, splitext
 from os.path import sep as dirsep
 from shutil import move
 import importlib
@@ -74,6 +74,13 @@ class BuildRules(object):
         if remake:
             self.addRemakeDirectory(dirname(ofile))
         return ret
+
+    def hasFileTypes(self, files, file_type):
+        if not file_type in self.cache["SourceExtensions"]: return False
+        for x in [ext for ext in [splitext(f)[-1][1:] for f in files] if ext]:
+            if x in self.cache["SourceExtensions"][file_type]:
+                return True
+        return False
 
     def addRemakeDirectory(self, dir):
         self.cache["RemakeDir"][dir] = 1
@@ -1374,6 +1381,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             safename = pname+bend_name
             fh.write("{0} := self/{1}/alpaka/{3}\n"
                      "{1}/alpaka/{3} := {0}\n"
+                     "{0}_PRODUCT_TYPE:=alpaka/{3}\n"
                      "{0}_files := $(patsubst {2}/%,%,$(wildcard $(foreach dir,{2},"
                      "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
                      format(safename, parent, path, bend))
@@ -1449,7 +1457,10 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  format(safename, safepath, parent, path, self.get("class"), self.getSubdirIfEnabled()))
         if parent.startswith("LCG/"):
             fh.write("%s := %s\n" % (parent[4:], safename))
+        self.searchPackageFiles()
         self.library_template_generic(check_alpaka=False)
+        if ex and (not self.hasFileTypes(self.get("all_files"), "cxx")) and (not self.get('classes_def_xml')) :
+            fh.write("%s_EX_LIB:=\n" % safename)
         self.alpaka_template_generic()
         fh.write("endif\n")
         return
@@ -1565,6 +1576,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
                     fh.write("%s := %s\n" % (safename, path))
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
+                    fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
                     self.dumpBuildFileData(lib, False)
                     self.popstash()
@@ -1646,22 +1658,29 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                      format(safename, path, safepath))
         return
 
-    def searchForSpecialFiles(self):
+    def searchPackageFiles(self):
         stubdir = ""
-        lcgheader = []
-        lcgxml = []
-        genreflex_args = "$(GENREFLEX_ARGS)"
         path = self.get('path')
-        dir = path
         files = self.core.get_product_files()
         if files:
             if dirsep in files[0]:
                 stubdir = dirname(files[0])
-                dir = join(dir, stubdir)
-        if not isdir(dir):
-            SCRAM.die("ERROR: Can not open '%s' directory. BuildFile in '%s' is refering "
-                      "to files in this directory" % (dir, path))
-        all_files = self.readDir(dir, 2, 1)
+                dir = join(path, stubdir)
+                if not isdir(dir):
+                    SCRAM.die("ERROR: Can not open '%s' directory. BuildFile in '%s' is refering "
+                              "to files in this directory" % (dir, path))
+                path = dir
+        self.set("stubdir", stubdir)
+        self.set("all_files", self.readDir(path, 2, 1))
+        return
+
+    def searchForSpecialFiles(self):
+        stubdir = self.get("stubdir")
+        all_files = self.get("all_files")
+        lcgheader = []
+        lcgxml = []
+        genreflex_args = "$(GENREFLEX_ARGS)"
+        path = self.get('path')
         hfile = self.core.get_flag_value("LCG_DICT_HEADER")
         xfile = self.core.get_flag_value("LCG_DICT_XML")
         xmldef = {}
