@@ -1328,6 +1328,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                               format(self.get("safename"), self.get("path"), self.get("precompile_header")))
 
     def lcgdict_template(self):
+        self.cache["HAS_LCGDICT"] = True
         safename = self.get("safename")
         lcgdict = self.get("classes_h")
         xr = "x "
@@ -1358,7 +1359,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.src2store_copy("*", "$(%s)" % self.getProductStore("scripts"))
 
     def library_template_generic(self, check_alpaka=True):
-        self.dumpBuildFileData(1, check_alpaka)
+        self.searchPackageFiles()
+        self.dumpBuildFileData(True, check_alpaka)
 
     def alpaka_template_generic(self):
         if not self.cache["SELECTED_ALPAKA_BACKENDS"]: return
@@ -1375,6 +1377,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.set('buildfile_path',self.getLocalBuildFile())
         self.set('path', path)
         self.set('use', "$(if $(strip $(filter $(%s),$(ALL_LIBRARIES))),%s,)" %  (parent, parent))
+        self.searchPackageFiles()
         for bend in backend.split(" "):
             bend_name = self.alpaka_safename(bend)
             if not bend_name: continue
@@ -1389,7 +1392,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.set('safename',safename)
             self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
             self.set("classes_file", "classes_%s" % bend)
-            self.dumpBuildFileData(1, check_alpaka=False)
+            self.dumpBuildFileData(True, check_alpaka=False)
             self.popstash()
         self.popstash()
         return
@@ -1457,10 +1460,10 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  format(safename, safepath, parent, path, self.get("class"), self.getSubdirIfEnabled()))
         if parent.startswith("LCG/"):
             fh.write("%s := %s\n" % (parent[4:], safename))
-        self.searchPackageFiles()
+        self.cache["HAS_LCGDICT"] = False
         self.library_template_generic(check_alpaka=False)
-        if ex and (not self.hasFileTypes(self.get("all_files"), "cxx")) and (not self.get('classes_def_xml')) :
-            fh.write("%s_EX_LIB:=\n" % safename)
+        if ex and (not self.hasFileTypes(self.get("all_files"), "cxx")) and (not self.cache["HAS_LCGDICT"]):
+            fh.write("%s_EX_LIB   :=\n" % safename)
         self.alpaka_template_generic()
         fh.write("endif\n")
         return

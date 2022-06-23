@@ -349,10 +349,11 @@ $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
 Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I,-isystem))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(DLINK_LIBDIR) $(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
+GetPublicProducts=$($1) $(if $(strip $($2_PRODUCT_TYPE)),$($1/$($2_PRODUCT_TYPE)))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
-FindToolDependency=$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$($d) $($d/$($(1)_PRODUCT_TYPE))),$(dep) $($(dep)_EX_USE_ALL))))
+FindToolDependency=$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
                       $($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2)))
@@ -808,7 +809,7 @@ define config_update
   fi
 endef
 define libdeps
-$(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach u,$($(1)_LOC_USE) $($(1)_EX_USE),$($u) $($($u)_EX_LIB) $($($u)_EX_UOLIB))))
+$(prelibdeps) $(addprefix $(WORKINGDIR)/cache/prod/lib,$(sort $($(1)_LOC_LIB) $(foreach d,$(sort $($(1)_LOC_USE) $($(1)_EX_USE)),$(foreach u,$(call GetPublicProducts,$d,$1),$u $($u_EX_LIB) $($u_EX_UOLIB)))))
 endef
 ##############################################################################
 define add_package_py_init
