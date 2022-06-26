@@ -610,7 +610,8 @@ GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(i
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
-  @[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
+  @[ "$(if $(strip $(filter alpaka/%,$($1_PRODUCT_TYPE))),alpaka,)-$(if $(strip $(filter alpaka/serial,$($1_PRODUCT_TYPE))),,non-serial)" = "alpaka-non-serial" ] && exit 0 ;\
+  [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
   $(CMD_echo) "{\"directory\":\"$(call JsonStr,$(LOCALTOP))\",\
                 \"file\":\"$(call JsonStr,$<)\",\
@@ -1004,7 +1005,11 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,plugintype
 define CommonBinaryHead
+ifeq ($(strip $(filter %/src/alpaka,$2)),)
 $(1)_PROD_PACKAGE  := $(patsubst $(SCRAM_SOURCEDIR)/%/,%,$(dir $2))
+else
+$(1)_PROD_PACKAGE  := $(patsubst $(SCRAM_SOURCEDIR)/%/src/alpaka,%,$2)
+endif
 $(1)_PROD_SUBSYSTEM:=$$(patsubst %/,%,$$(dir $$($(1)_PROD_PACKAGE)))
 $(3)          += all_$(1)
 $(eval $(call LogFile,$(1),$(2)))
