@@ -27,7 +27,7 @@ $(1)_headers_exts:=$$(sort $$(patsubst .%,%,$$(suffix $$($(1)_headers))))
 ifneq ($$(strip $$($(1)_headers_exts)),)
 $(1)_headers_chks:=$$(addprefix $$($(1)_objdir)/, $$(addsuffix .chk_header,$$($(1)_headers)))
 CHECK_HEADERS_ALL+=$$($(1)_headers_chks)
-$$(if $$(strip $$(filter alpaka,$$($1_LOC_USE_ALL))),$$(eval $1_LOC_USE_ALL+=alpaka-serial))
+$$(if $$(strip $$(filter alpaka/%,$$($1_headers))),$$(eval $1_LOC_USE+=alpaka-serial))
 $$(foreach e,$$(filter $(HEADER_FILES_SUFFIXES),$$($(1)_headers_exts)),$$(eval $$(call HCompileRule,$(1),$$(e),$(1))))
 endif
 endif
