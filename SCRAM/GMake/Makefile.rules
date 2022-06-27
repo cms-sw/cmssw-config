@@ -4,6 +4,7 @@ SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
 SCRAM_TARGETS:=$(self_EX_FLAGS_SCRAM_TARGETS)
+CODE_CHECK_ALPAKA_BACKEND:=$(if $(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),$(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),serial)
 $(foreach v,$(SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
 else
 SCRAM_MULTI_TARGET:=0
@@ -610,7 +611,7 @@ GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(i
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
-  @[ "$(if $(strip $(filter alpaka/%,$($1_PRODUCT_TYPE))),alpaka,)-$(if $(strip $(filter alpaka/serial,$($1_PRODUCT_TYPE))),,non-serial)" = "alpaka-non-serial" ] && exit 0 ;\
+  @[ "$(if $(strip $(filter alpaka/%,$($1_PRODUCT_TYPE))),alpaka,)-$(if $(strip $(filter alpaka/$(CODE_CHECK_ALPAKA_BACKEND),$($1_PRODUCT_TYPE))),,non-$(CODE_CHECK_ALPAKA_BACKEND))" = "alpaka-non-$(CODE_CHECK_ALPAKA_BACKEND)" ] && exit 0 ;\
   [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
   $(CMD_echo) "{\"directory\":\"$(call JsonStr,$(LOCALTOP))\",\
