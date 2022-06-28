@@ -4,11 +4,11 @@ SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
 SCRAM_TARGETS:=$(self_EX_FLAGS_SCRAM_TARGETS)
-CODE_CHECK_ALPAKA_BACKEND:=$(if $(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),$(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),serial)
 $(foreach v,$(SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
 else
 SCRAM_MULTI_TARGET:=0
 endif
+CODE_CHECK_ALPAKA_BACKEND:=$(if $(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),$(self_EX_FLAGS_CODE_CHECK_ALPAKA_BACKEND),serial)
 LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_TARGETS_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
