@@ -660,10 +660,10 @@ endef
 
 ##############################################################################
 define compile_cxx
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,,,$3),,,,$3)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS LTO_FLAGS,,,$3),,,,$3)
 endef
 define compile_cxx_edm
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS,,,$3),edm plugin,,,$3)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS LTO_FLAGS,,,$3),edm plugin,,,$3)
 endef
 define compile_c
   $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS,,,$3),,,,$3)
@@ -727,18 +727,18 @@ define link_lib_common
   ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1))
 endef
 define link_lib
-  $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS,,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
+  $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS LTO_FLAGS,,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
 endef  
 define link_lib_edm
-  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS,,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5))
+  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS LTO_FLAGS,,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5))
 endef
 ##############################################################################
 # Binary/test building Rules
 # Binary building 
 define build_bin
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
-  $(VERB_ECHO)                $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
-  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS LTO_FLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS LTO_FLAGS) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
