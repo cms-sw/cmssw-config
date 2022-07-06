@@ -37,7 +37,6 @@
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
 <flags LCGDICT_CPPFLAGS="-DCMSSW_REFLEX_DICT"/>
 <architecture name="!osx">
-  <flags BIGOBJ_CXXFLAGS="-flto"/>
   <flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
 </architecture>
 
