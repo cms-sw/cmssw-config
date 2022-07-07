@@ -1,5 +1,6 @@
 #!/bin/bash
 
+if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
 #No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set or set to "default"
@@ -34,7 +35,6 @@ knm="knl ${knl}"
 alderlake="skylake ${skylake}"
 tremont="goldmont-plus ${goldmont_plus}"
 
-if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 LD_ENV=$(${SCRAM} tool info gcc-cxxcompiler | grep '^LD_LIBRARY_PATH='):${LD_LIBRARY_PATH}
 PATH_ENV=$(${SCRAM} tool info gcc-cxxcompiler | grep '^PATH='):${PATH}
 eval "export $LD_ENV; export $PATH_ENV"
@@ -63,13 +63,17 @@ if [ "${MATCHED_TARGET}" = "" ] ; then
 fi
 
 echo "IMPORTANT: Setting CMSSW environment to use '${MATCHED_TARGET}' target." 1>&2
-for d in $(${SCRAM} tool tag self LIBDIR) ; do
-  v=""
-  case $d in
-    ${LOCALTOP}/* ) v=$d ;;
-    * ) if [ -d $d/${MATCHED_TARGET} ] ; then v=$d ; fi ;;
-  esac
-  if [ $v ] ; then
-    echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/${MATCHED_TARGET}:$d"
-  fi
+TOOLS="self"
+if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
+for tool in  $TOOLS ; do
+  for d in $(${SCRAM} tool tag $tool LIBDIR) ; do
+    v=""
+    case $d in
+      ${LOCALTOP}/* ) v=$d ;;
+      * ) if [ -d $d/${MATCHED_TARGET} ] ; then v=$d ; fi ;;
+    esac
+    if [ $v ] ; then
+      echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/${MATCHED_TARGET}:$d"
+    fi
+  done
 done

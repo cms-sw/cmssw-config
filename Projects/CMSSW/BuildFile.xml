@@ -36,17 +36,13 @@
 <flags LLVM_PLUGIN="UtilitiesStaticAnalyzers"/>
 <flags LLVM_CHECKERS="-enable-checker threadsafety"/>
 <flags LCGDICT_CPPFLAGS="-DCMSSW_REFLEX_DICT"/>
-<architecture name="!osx">
-  <flags BIGOBJ_CXXFLAGS="-flto"/>
+<ifos name="darwin">
+  <flags MISSING_SYMBOL_FLAGS="-Wl,-undefined,error"/>
+<else/>
   <flags BIGOBJ_CXXFLAGS="-Wl,--exclude-libs,ALL"/>
-</architecture>
+  <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
+</ifos>
 
-<architecture name="!osx">
-   <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
-</architecture>
-<architecture name="osx">
-   <flags MISSING_SYMBOL_FLAGS="-Wl,-undefined,error"/>
-</architecture>
 <architecture name="_mic_">
   <flags CPPDEFINES="thread_local="/>
 </architecture>
