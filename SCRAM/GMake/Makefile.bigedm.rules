@@ -47,10 +47,10 @@ define big_obj
   (            $(CMD_ld) $(LD_UNIT) -o $@ $(3) || ($(call delete_build_prod,$(4)) && exit 1)) $(endlog_$(2))
 endef
 define bigobj_compile_cxx
-  $(call compile_cxx_common,$1,$2,$(call BigObjAdjustFlags,$1,,CPPFLAGS CXXFLAGS,$3),$3 bigobj,,1)
+  $(call compile_cxx_common,$1,$2,$(call BigObjAdjustFlags,$1,,CPPFLAGS CXXFLAGS $(LTO_FLAG_NAME),$3),$3 bigobj,,1)
 endef
 define bigobj_compile_cxx_edm
-  $(call compile_cxx_common,$1,$2,$(call BigObjAdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS,$3),$3 bigobj edm plugin,,1)
+  $(call compile_cxx_common,$1,$2,$(call BigObjAdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS $(LTO_FLAG_NAME),$3),$3 bigobj edm plugin,,1)
 endef
 define bigobj_compile_c
   $(call compile_c_common,$1,$2,$(call BigObjAdjustFlags,$1,,CPPFLAGS CFLAGS,$3),$3 bigobj,,1)
@@ -67,15 +67,15 @@ endef
 define bigobj_compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling Bigobj LCG dictionary: $<" &&\
-  $(VERB_ECHO)                   $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO)                   $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(LTO_FLAG_NAME)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@) &&\
+  (($(CMD_cd) $($(1)_objdir)/..; $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(LTO_FLAG_NAME)) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
 endef
 #############################################################################
 define bigobj_link_plugin
   @$(startlog_$(1))$(CMD_echo) ">> Building $3 big plugin $@" &&\
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-  $(VERB_ECHO) $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS,$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3)) &&\
-  (            $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS,$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))) $(endlog_$(1))
+  $(VERB_ECHO) $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(LTO_FLAG_NAME),$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3)) &&\
+  (            $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(LTO_FLAG_NAME),$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))) $(endlog_$(1))
 endef
 #############################################################################
 #Compiler Rules for big objects
