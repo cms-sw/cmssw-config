@@ -16,6 +16,8 @@ define dd4hep_register_plugin
       $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(<F) $@" > $(call AutoCleanFile,$<,edm) &&\
       $(CMD_echo) "--- Registered DD4HEP Plugin: $(1)"; \
     else \
+      ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
+      ($(call install_name_tool,@rpath/$(<F),$<) && $(CMD_cp) -f $< $(@D)/$(<F)) || ($(CMD_rm) -f $< $@ $(@D)/$(<F) && exit 1)) &&\
       $(CMD_ln) -sf ../$(@F) $@ &&\
       $(CMD_echo) "--- Symlinked DD4HEP Plugin $1/$3";\
     fi ;\
