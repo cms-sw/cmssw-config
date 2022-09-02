@@ -70,10 +70,10 @@ for tool in  $TOOLS ; do
     v=""
     case $d in
       ${LOCALTOP}/* ) v=$d ;;
-      * ) if [ -d $d/${MATCHED_TARGET} ] ; then v=$d ; fi ;;
+      * ) if [ -d $d/scram_${MATCHED_TARGET} ] ; then v=$d ; fi ;;
     esac
     if [ $v ] ; then
-      echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/${MATCHED_TARGET}:$d"
+      echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/scram_${MATCHED_TARGET}:$d"
     fi
   done
 done

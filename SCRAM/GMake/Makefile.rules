@@ -3,8 +3,8 @@ $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
-SCRAM_TARGETS:=$(self_EX_FLAGS_SCRAM_TARGETS)
-$(foreach v,$(SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_$v:=$u))
+$(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_scram_$v:=$u))
+SCRAM_TARGETS:=$(addprefix scram_,$(self_EX_FLAGS_SCRAM_TARGETS))
 else
 SCRAM_MULTI_TARGET:=0
 endif
@@ -298,7 +298,7 @@ GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-c
 
 define SetCompilerTargetsFlag
   $(eval $(1)_SCRAM_TARGETS:=)
-  $(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),\
+  $(foreach v,$(SCRAM_TARGETS),\
       $(eval u:=$(TARGETS_FLAGS_$(v)))\
       $(if $(strip $($(1)-cxxcompiler_EX_FLAGS_CXXFLAGS_TARGETS_$(u))),\
           $(eval $(1)_SCRAM_TARGETS+=$v),\
