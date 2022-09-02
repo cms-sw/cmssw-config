@@ -232,7 +232,7 @@ def main():
                 cf = "LIBDIR"
                 if cf in cache["defaultlinks"]:
                     ux = "%s_%s" %  (x.upper().replace("-","_"), cf)
-                    cache["validlinks"][ux] = join(cache["validlinks"][cf], x)
+                    cache["validlinks"][ux] = join(cache["validlinks"][cf], "scram_"+x)
                     cache["defaultlinks"][ux] = 1
                     if cf in cache["ignorefiles"]:
                         cache["ignorefiles"][ux] = cache["ignorefiles"][cf]
