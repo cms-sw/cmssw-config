@@ -1,8 +1,9 @@
 #!/bin/bash
 
-if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
+[ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets ] || exit 0
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
+if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 #No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set or set to "default"
 if  [ "${SCRAM_TARGET}" = "" ] ; then
   SCRAM_TARGET="$(${SCRAM} tool info self | grep '^SCRAM_TARGET=' | sed 's|.*=||')"
