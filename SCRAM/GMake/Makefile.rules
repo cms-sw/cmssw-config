@@ -1315,6 +1315,7 @@ ifneq ($(strip $(filter updateclassversion,$(MAKECMDGOALS))),)
 endif
 ifneq ($(strip $(filter use-ibeos,$(MAKECMDGOALS))),)
 export CMS_PATH=/cvmfs/cms-ib.cern.ch
+export SITECONFIG_PATH=/cvmfs/cms-ib.cern.ch/SITECONF/local
 export PATH=$(LOCALTOP)/$(WORKINGDIR)/das_client:$(PATH)
 UNIT_TEST_DEPS+=use-ibeos
 endif
