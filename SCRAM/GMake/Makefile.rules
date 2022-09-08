@@ -788,7 +788,7 @@ define run_test
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
     STIME=$$(date +%s) &&\
     export SCRAM_TEST_NAME="$1" && export SCRAM_TEST_PATH="$(LOCALTOP)/$4" && export SCRAM_TEST_PACKAGE="$($(1)_PROD_PACKAGE)" && export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && cd $(UNITTEST_DIR)/$1 &&,) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) $($(1)_TEST_RUNNER_CMD) && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
+    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && cd $(UNITTEST_DIR)/$1 &&,) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) sh -c '$($(1)_TEST_RUNNER_CMD)' && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
