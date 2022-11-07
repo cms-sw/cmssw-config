@@ -26,6 +26,7 @@ empty:=
 colon:= :
 path_seperator := :
 space:= $(epmty) $(empty)
+semicolon      := ;
 prebuild       := 
 postbuild      :=
 prelibdeps     :=
@@ -360,7 +361,7 @@ GetPublicProducts=$($1) $(if $(strip $($2_PRODUCT_TYPE)),$($1/$($2_PRODUCT_TYPE)
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
-FindToolDependency=$(sort $(filter-out $(3),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
+FindToolDependency=$(sort $(filter-out $(subst $(semicolon),$(space),$(3)),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
                       $($(word 2,$(subst $(colon),$(space),$(var)))_EX_$(2)))
@@ -388,7 +389,7 @@ endef
 define SetProductCommonVars
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(SET_PRODUCT_VARIABLES),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
-$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$($(1)_DROP_DEP),)))
+$(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$(subst $(space),$(semicolon),$($(1)_DROP_DEP)),)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
 endef
 
