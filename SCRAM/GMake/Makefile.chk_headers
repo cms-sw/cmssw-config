@@ -22,7 +22,7 @@ ifeq ($$(chk_header),yes)
 ALL_HEADER_PACKAGES+=$($(1)_PROD_PACKAGE)
 $(1)_interfacedir:=$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/interface
 ifneq ($$(strip $$(wildcard $$($(1)_interfacedir))),)
-$(1)_headers:=$$(patsubst $$($(1)_interfacedir)/%,%,$$(wildcard $$(foreach ext,$(HEADER_FILES_SUFFIXES),$$(strip $$(foreach xdir,$$($(1)_interfacedir) $$($(1)_interfacedir)/alpaka,$$(xdir)/*.$$(ext))))))
+$(1)_headers:=$$(filter-out $($1_LOC_FLAGS_IGNORE_HEADER_CHECK),$$(patsubst $$($(1)_interfacedir)/%,%,$$(wildcard $$(foreach ext,$(HEADER_FILES_SUFFIXES),$$(strip $$(foreach xdir,$$($(1)_interfacedir) $$($(1)_interfacedir)/alpaka,$$(xdir)/*.$$(ext)))))))
 $(1)_headers_exts:=$$(sort $$(patsubst .%,%,$$(suffix $$($(1)_headers))))
 ifneq ($$(strip $$($(1)_headers_exts)),)
 $(1)_headers_chks:=$$(addprefix $$($(1)_objdir)/, $$(addsuffix .chk_header,$$($(1)_headers)))
