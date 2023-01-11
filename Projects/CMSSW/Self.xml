@@ -27,7 +27,7 @@
   <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS CUDA_FLAGS CUDA_LDFLAGS LTO_FLAGS"/>
   <flags ALPAKA_BACKENDS="cuda serial"/>
   <flags CODE_CHECK_ALPAKA_BACKEND="serial"/>
-  <flags ENABLE_LTO="0"/>
+  <flags ENABLE_LTO="@ENABLE_LTO@"/>
  </client>
  <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
