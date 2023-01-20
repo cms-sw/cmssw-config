@@ -1937,7 +1937,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                 if val:
                                     fh.write("%s_PRE_TEST := %s\n" % (sname, val))
                             else:
-                                fh.write("%s_CLASS := BINARY\n" % safename)
+                                fh.write("%s_CLASS := BINARY\n" % sname)
                         self.popstash()
                         fh.write("else\n$(eval $(call MultipleWarningMsg,%s,%s))\nendif\n" % (safename, path))
             else:
