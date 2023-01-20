@@ -1572,9 +1572,11 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             if backend:
                 psafename = safename
                 ptype = self.get("ptype")
+                alpaka_names = []
                 for bend in backend.split(" "):
                     self.pushstash()
                     safename = psafename+self.alpaka_safename(bend)
+                    alpaka_names.append(safename)
                     self.set("safename", safename)
                     self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
                     fh.write("%s := %s\n" % (safename, path))
@@ -1583,6 +1585,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
                     self.dumpBuildFileData(lib, False)
                     self.popstash()
+                self.set("alpaka_names"," ".join(alpaka_names))
                 return
         localbf = self.getLocalBuildFile()
         no_export = {}
@@ -1910,38 +1913,32 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                      "$(warning No such file exists: {1}/$(file). Please fix {3}.))))\n".
                                      format(safename, path, prodfiles, localbf[:-4]))
                         if xclass == "TEST":
-                            val = self.core.get_flag_value("NO_TESTRUN").lower()
-                            if val in ["yes", "1"]:
-                                fh.write("{0}_TEST_RUNNER_CMD := echo\n{0}_NO_TESTRUN := yes\n".format(safename))
-                            else:
-                                if cmd:
-                                    val = cmd
-                                else:
-                                    val = self.core.get_flag_value("TEST_RUNNER_CMD")
-                                if val:
-                                    fh.write("%s_TEST_RUNNER_CMD :=  %s\n" % (safename, val))
-                                else:
-                                    fh.write("{0}_TEST_RUNNER_CMD :=  {0} {1}\n".
-                                             format(safename, self.core.get_flag_value("TEST_RUNNER_ARGS")))
-                                for val in self.core.get_flag_value("SETENV_SCRIPT", False):
-                                    if val:
-                                        fh.write("%s_TEST_ENV += source %s && \n" % (safename, val))
-                                for val in self.core.get_flag_value("SETENV", False):
-                                    if val:
-                                        fh.write("%s_TEST_ENV += export %s && \n" % (safename, val))
-                            val = self.core.get_flag_value("PRE_TEST")
-                            if val:
-                                fh.write("%s_PRE_TEST := %s\n" % (safename, val))
                             self.set("type", "test")
                         else:
                             self.set("type", types[ptype][prod]["TYPE"])
                         self.pushstash()
                         self.binary_template_generic()
+                        xnames = self.get("alpaka_names")
+                        if not xnames: xnames = safename
+                        for sname in xnames.split(" "):
+                            if xclass == "TEST":
+                                fh.write("%s_CLASS := TEST\n" % sname)
+                                if self.core.get_flag_value("NO_TESTRUN").lower() in ["yes", "1"]:
+                                    fh.write("{0}_TEST_RUNNER_CMD := echo\n{0}_NO_TESTRUN := yes\n".format(sname))
+                                else:
+                                    val = cmd if cmd else self.core.get_flag_value("TEST_RUNNER_CMD")
+                                    if not val: val = "%s %s" % (sname, self.core.get_flag_value("TEST_RUNNER_ARGS"))
+                                    fh.write("%s_TEST_RUNNER_CMD :=  %s\n" % (sname, val))
+                                    for val in self.core.get_flag_value("SETENV_SCRIPT", False):
+                                        if val: fh.write("%s_TEST_ENV += source %s && \n" % (sname, val))
+                                    for val in self.core.get_flag_value("SETENV", False):
+                                        if val: fh.write("%s_TEST_ENV += export %s && \n" % (sname, val))
+                                val = self.core.get_flag_value("PRE_TEST")
+                                if val:
+                                    fh.write("%s_PRE_TEST := %s\n" % (sname, val))
+                            else:
+                                fh.write("%s_CLASS := BINARY\n" % safename)
                         self.popstash()
-                        if xclass == "TEST":
-                            fh.write("%s_CLASS := TEST\n" % safename)
-                        else:
-                            fh.write("%s_CLASS := BINARY\n" % safename)
                         fh.write("else\n$(eval $(call MultipleWarningMsg,%s,%s))\nendif\n" % (safename, path))
             else:
                 self.set("type", ptype.lower())
