@@ -1881,11 +1881,14 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     self.pushstash()
                     self.set("ptype",ptype)
                     self.library_template_generic()
+                    xnames = self.get("alpaka_names")
+                    if not xnames: xnames = safename
+                    for sname in xnames.split(" "):
+                        if xclass == "TEST":
+                            fh.write("%s_CLASS := TEST_%s\n" % (sname, ptype))
+                        else:
+                            fh.write("%s_CLASS := %s\n" % (sname, ptype))
                     self.popstash()
-                    if xclass == "TEST":
-                        fh.write("%s_CLASS := TEST_%s\n" % (safename, ptype))
-                    else:
-                        fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("else\n$(eval $(call MultipleWarningMsg,%s,%s))\nendif\n" % (safename, path))
             elif ptype == "BIN":
                 for prod in sorted(types[ptype].keys()):
