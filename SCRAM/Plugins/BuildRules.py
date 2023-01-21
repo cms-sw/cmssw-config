@@ -1579,7 +1579,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     alpaka_names.append(safename)
                     self.set("safename", safename)
                     self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
-                    fh.write("%s := %s\n" % (safename, path))
+                    fh.write("%s := self/%s\n" % (safename, path))
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
