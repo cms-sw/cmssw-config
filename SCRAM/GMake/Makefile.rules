@@ -83,7 +83,8 @@ DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
-FILE_EXT_CC_MAP:=
+DEVICE_CC_EXT := dev.cc
+FILE_EXT_CC_MAP :=
 
 ifeq ($(strip $(RELEASETOP)),)
 IS_DEV_AREA:=0
@@ -1029,7 +1030,9 @@ $(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$(filter-out $$(addprefix %.,$(FILE_EXT_CC_MAP)),$$(notdir $$($(1)_files))))) $$(foreach e,$(FILE_EXT_CC_MAP),$$(if $$(strip $$(filter %.$$e,$$(notdir $$($(1)_files)))),$$e,)))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
+ifneq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/serial)
 $$(eval $$(call AddCudaRules,$1,$6))
+endif
 $(1)_libdeps      := $$(call libdeps,$1)
 ifeq ($(strip $(SKIP_SCRIPTS_COPY)),)
 ifneq ($(strip $(5)),)
@@ -1174,6 +1177,9 @@ endef
 #safename
 define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
+ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/serial)
+$$(foreach ext,$(filter $(DEVICE_CC_EXT),    $($(1)_files_exts)),$$(eval $$(call CXXCompileRule,$(1),$$(ext),$(1),$($(1)_BUILDRULES))))
+endif
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
 $(foreach v,$($(1)_LOC_FLAGS_TARGETS),

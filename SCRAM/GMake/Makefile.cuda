@@ -1,4 +1,4 @@
-CUDA_EXTRA_EXT:=cuda.cc dev.cc
+CUDA_EXTRA_EXT:=cuda.cc $(DEVICE_CC_EXT)
 EXTRA_FILE_EXT+=$(CUDA_EXTRA_EXT)
 FILE_EXT_CC_MAP+=$(CUDA_EXTRA_EXT)
 NonTargetExt+=%_cudadlink.$(OBJEXT)
