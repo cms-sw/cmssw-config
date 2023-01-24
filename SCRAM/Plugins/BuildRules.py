@@ -75,6 +75,12 @@ class BuildRules(object):
             self.addRemakeDirectory(dirname(ofile))
         return ret
 
+    def hasAnySources(self, files):
+        for file_type in self.cache["SourceExtensions"]:
+            if self.hasFileTypes(files, file_type):
+                return True
+        return False
+
     def hasFileTypes(self, files, file_type):
         if not file_type in self.cache["SourceExtensions"]: return False
         for x in [ext for ext in [splitext(f)[-1][1:] for f in files] if ext]:
@@ -1462,7 +1468,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             fh.write("%s := %s\n" % (parent[4:], safename))
         self.cache["HAS_LCGDICT"] = False
         self.library_template_generic(check_alpaka=False)
-        if ex and (not self.hasFileTypes(self.get("all_files"), "cxx")) and (not self.cache["HAS_LCGDICT"]):
+        if ex and (not self.hasAnySources(self.get("all_files"))) and (not self.cache["HAS_LCGDICT"]):
             fh.write("%s_EX_LIB   :=\n" % safename)
         self.alpaka_template_generic()
         fh.write("endif\n")
