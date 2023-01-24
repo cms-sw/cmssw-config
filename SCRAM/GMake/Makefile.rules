@@ -1102,7 +1102,7 @@ $(1)_NO_TESTRUN := yes
 endif
 runtests_$(6) += unittests_$(1)
 unittests_$(6) += unittests_$(1)
-unittests_$(1): $(if $(strip $(filter runtests%,$(MAKECMDGOALS))),all_$(1)) $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS) | cleanup-runtest
+runtests_$(1) unittests_$(1): $(if $(strip $(filter runtests%,$(MAKECMDGOALS))),all_$(1)) $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS) | cleanup-runtest
 	$$(call run_test,$(1),$(3),$(5),$(2))
 endif
 ifeq ($(strip $(4)),lib)
