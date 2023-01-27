@@ -622,6 +622,7 @@ ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
 JsonStr = $(subst ",\\\",$(subst \,\\,$1))
 define run_compile_command
   @[ "$(if $(strip $(filter alpaka/%,$($1_PRODUCT_TYPE))),alpaka,)-$(if $(strip $(filter alpaka/$(CODE_CHECK_ALPAKA_BACKEND),$($1_PRODUCT_TYPE))),,non-$(CODE_CHECK_ALPAKA_BACKEND))" = "alpaka-non-$(CODE_CHECK_ALPAKA_BACKEND)" ] && exit 0 ;\
+  [ "$(ROCMSRC_FILES_SUFFIXES)" != "" ] && $(if $(strip $(filter $(addprefix %.,$(ROCMSRC_FILES_SUFFIXES)),$<)),true,false) && echo ROCM $<&& exit 0;\
   [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating LLVM Compile command for $(2) $< " &&\
   $(CMD_echo) "{\"directory\":\"$(call JsonStr,$(LOCALTOP))\",\
