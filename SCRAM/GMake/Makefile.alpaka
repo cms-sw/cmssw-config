@@ -1,0 +1,10 @@
+define SetAlpakaRules
+ifneq ($(strip $(filter $(DEVICE_CC_EXT),$($(1)_files_exts))),)
+ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/cuda)
+$$(eval $$(call AddCudaRules,$1,$2))
+endif
+ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/rocm)
+$$(eval $$(call AddRocmRules,$1,$2))
+endif
+endif
+endef

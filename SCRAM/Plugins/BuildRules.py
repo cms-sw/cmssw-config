@@ -30,6 +30,7 @@ class BuildRules(object):
             "cxx": {"cc": 1, "cpp": 1, "cxx": 1, "C": 1},
             "c": {"c": 1},
             "cuda": {"cu": 1},
+            "rocm": {"hip.cc": 1},
         }
         environ["LOCALTOP"] = normpath(environ["LOCALTOP"])
         self.init = False
@@ -458,6 +459,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             keys.append("CUDASRC_FILES_SUFFIXES := %s" % " ".join(self.getSourceExtensions("cuda")))
         else:
             keys.append("CUDASRC_FILES_SUFFIXES := ")
+        rocm = self.isToolAvailable("rocm")
+        if rocm:
+            keys.append("ROCM_TYPE_COMPILER        := rocm")
+            keys.append("ROCMSRC_FILES_SUFFIXES    := %s" % " ".join(self.getSourceExtensions("rocm")))
+        else:
+            keys.append("ROCMSRC_FILES_SUFFIXES := ")
 
         keys.append("CXXSRC_FILES_SUFFIXES     := %s" % " ".join(self.getSourceExtensions("cxx")))
         keys.append("CSRC_FILES_SUFFIXES       := %s" % " ".join(self.getSourceExtensions("c")))

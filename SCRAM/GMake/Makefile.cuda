@@ -32,7 +32,7 @@ endef
 define compile_cuda
   $(call compile_cuda_common,$1,$2,$(patsubst -isystem%,-I%,$(call AdjustFlags,$1,,CPPFLAGS,gcc)) $(call AdjustFlags,$1,,CUDA_FLAGS))
 endef
-define CudeCompileRule
+define CudaCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
 	$$(call compile_cuda,$(1),$(3))
 endef
@@ -84,11 +84,11 @@ define AddCudaRules
 $(1)_cudafiles    := $(filter $(foreach e,$(CUDASRC_FILES_SUFFIXES) $(CUDA_EXTRA_EXT),%.$e),$($(1)_files))
 $(1)_cuda_dlink_deps := $$(call cuda_dlink_deps,$1)
 ifneq ($$(strip $$($(1)_cudafiles)),)
-$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES) $(CUDA_EXTRA_EXT),$($(1)_files_exts)),$$(eval $$(call CudeCompileRule,$(1),$(ext),$(1))))
+$(foreach ext,$(filter $(CUDASRC_FILES_SUFFIXES) $(CUDA_EXTRA_EXT),$($(1)_files_exts)),$$(eval $$(call CudaCompileRule,$(1),$(ext),$(1))))
 ifeq ($(strip $(SYNTAX_ONLY)),)
 $(1)_cudadlink    := $($(1)_objdir)/$(1)_cudadlink.$(OBJEXT)
 $(1)_objs         += $$($(1)_cudadlink)
-$(1)_PRE_INIT_FUNC:=$$($(1)_PRE_INIT_FUNC) $$(eval $$(call SetCudaRules,$1,$2))
+$(1)_PRE_INIT_FUNC+=$$$$(eval $$$$(call SetCudaRules,$1,$2))
 endif
 $(1)_LOC_USE      += $(CUDA_TYPE_COMPILER)
 else
