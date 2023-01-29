@@ -3,7 +3,7 @@ EXTRA_FILE_EXT+=$(CUDA_EXTRA_EXT)
 FILE_EXT_CC_MAP+=$(CUDA_EXTRA_EXT)
 NonTargetExt+=%_cudadlink.$(OBJEXT)
 SET_PRODUCT_VARIABLES += CUDA_DLINK_LIB
-AdjustCudaHostFlags=$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$2) $(call GetToolFlag,cuda,CUDA_HOST_$2),$(call AdjustFlags,$1,,$2,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$2)
+AdjustCudaHostFlags=$(foreach x,$2,$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$x) $(call GetToolFlag,cuda,CUDA_HOST_$x),$(call AdjustFlags,$1,,$x,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 Tool_DependencyDLINK=$(foreach x,$($(1)_LOC_CUDA_DLINK_LIB_ALL),-l$x)
 define cuda_dlink_deps

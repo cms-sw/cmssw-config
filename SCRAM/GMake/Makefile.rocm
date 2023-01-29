@@ -2,7 +2,7 @@ ROCM_EXTRA_EXT:=$(ROCMSRC_FILES_SUFFIXES) $(DEVICE_CC_EXT)
 EXTRA_FILE_EXT+=$(ROCM_EXTRA_EXT)
 FILE_EXT_CC_MAP+=$(ROCM_EXTRA_EXT)
 SET_PRODUCT_VARIABLES += ROCM_DLINK_LIB
-AdjustRocmHostFlags=$(filter-out $(call GetToolFlag,rocm,ROCM_HOST_REM_$2) $(call GetToolFlag,rocm,ROCM_HOST_$2),$(call AdjustFlags,$1,,$2,llvm)) $(call GetToolFlag,rocm,ROCM_HOST_$2)
+AdjustRocmHostFlags=$(foreach x,$2,$(filter-out $(call GetToolFlag,rocm,ROCM_HOST_REM_$x) $(call GetToolFlag,rocm,ROCM_HOST_$x),$(call AdjustFlags,$1,,$x,llvm)) $(call GetToolFlag,rocm,ROCM_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 Tool_DependencyDLINK=$(foreach x,$($(1)_LOC_ROCM_DLINK_LIB_ALL),-l$x)
 define rocm_dlink_deps
@@ -26,10 +26,10 @@ $(eval $(call GenerateReleaseRocmDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
 $(eval $(call GenerateReleaseRocmDlink,$(RELEASETOP),base))
 
 define compile_rocm_common
-  $(call run_compile_command,$2,$4,$5,$(HIPCC) -c $3 $(call AdjustRocmHostFlags,$1,CXXFLAGS CPPFLAGS) $(CXXSHAREDOBJECTFLAGS) $(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d))
+  $(call run_compile_command,$2,$4,$5,$(HIPCC) -c $3 $(call AdjustRocmHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d))
 endef
 define compile_rocm
-  $(call compile_rocm_common,$1,$2,$(patsubst -isystem%,-I%,$(call AdjustFlags,$1,,CPPFLAGS,gcc)) $(call AdjustFlags,$1,,ROCM_FLAGS))
+  $(call compile_rocm_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS,gcc) $(call AdjustFlags,$1,,ROCM_FLAGS))
 endef
 define RocmCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
