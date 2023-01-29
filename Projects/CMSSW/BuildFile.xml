@@ -43,6 +43,7 @@
   <flags MISSING_SYMBOL_FLAGS="-Wl,-z,defs"/>
 </ifos>
 
+<flags CPPDEFINES="USE_CMS_DEPRECATED"/>
 <architecture name="_mic_">
   <flags CPPDEFINES="thread_local="/>
 </architecture>
