@@ -26,10 +26,10 @@ $(eval $(call GenerateReleaseRocmDlink,$(FULL_RELEASE_FOR_A_PATCH),full))
 $(eval $(call GenerateReleaseRocmDlink,$(RELEASETOP),base))
 
 define compile_rocm_common
-  $(call run_compile_command,$2,$4,$5,$(HIPCC) -c $3 $(call AdjustRocmHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d))
+  $(call run_compile_command,$2,$4,$5,$(HIPCC) -c $3 $(call AdjustRocmHostFlags,$1,CPPFLAGS CXXFLAGS) $(CXXSHAREDOBJECTFLAGS) $(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d))
 endef
 define compile_rocm
-  $(call compile_rocm_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS,gcc) $(call AdjustFlags,$1,,ROCM_FLAGS))
+  $(call compile_rocm_common,$1,$2,$(call AdjustFlags,$1,,ROCM_FLAGS))
 endef
 define RocmCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
