@@ -356,7 +356,7 @@ $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$
 Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFINES) $(call TOOLS_DIR_FUNC,$1,INCLUDE,-I,-isystem))
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(DLINK_LIBDIR) \
   $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) \
-  $(if $(strip $($1_rocmfiles)),$(call TOOLS_LIB_FUNC,$1,ROCM_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
+  $(if $(strip $($1_rocm)),$(call TOOLS_LIB_FUNC,$1,ROCM_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
 GetPublicProducts=$($1) $(if $(strip $($2_PRODUCT_TYPE)),$($1/$($2_PRODUCT_TYPE)))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
@@ -612,7 +612,7 @@ endif
 ##############################################################################
 #Compilation Rules
 GetCompilerData=$(strip $(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_$2),$($(SCRAM_COMPILER)_$2)))
-GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(CXX)))
+GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(if $(strip $(filter link-1,$3-$($1_rocm))),$(HIPCC),$(CXX))))
 GetCC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CC),$(if $(strip $2),$($2_CC),$(CC)))
 GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(if $(strip $2),$($2_FC),$(FC)))
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
@@ -725,8 +725,8 @@ endef
 # Shared library linking
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
-  $(VERB_ECHO)                $(call GetCXX,$1) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
-  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1,,link) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1,,link) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
@@ -735,24 +735,36 @@ define link_lib_common
   ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1))
 endef
 define link_lib
-  $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME),,,$5) ,$(call AdjustFlags,$1,,LDFLAGS,,,$5))
+  $(if $(strip $($1_rocm)),
+    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME),,,$5),$(call AdjustFlags,$1,,LDFLAGS,,,$5)))
 endef  
 define link_lib_edm
-  $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS $(LTO_FLAG_NAME),,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5))
+  $(if $(strip $($1_rocm)),
+    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS $(LTO_FLAG_NAME),,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5)))
 endef
 ##############################################################################
 # Binary/test building Rules
 # Binary building 
-define build_bin
+define build_bin_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
-  $(VERB_ECHO)                $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME)) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@ &&\
-  (($(call checklibs,$(1)) && $(call GetCXX,$1) $(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME)) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $(call AdjustFlags,$1,,LDFLAGS) -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1,,link) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1,,link) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
+# Binary building
+define build_bin
+  $(if $(strip $($1_rocm)),
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustFlags,$1,,LDFLAGS)))
+endef
 # Test executable building
 define build_test
-  $(call build_bin,$(1),$(2),$(3))
+  $(if $(strip $($1_rocm)),
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustFlags,$1,,LDFLAGS)))
 endef  
 ##############################################################################
 # Data download and Copy
