@@ -612,7 +612,7 @@ endif
 ##############################################################################
 #Compilation Rules
 GetCompilerData=$(strip $(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_$2),$($(SCRAM_COMPILER)_$2)))
-GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(if $(strip $(filter link-1,$3-$($1_rocm))),$(HIPCC),$(CXX))))
+GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(if $(strip $3),$3,$(CXX))))
 GetCC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CC),$(if $(strip $2),$($2_CC),$(CC)))
 GetFC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_FC),$(if $(strip $2),$($2_FC),$(FC)))
 ifeq ($(strip $(SCRAM_GENERATE_LLVM_CCDB)),YES)
@@ -725,8 +725,8 @@ endef
 # Shared library linking
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
-  $(VERB_ECHO)                $(call GetCXX,$1,,link) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
-  (($(call checklibs,$(1)) && $(call GetCXX,$1,,link) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
@@ -749,8 +749,8 @@ endef
 # Binary building 
 define build_bin_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
-  $(VERB_ECHO)                $(call GetCXX,$1,,link) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
-  (($(call checklibs,$(1)) && $(call GetCXX,$1,,link) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)                $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
+  (($(call checklibs,$(1)) && $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
@@ -1037,7 +1037,7 @@ $(eval $(call LogFile,$(1),$(2)))
 .PHONY: $(1) all_$(1)
 $(1)_objdir       := $(WORKINGDIR)/$(2)/$(1)
 $(1)_srcdir       := $(LOCALTOP)/$(2)
-$(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $($(1)_files))
+$(1)_files        := $$(filter-out $($(1)_SKIP_FILES), $(sort $($(1)_files)))
 $(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)_files))
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$(filter-out $$(addprefix %.,$(FILE_EXT_CC_MAP)),$$(notdir $$($(1)_files))))) $$(foreach e,$(FILE_EXT_CC_MAP),$$(if $$(strip $$(filter %.$$e,$$(notdir $$($(1)_files)))),$$e,)))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
