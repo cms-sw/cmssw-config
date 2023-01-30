@@ -5,7 +5,7 @@ NonTargetExt+=%_cudadlink.$(OBJEXT)
 SET_PRODUCT_VARIABLES += CUDA_DLINK_LIB
 AdjustCudaHostFlags=$(foreach x,$2,$(filter-out $(call GetToolFlag,cuda,CUDA_HOST_REM_$x) $(call GetToolFlag,cuda,CUDA_HOST_$x),$(call AdjustFlags,$1,,$x,gcc)) $(call GetToolFlag,cuda,CUDA_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
-Tool_DependencyDLINK=$(foreach x,$($(1)_LOC_CUDA_DLINK_LIB_ALL),-l$x)
+Tool_DependencyCudaDLINK=$(foreach x,$($(1)_LOC_CUDA_DLINK_LIB_ALL),-l$x)
 define cuda_dlink_deps
 $(addprefix $(WORKINGDIR)/cache/cuda_dlink/,$(foreach u,$($(1)_LOC_USE),$($u)))
 endef
@@ -40,8 +40,8 @@ endef
 define link_cuda_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Cuda Device Link $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyCudaDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@" &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(NVCC) -dlink $(DLINK_LIBDIR) $(call Tool_DependencyCudaDLINK,$1) $(call AdjustFlags,$1,,CUDA_LDFLAGS CUDA_FLAGS) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)' $2 -o $@) $(endlog_$(1))
 endef
 define generate_cuda_nv_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\

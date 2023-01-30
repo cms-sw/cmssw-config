@@ -4,7 +4,6 @@ FILE_EXT_CC_MAP+=$(ROCM_EXTRA_EXT)
 SET_PRODUCT_VARIABLES += ROCM_DLINK_LIB
 AdjustRocmHostFlags=$(foreach x,$2,$(filter-out $(call GetToolFlag,rocm,ROCM_HOST_REM_$x) $(call GetToolFlag,rocm,ROCM_HOST_$x),$(call AdjustFlags,$1,,$x,llvm)) $(call GetToolFlag,rocm,ROCM_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
-Tool_DependencyDLINK=$(foreach x,$($(1)_LOC_ROCM_DLINK_LIB_ALL),-l$x)
 define rocm_dlink_deps
 $(addprefix $(WORKINGDIR)/cache/rocm_dlink/,$(foreach u,$($(1)_LOC_USE),$($u)))
 endef
