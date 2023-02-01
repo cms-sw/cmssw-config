@@ -58,7 +58,7 @@ $(WORKINGDIR)/cache/rocm_dlink/$(1): $($(1)_objdir)/lib$(1)_rocm.$(AREXT) $$($(1
 $($(1)_objdir)/lib$(1)_rocm.$(AREXT): $(addsuffix .rocm_o,$($(1)_rocmobjs))
 	$$(call generate_rocm_a,$1) && $$(call copy_build_product,$(SCRAMSTORENAME_STATIC))
 $($(1)_objdir)/%.rocm_o: $($(1)_objdir)/%
-	@$$(call generate_rocm_device_objs,$1)
+	$$(call generate_rocm_device_objs,$1)
 all_$(1)+=$(PUB_DIRCACHE_MKDIR)/rocm_dlink/$(1).mk
 $(PUB_DIRCACHE_MKDIR)/rocm_dlink/$(1).mk: $(PUB_DIRCACHE_MKDIR)/rocm_dlink/scram.mk
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
