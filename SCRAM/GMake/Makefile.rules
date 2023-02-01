@@ -630,6 +630,7 @@ else
 define run_compile_command
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(strip $($(1)_PRODUCT_TYPE) $(2)) $<" &&\
+  export TMPDIR=$(@D) &&\
   $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$4 $5 $< -o $@" &&\
               ($(SCRAM_PREFIX_COMPILER_COMMAND) $4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
 endef
@@ -725,6 +726,7 @@ endef
 # Shared library linking
 define link_lib_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
+  export TMPDIR=$(@D) &&\
   $(VERB_ECHO)                $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
   (($(call checklibs,$(1)) && $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
@@ -749,6 +751,7 @@ endef
 # Binary building 
 define build_bin_common
   @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
+  export TMPDIR=$(@D) &&\
   $(VERB_ECHO)                $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
   (($(call checklibs,$(1)) && $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
@@ -762,9 +765,7 @@ define build_bin
 endef
 # Test executable building
 define build_test
-  $(if $(strip $($1_rocm)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(LTO_FLAG_NAME)),$(call AdjustFlags,$1,,LDFLAGS)))
+  $(call build_bin,$1,$2,$3)
 endef  
 ##############################################################################
 # Data download and Copy
