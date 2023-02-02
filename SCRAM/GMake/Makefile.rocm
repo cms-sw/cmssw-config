@@ -1,8 +1,9 @@
+TOP_LEVEL_VARIABLES+=ROCM_HOST
 ROCM_EXTRA_EXT:=$(ROCMSRC_FILES_SUFFIXES) $(DEVICE_CC_EXT)
 EXTRA_FILE_EXT+=$(ROCM_EXTRA_EXT)
 FILE_EXT_CC_MAP+=$(ROCM_EXTRA_EXT)
 SET_PRODUCT_VARIABLES += ROCM_DLINK_LIB
-AdjustRocmHostFlags=$(foreach x,$2,$(filter-out $(call GetToolFlag,rocm,ROCM_HOST_REM_$x) $(call GetToolFlag,rocm,ROCM_HOST_$x),$(call AdjustFlags,$1,,$x,llvm)) $(call GetToolFlag,rocm,ROCM_HOST_$x))
+AdjustRocmHostFlags=$(foreach x,$2,$(filter-out $(call GetVariable,REM_ROCM_HOST_$x) $(call GetVariable,ROCM_HOST_$x) $(call AdjustFlags,$1,rocm,REM_ROCM_HOST_$x) $(call GetToolFlag,rocm,REM_ROCM_HOST_$x) $(call GetToolFlag,,ROCM_HOST_$x),$(call AdjustFlags,$1,,$x,llvm)) $(call GetVariable,ROCM_HOST_$x) $(call GetToolFlag,rocm,ROCM_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 define rocm_dlink_deps
 $(addprefix $(WORKINGDIR)/cache/rocm_dlink/,$(foreach u,$($(1)_LOC_USE),$($u)))
