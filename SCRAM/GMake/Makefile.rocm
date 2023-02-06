@@ -71,6 +71,7 @@ define AddRocmRules
 $(1)_rocmfiles       := $(filter $(foreach e,$(ROCM_EXTRA_EXT),%.$e),$($(1)_files))
 $(1)_rocm_dlink_deps := $$(call rocm_dlink_deps,$1)
 ifneq ($$(strip $$($(1)_rocmfiles)),)
+$(1)_DISABLE_LTO     := 1
 $(1)_linker          := $(HIPCC)
 $(1)_rocm            := 1
 $(foreach ext,$(filter $(ROCM_EXTRA_EXT),$($(1)_files_exts)),$$(eval $$(call RocmCompileRule,$(1),$(ext),$(1))))
