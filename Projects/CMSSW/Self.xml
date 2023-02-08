@@ -25,7 +25,7 @@
   <flags CHECK_PRIVATE_HEADERS="1"/>
   <flags SCRAM_TARGETS="haswell sandybridge nehalem"/>
   <flags OVERRIDABLE_FLAGS="CPPDEFINES CXXFLAGS FFLAGS CFLAGS CPPFLAGS LDFLAGS CUDA_FLAGS CUDA_LDFLAGS LTO_FLAGS ROCM_FLAGS ROCM_LDFLAGS"/>
-  <flags ALPAKA_BACKENDS="cuda serial"/>
+  <flags ALPAKA_BACKENDS="cuda rocm serial"/>
   <flags CODE_CHECK_ALPAKA_BACKEND="serial"/>
   <flags ENABLE_LTO="@ENABLE_LTO@"/>
  </client>

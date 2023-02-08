@@ -672,7 +672,7 @@ define compile_cxx
   $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS $(call GetLTOFlag,$1),,,$3),,,,$3)
 endef
 define compile_cxx_edm
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS $(call GetLTOFlag,1),,,$3),edm plugin,,,$3)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS $(call GetLTOFlag,$1),,,$3),edm plugin,,,$3)
 endef
 define compile_c
   $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS,,,$3),,,,$3)
