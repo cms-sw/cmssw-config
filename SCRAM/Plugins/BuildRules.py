@@ -1014,6 +1014,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             comFlags[flag] = 1
         if ("cuda" in self.cache["SUPPORTED_ALPAKA_BACKENDS"]) and (not self.isToolAvailable("cuda-gcc-support")):
             del self.cache["SUPPORTED_ALPAKA_BACKENDS"]["cuda"]
+        if ("rocm" in self.cache["SUPPORTED_ALPAKA_BACKENDS"]) and (not self.isToolAvailable("rocm")):
+            del self.cache["SUPPORTED_ALPAKA_BACKENDS"]["cuda"]
         self.cache['SELECTED_ALPAKA_BACKENDS'] = ""
         if 'FLAGS' in stool:
             if 'DEFAULT_COMPILER' in stool['FLAGS']:
