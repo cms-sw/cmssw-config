@@ -31,6 +31,7 @@ class BuildRules(object):
             "c": {"c": 1},
             "cuda": {"cu": 1},
             "rocm": {"hip.cc": 1},
+            "alpaka_device": {"dev.cc": 1},
         }
         environ["LOCALTOP"] = normpath(environ["LOCALTOP"])
         self.init = False
@@ -84,9 +85,9 @@ class BuildRules(object):
 
     def hasFileTypes(self, files, file_type):
         if not file_type in self.cache["SourceExtensions"]: return False
-        for x in [ext for ext in [splitext(f)[-1][1:] for f in files] if ext]:
-            if x in self.cache["SourceExtensions"][file_type]:
-                return True
+        for f in files:
+            for ext in self.cache["SourceExtensions"][file_type]:
+                if f.endswith("."+ext): return True
         return False
 
     def addRemakeDirectory(self, dir):
@@ -1403,6 +1404,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                      "{0}_files := $(patsubst {2}/%,%,$(wildcard $(foreach dir,{2},"
                      "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
                      format(safename, parent, path, bend))
+            if bend=="rocm":
+                self.check_rocm_files("alpaka_device")
             self.pushstash()
             self.set('safename',safename)
             self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
@@ -1413,6 +1416,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return
 
     def binary_template_generic(self):
+        self.searchPackageFiles()
         self.dumpBuildFileData()
 
     def donothing_template(self):
@@ -1438,6 +1442,14 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.core.add_build_product(name.replace("/", ""), "", "lib", "LIBRARY")
             autoPlugin = 1
         self.binary_rules(autoPlugin)
+
+    def check_rocm_files(self, rocm_type="rocm"):
+        if self.hasFileTypes(self.get("all_files"),rocm_type):
+            self.data["FH"].write(
+                "{0}_DROP_DEP+=sanitizer-flags-%\n"
+                "{0}_rocm:=1\n"
+                "{0}_linker:=$(HIPCC)\n".format(self.get("safename")))
+        return
 
     def library_template(self):
         self.initTemplate_LIBRARY()
@@ -1517,6 +1529,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
     def dumpBuildFileLOC(self, localbf, safename, path, no_export, lib):
         fh = self.data["FH"]
+        self.check_rocm_files()
         locuse = ""
         if localbf:
             fh.write("%s_BuildFile    := $(WORKINGDIR)/cache/bf/%s\n" % (safename, localbf[:-4]))
@@ -1598,6 +1611,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
+                    if bend in ["rocm"]: self.check_rocm_files("alpaka")
                     self.dumpBuildFileData(lib, False)
                     self.popstash()
                 self.set("alpaka_names"," ".join(alpaka_names))
