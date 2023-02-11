@@ -59,6 +59,7 @@ class BuildRules(object):
         self.data["context"].stash(data.branch)
         self.data["swap_prod_mkfile"] = False
         self.data["context"].pushstash()
+        self.set("allow_empty_file_list",False)
         self.core = data.branch["context"]
         self.data["product"] = {}
         if not self.init:
@@ -1444,7 +1445,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.binary_rules(autoPlugin)
 
     def check_rocm_files(self, rocm_type="rocm"):
-        if self.hasFileTypes(self.get("all_files"),rocm_type):
+        files = self.core.get_product_files()
+        if (not files) and (not self.get("allow_empty_file_list")): files = self.get("all_files")
+        if self.hasFileTypes(files,rocm_type):
             self.data["FH"].write(
                 "{0}_DROP_DEP+=sanitizer-flags-%\n"
                 "{0}_rocm:=1\n"
@@ -1908,6 +1911,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                  format(safename, path, prodfiles, localbf[:-4]))
                     self.set("type", types[ptype][prod]["TYPE"])
                     self.pushstash()
+                    self.set("allow_empty_file_list",True)
                     self.set("ptype",ptype)
                     self.library_template_generic()
                     xnames = self.get("alpaka_names")
