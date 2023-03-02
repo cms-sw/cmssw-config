@@ -1614,7 +1614,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
-                    if bend in ["rocm"]: self.check_rocm_files("alpaka")
+                    if bend in ["rocm"]: self.check_rocm_files("alpaka_device")
                     self.dumpBuildFileData(lib, False)
                     self.popstash()
                 self.set("alpaka_names"," ".join(alpaka_names))
