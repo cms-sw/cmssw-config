@@ -78,6 +78,9 @@ class BuildRules(object):
             self.addRemakeDirectory(dirname(ofile))
         return ret
 
+    def getExtension(self, file_type):
+        return self.cache["SourceExtensions"][file_type].keys() if file_type in self.cache["SourceExtensions"] else []
+
     def hasAnySources(self, files):
         for file_type in self.cache["SourceExtensions"]:
             if self.hasFileTypes(files, file_type):
@@ -1445,9 +1448,21 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.binary_rules(autoPlugin)
 
     def check_rocm_files(self, rocm_type="rocm"):
+        if self.get("check_rocm_files"): return
         files = self.core.get_product_files()
+        if files and ([f for f in files if f.endswith("*.cc")]):
+            rocm_ext = ["."+e for e in self.getExtension(rocm_type)]
+            for f in self.get("all_files"):
+                done=False
+                for e in rocm_ext:
+                    if f.endswith(e):
+                        files.append(f)
+                        done=True
+                        break
+                if done:break
         if (not files) and (not self.get("allow_empty_file_list")): files = self.get("all_files")
         if self.hasFileTypes(files,rocm_type):
+            self.set("check_rocm_files",True)
             self.data["FH"].write(
                 "{0}_DROP_DEP+=sanitizer-flags-%\n"
                 "{0}_rocm:=1\n"
