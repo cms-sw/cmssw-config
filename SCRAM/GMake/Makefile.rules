@@ -105,7 +105,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar rsync
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -155,6 +155,7 @@ BASECMD_which := $(CMD_which)
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetLocalCMDs,$(subst :,$(comma),$c))))
 $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
+UNIT_TEST_PATHS:=$(LOCALTOP)/$(SCRAMSTORENAME_TEST)$(if $(strip $(RELEASETOP)),:$(RELEASETOP)/$(SCRAMSTORENAME_TEST))$(if $(strip $(FULL_RELEASE_FOR_A_PATCH)),:$(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_TEST))
 PYTHON_RELPATH := $(shell $(CMD_echo) $(SCRAMSTORENAME_PYTHON) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
 CMD_python := $(CMD_python$(DEFAULT_PYTHON))
 ###################################
@@ -814,7 +815,7 @@ define run_test
     $(CMD_echo) "===== Test \"$(1)\" ====" >> $($(1)_objdir)/testing.log &&\
     STIME=$$(date +%s) &&\
     export SCRAM_TEST_NAME="$1" && export SCRAM_TEST_PATH="$(LOCALTOP)/$4" && export SCRAM_TEST_PACKAGE="$($(1)_PROD_PACKAGE)" && export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
-    export PATH=$(LOCALTOP)/$(2):$(LOCALTOP)/$(4):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && cd $(UNITTEST_DIR)/$1 &&,) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) sh -c '$(subst ','\'',$($(1)_TEST_RUNNER_CMD))' && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
+    export PATH=$(LOCALTOP)/$(4):$(UNIT_TEST_PATHS):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && cd $(UNITTEST_DIR)/$1 $(if $(strip $($(1)_PRE_TEST)),&& for d in $($(1)_PRE_TEST) ; do [ -d $(UNITTEST_DIR)/$$d ] && $(CMD_rsync) -a $(UNITTEST_DIR)/$$d/ ./;done) &&) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) sh -c '$(subst ','\'',$(5))' && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
@@ -1123,7 +1124,7 @@ endif
 runtests_$(6) += unittests_$(1)
 unittests_$(6) += unittests_$(1)
 runtests_$(1) unittests_$(1): $(if $(strip $(filter runtests%,$(MAKECMDGOALS))),all_$(1)) $(patsubst %,unittests_%,$($(1)_PRE_TEST)) $(LOCALTOP)/$(5)/testing.log $(UNIT_TEST_DEPS) | cleanup-runtest
-	$$(call run_test,$(1),$(3),$(5),$(2))
+	$$(call run_test,$(1),$(3),$(5),$(2),$$(if $$(strip $$(wildcard $(LOCALTOP)/$2/$$(firstword $$($(1)_TEST_RUNNER_CMD)))),$(LOCALTOP)/$2/$$($(1)_TEST_RUNNER_CMD),$$($(1)_TEST_RUNNER_CMD)))
 endif
 ifeq ($(strip $(4)),lib)
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetLib,$1,$2,$3,$$v)))
@@ -1971,7 +1972,7 @@ $(WORKINGDIR)/das_client/dasgoclient: $(WORKINGDIR)/das_client/das_client
 $(WORKINGDIR)/das_client/das_client:
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	curl -L -s --connect-timeout 10 https://raw.githubusercontent.com/cms-sw/cms-bot/master/das-utils/das_client  > $@ &&\
-        chmod +x $@
+        $(CMD_chmod) +x $@
 emit-llvm:
 	SCRAM_APPLY_BIGLIB_RULES=no \
         SCRAM_SYNTAX_ONLY=yes \
@@ -1986,7 +1987,7 @@ scripts_%:
 skip-scripts-copy: all
 	@:
 cleanup-runtest:
-	@[ ! -d "$(LOCALTOP)/$(UNITTEST_DIR)" ] || $(CMD_rm) -rf $(LOCALTOP)/$(UNITTEST_DIR)
+	@[ ! -d "$(LOCALTOP)/$(UNITTEST_DIR)" ] || ($(CMD_chmod) -R +w $(LOCALTOP)/$(UNITTEST_DIR) && $(CMD_rm) -rf $(LOCALTOP)/$(UNITTEST_DIR))
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
 %:
