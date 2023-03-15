@@ -1,5 +1,5 @@
 -include $(TOOLS_MKDIR).mk
-$(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
+$(foreach f,LLVM_ANALYZER USE_UNITTEST_DIR,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
@@ -822,6 +822,7 @@ define run_test
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
+    $(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_cp) -f $($(1)_objdir)/testing.log $(UNITTEST_DIR)/$1/$1.log &&)\
     $(CMD_cat) $($(1)_objdir)/testing.log &&\
     $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi

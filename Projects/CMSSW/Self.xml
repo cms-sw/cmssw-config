@@ -28,6 +28,7 @@
   <flags ALPAKA_BACKENDS="cuda rocm serial"/>
   <flags CODE_CHECK_ALPAKA_BACKEND="serial"/>
   <flags ENABLE_LTO="@ENABLE_LTO@"/>
+  <flags USE_UNITTEST_DIR="1"/>
  </client>
  <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>
