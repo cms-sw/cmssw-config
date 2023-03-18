@@ -811,7 +811,7 @@ define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
     $(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Skipping test $(1)"; \
   else \
-    $(if $(strip $(SCRAM_BUILDVERBOSE)),,$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
+    $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
     [ -d $($(1)_objdir) ] || $(CMD_mkdir) -p $($(1)_objdir) &&\
     $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
@@ -826,7 +826,7 @@ define run_test
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
     $(CMD_cp) -f $($(1)_objdir)/testing.log $(UNITTEST_DIR)/$1.log &&\
-    $(if $(strip $(SCRAM_BUILDVERBOSE)),,$(CMD_cat) $($(1)_objdir)/testing.log &&)\
+    $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_cat) $($(1)_objdir)/testing.log &&)\
     $(CMD_printf) "$${RESULT} %-5s ... $1\n" "$${UT_TIME}s" &&\
     $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi
