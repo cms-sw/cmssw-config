@@ -1,5 +1,5 @@
 -include $(TOOLS_MKDIR).mk
-$(foreach f,LLVM_ANALYZER USE_UNITTEST_DIR,$(eval $f:=$(self_EX_FLAGS_$f)))
+$(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
@@ -51,6 +51,7 @@ RESET_BUILD_LOGS:=yes
 TOP_LEVEL_VARIABLES:= BIGOBJ BINARY LIBRARY TEST TEST_LIBRARY
 SKIP_UNITTESTS     := $(patsubst skiptest_%,%,$(filter skiptest_%,$(MAKECMDGOALS)))
 IGNORE_DELETED     := $(strip $(filter ignore-deleted,$(MAKECMDGOALS)))
+UNITTESTING        := $(if $(strip $(filter unittests runtests unittests_% runtests_%,$(MAKECMDGOALS))),yes,)
 FAST:=
 XFAST:=
 UFAST:=
@@ -61,7 +62,8 @@ AREXT:=a
 MODULE_PREFIX:=lib
 COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
-UNITTEST_DIR := $(LOCALTOP)/unit_tests
+UNITTEST_DIRNAME:=unit_tests
+UNITTEST_DIR := $(LOCALTOP)/$(UNITTEST_DIRNAME)
 PRECOMPILE_FLAGS_EXTENSION  := cxxflags
 PRECOMPILE_EXTENSION        := gch
 YACC                        := bison
@@ -106,7 +108,7 @@ ALL_BIGPRODS                :=
 POISON_EDMPLUGIN_CACHE      :=
 EDM_CHECKSUM_HELP_MSG       = Suggestion: You can run 'scram build updateclassversion' to generate $$x.generated with updated ClassVersion
 CMDS_COMPILERS_MAP          := CXX:g++ CC:gcc FC:g77
-ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar rsync
+ALL_CMDS                    := sh awk basename cat cd chmod cp dirname diff echo false find g77 g++ c++ gcc grep ln ls mkdir mv printf python python2 python3 rm sed sort touch tr true uname uniq xargs ld wc cut git gunzip tail head objcopy ar rsync
 SHELL                       := /bin/sh
 BASECMD_which               := which
 CMD_cd  := cd
@@ -809,7 +811,7 @@ define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
     $(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Skipping test $(1)"; \
   else \
-    $(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&\
+    $(if $(strip $(SCRAM_BUILDVERBOSE)),,$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
     [ -d $($(1)_objdir) ] || $(CMD_mkdir) -p $($(1)_objdir) &&\
     $(CMD_rm) -f $($(1)_objdir)/testing.log; $(CMD_touch) $($(1)_objdir)/testing.log  &&\
     $(CMD_echo) " " >> $($(1)_objdir)/testing.log &&\
@@ -817,13 +819,15 @@ define run_test
     STIME=$$(date +%s) &&\
     export SCRAM_TEST_NAME="$1" && export SCRAM_TEST_PATH="$(LOCALTOP)/$4" && export SCRAM_TEST_PACKAGE="$($(1)_PROD_PACKAGE)" && export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
     export CMSSW_SEARCH_PATH=$(LOCALTOP)/tmp:$(CMSSW_SEARCH_PATH) &&\
-    export PATH=$(LOCALTOP)/$(4):$(UNIT_TEST_PATHS):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_rm) -rf $(UNITTEST_DIR)/$1 && $(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && export CMSSW_SEARCH_PATH=$(UNITTEST_DIR)/$1:$$CMSSW_SEARCH_PATH && cd $(UNITTEST_DIR)/$1 $(if $(strip $($(1)_PRE_TEST)),&& for d in $($(1)_PRE_TEST) ; do [ ! -d $(UNITTEST_DIR)/$$d ] || $(CMD_rsync) -a --link-dest=../$$d/ $(UNITTEST_DIR)/$$d/ ./; done) &&) $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) sh -c '$(subst ','\'',$(5))' && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
+    export PATH=$(LOCALTOP)/$(4):$(UNIT_TEST_PATHS):$(PATH) && $(strip $($(1)_TEST_ENV)) (($(CMD_mkdir) -p $(UNITTEST_DIR)/$1 && export CMSSW_SEARCH_PATH=$(UNITTEST_DIR)/$1:$$CMSSW_SEARCH_PATH && cd $(UNITTEST_DIR)/$1 $(if $(strip $($(1)_PRE_TEST)),&& for d in $($(1)_PRE_TEST) ; do [ ! -d $(UNITTEST_DIR)/$$d ] || $(CMD_rsync) -a --link-dest=../$$d/ $(UNITTEST_DIR)/$$d/ ./; done) && $(if $(strip $(${1}_LOC_FLAGS_NO_TEST_PREFIX)),,$(EDM_TOOLS_PREFIX)) $(SCRAM_TEST_RUNNER_PREFIX) sh -c '$(subst ','\'',$(5))' && $(CMD_echo) "" && $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
+    RESULT=$$($(CMD_grep) -q " test $(1) succeeded" $($(1)_objdir)/testing.log && $(CMD_echo) Pass || $(CMD_echo) Fail) &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
-    $(if $(strip $(${1}_USE_UNITTEST_DIR)),$(CMD_cp) -f $($(1)_objdir)/testing.log $(UNITTEST_DIR)/$1/$1.log &&)\
-    $(CMD_cat) $($(1)_objdir)/testing.log &&\
+    $(CMD_cp) -f $($(1)_objdir)/testing.log $(UNITTEST_DIR)/$1.log &&\
+    $(if $(strip $(SCRAM_BUILDVERBOSE)),,$(CMD_cat) $($(1)_objdir)/testing.log &&)\
+    $(CMD_printf) "$${RESULT} %-5s ... $1\n" "$${UT_TIME}s" &&\
     $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi
 endef
@@ -854,6 +858,10 @@ define create_subsystem_init
   fi
 endef
 #############################################################################
+ifeq ($(UNITTESTING),yes)
+FinalizeSubSystem=true
+FinalizePackage=true
+else
 define FinalizeSubSystem
   $(CMD_echo) ">> Subsystem $(1) built"
 endef
@@ -861,6 +869,7 @@ define FinalizePackage
   $(DO_BUILD_LOG) $(CMD_echo) ">> Leaving Package $(1)" &&\
   $(DO_BUILD_LOG) $(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 endef
+endif
 define SubSystem
 .PHONY: $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2) runtests_$(2) unittests_$(2) compile_$(2) precompile_$(2) edm_checks_$(2) scripts_$(2)
 ifneq ($(strip $(SCRAM_IGNORE_PACKAGES)),)
@@ -883,8 +892,10 @@ precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
+ifneq ($(UNITTESTING),yes)
 scripts_$(2): $$(addprefix scripts_,$$(subdirs_$(2)))
 	@:
+endif
 endef
 define EmptyPackage
 $(1)_libdeps      := $$(call libdeps,$1)
@@ -912,16 +923,20 @@ ifneq ($(strip $(SCRAM_IGNORE_SUBDIRS)),)
 subdirs_$(2) := $$(filter-out $$(addprefix $(2)_,$(SCRAM_IGNORE_SUBDIRS)),$$(subdirs_$(2)))
 endif
 $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg: $$(logfile_$(2)) FORCE_TARGET
+ifneq ($(UNITTESTING),yes)
 ifeq ($(strip $(RESET_BUILD_LOGS)),yes)
 	@$(DO_BUILD_LOG) $(CMD_echo) ">> Entering Package $(1)" $$(redirectlog_$(2)) &&\
 	$(CMD_echo) ">> Entering Package $(1)" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -s -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+endif
 endif
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) -t $(OLD_TIMESTAMP) $$@
 $(1) $(SCRAM_SOURCEDIR)/$(1) $(2) all_$(2): $(if $(POISON_EDMPLUGIN_CACHE),$(WORKINGDIR)/$(SCRAM_SOURCEDIR)/$(1)/AUTOCLEAN.poison_edmplugin.clean) $(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$(1).msg $$(addprefix all_,$$(subdirs_$(2))) $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@$$(call run_postprocess,$1,$$(redirectlog_$(2)))
 	@$$(call package_outputlog,$(1))
+ifneq ($(UNITTESTING),yes)
 	@$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
+endif
 $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
@@ -929,9 +944,9 @@ $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__i
 	cp $(LOCALTOP)/config/SCRAM/pyinit.py $$@
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
-	@$(CMD_echo) ">> Tests for package $(1) ran."
+	@$(CMD_echo) ">> Tests for package $(1) finished."
 unittests_$(2): unittests_$(2)_test
-	@$(CMD_echo) ">> Tests for package $(1) ran."
+	@$(CMD_echo) ">> Tests for package $(1) finished."
 endif
 precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
@@ -939,10 +954,12 @@ compile_$(2): $$(addprefix compile_,$$(subdirs_$(2)))
 	@:
 edm_checks_$(2): $$(addprefix edm_checks_,$$(subdirs_$(2)))
 	@:
+ifneq ($(UNITTESTING),yes)
 scripts_$(2): all_$(2)_scripts
 	@:
 runpython_$(2): $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@:
+endif
 endef
 
 define TargetPlugin
@@ -1018,17 +1035,6 @@ redirectlog_$(1) :=
 endif
 endef
 
-define UnitTestBuildDirectory
-${1}_USE_UNITTEST_DIR:=$(USE_UNITTEST_DIR)
-ifneq ($(strip $(${1}_LOC_FLAGS_USE_UNITTEST_DIR)),)
-ifneq ($(strip $(lastword $(${1}_LOC_FLAGS_USE_UNITTEST_DIR))),1)
-${1}_USE_UNITTEST_DIR:=
-else
-${1}_USE_UNITTEST_DIR:=1
-endif
-endif
-endef
-
 #safename,path,safepath,scriptstore,scripts,plugintype
 define CommonBinaryHead
 ifeq ($(strip $(filter %/src/alpaka,$2)),)
@@ -1081,7 +1087,6 @@ $$($(1)_objdir)/config: $$($(1)_CONFIGDEPS) | $(WORKINGDIR)/$(2)/productautoclea
 endif
 $(1)_config_msg += $(WORKINGDIR)/cache/msg/$(2)/$(1).msg $(if $(strip $(filter $($(3)_parent),$(ALL_PACKAGES))),$(WORKINGDIR)/cache/msg/$(SCRAM_SOURCEDIR)/$($(3)_parent).msg,)
 $(1)_config += $$($(1)_objdir)/config
-$(eval $(call UnitTestBuildDirectory,$1))
 ifneq ($(strip $($(1)_DNN_NAME)),)
 $$(eval $$(call AddDNNRules,$1,$2))
 endif
@@ -1989,7 +1994,7 @@ scripts_%:
 skip-scripts-copy: all
 	@:
 cleanup-runtest:
-	@[ ! -d "$(UNITTEST_DIR)" ] || ($(CMD_chmod) -R +w $(UNITTEST_DIR) && $(CMD_rm) -rf $(UNITTEST_DIR))
+	@[ ! -d "$(UNITTEST_DIR)" ] || ($(CMD_chmod) -R +w $(UNITTEST_DIR) && $(CMD_rm) -rf $(UNITTEST_DIR)/*)
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
 %:
