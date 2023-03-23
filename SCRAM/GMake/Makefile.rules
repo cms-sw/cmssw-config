@@ -809,7 +809,7 @@ endef
 # Tesings test executable
 define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
-    $(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Skipping test $(1)"; \
+    $(CMD_printf) "Skip %5s ... $($(1)_PROD_PACKAGE)/$1\n" "0s"; \
   else \
     $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
     [ -d $($(1)_objdir) ] || $(CMD_mkdir) -p $($(1)_objdir) &&\
@@ -827,7 +827,7 @@ define run_test
     $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
     $(CMD_cp) -f $($(1)_objdir)/testing.log $(UNITTEST_DIR)/$1.log &&\
     $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_cat) $($(1)_objdir)/testing.log &&)\
-    $(CMD_printf) "$${RESULT} %-5s ... $1\n" "$${UT_TIME}s" &&\
+    $(CMD_printf) "$${RESULT} %5s ... $($(1)_PROD_PACKAGE)/$1\n" "$${UT_TIME}s" &&\
     $(CMD_cat) $($(1)_objdir)/testing.log >> $(LOCALTOP)/$(3)/testing.log; \
   fi
 endef
@@ -944,9 +944,9 @@ $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__i
 	cp $(LOCALTOP)/config/SCRAM/pyinit.py $$@
 ifeq ($$(filter $(2)_test,$$(subdirs_$(2))),$(2)_test)
 runtests_$(2): $(2) runtests_$(2)_test
-	@$(CMD_echo) ">> Tests for package $(1) finished."
+	@:
 unittests_$(2): unittests_$(2)_test
-	@$(CMD_echo) ">> Tests for package $(1) finished."
+	@:
 endif
 precompile_$(2): $$(addprefix precompile_,$$(subdirs_$(2)))
 	@:
