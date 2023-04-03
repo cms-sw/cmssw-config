@@ -2,7 +2,7 @@ SERIALIZATION_SUBDIR:=a
 AUTO_GENERATED_SOURCES+=$(SERIALIZATION_SUBDIR)
 TOP_LEVEL_VARIABLES+=BOOST_SERIALIZATION
 define compile_boost_serialization
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,BOOST_SERIALIZATION,CPPFLAGS CXXFLAGS $(call GetLTOFlag,$1)))
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,BOOST_SERIALIZATION,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO)))
 endef
 
 # CondFormat Serialization generation

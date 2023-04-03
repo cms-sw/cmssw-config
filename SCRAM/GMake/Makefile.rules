@@ -667,16 +667,12 @@ define analyze_c_common
 endef
 
 ##############################################################################
-ifeq ($(strip $(self_EX_FLAGS_ENABLE_LTO)),1)
-GetLTOFlag=$(if $(strip $($1_DISABLE_LTO)),,LTO_FLAGS)
-else
-GetLTOFlag=
-endif
+GetFlagName=$(foreach f,$2,$(if $(strip $($1_DISABLE_${f})),,$(if $(strip $(filter 1,$(self_EX_FLAGS_ENABLE_$f))),${f}_FLAGS)))
 define compile_cxx
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS $(call GetLTOFlag,$1),,,$3),,,,$3)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO),,,$3),,,,$3)
 endef
 define compile_cxx_edm
-  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS $(call GetLTOFlag,$1),,,$3),edm plugin,,,$3)
+  $(call compile_cxx_common,$1,$2,$(call AdjustFlags,$1,EDM,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO),,,$3),edm plugin,,,$3)
 endef
 define compile_c
   $(call compile_c_common,$1,$2,$(call AdjustFlags,$1,,CPPFLAGS CFLAGS,,,$3),,,,$3)
@@ -742,13 +738,13 @@ define link_lib_common
 endef
 define link_lib
   $(if $(strip $($1_rocm)),
-    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetLTOFlag,$1)) $(call AdjustFlags,$1,,ROCM_FLAGS),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS $(call GetLTOFlag,$1),,,$5),$(call AdjustFlags,$1,,LDFLAGS,,,$5)))
+    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)) $(call AdjustFlags,$1,,ROCM_FLAGS),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call link_lib_common,$1,$2,$3,$4,shared library,$5,$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO),,,$5),$(call AdjustFlags,$1,,LDFLAGS,,,$5)))
 endef  
 define link_lib_edm
   $(if $(strip $($1_rocm)),
-    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetLTOFlag,$1)) $(call AdjustFlags,$1,,ROCM_FLAGS),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS $(call GetLTOFlag,$1),,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5)))
+    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)) $(call AdjustFlags,$1,,ROCM_FLAGS),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call link_lib_common,$1,$2,$3,$4,edm plugin,$5,$(call AdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),,,$5),$(call AdjustFlags,$1,EDM,LDFLAGS,,,$5)))
 endef
 ##############################################################################
 # Binary/test building Rules
@@ -764,8 +760,8 @@ endef
 # Binary building
 define build_bin
   $(if $(strip $($1_rocm)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetLTOFlag,$1)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(call GetLTOFlag,$1)),$(call AdjustFlags,$1,,LDFLAGS)))
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO) $(call GetPGOFlag,$1)),$(call AdjustFlags,$1,,LDFLAGS)))
 endef
 # Test executable building
 define build_test
