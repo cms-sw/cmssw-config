@@ -64,6 +64,10 @@ COMMON_WORKINGDIR := $(SCRAM_TMP)/common
 WORKINGDIR := $(SCRAM_INTwork)
 UNITTEST_DIRNAME:=unit_tests
 UNITTEST_DIR := $(LOCALTOP)/$(UNITTEST_DIRNAME)
+UNITTEST_TYPES:=
+ifneq ($(strip $(USER_UNIT_TESTS)),)
+UNITTEST_TYPES:=$(strip $(USER_UNIT_TESTS) $(foreach b,$(ALPAKA_SELECTED_BACKENDS),$(if $(strip $(filter $b,$(USER_UNIT_TESTS))),alpaka-$b)))
+endif
 PRECOMPILE_FLAGS_EXTENSION  := cxxflags
 PRECOMPILE_EXTENSION        := gch
 YACC                        := bison
@@ -302,6 +306,13 @@ FFLAGS_COMPILER:=f77compiler
 GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
 GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2)))
+
+define UserTestsSelection
+ifeq ($(strip $(filter $(UNITTEST_TYPES),$($(1)_LOC_USE))),)
+$(1)_NO_TESTRUN := yes
+$(1)_TEST_SKIP_MSG:=Not a $(UNITTEST_TYPES) type test
+endif
+endef
 
 define SetCompilerTargetsFlag
   $(eval $(1)_SCRAM_TARGETS:=)
@@ -805,7 +816,7 @@ endef
 # Tesings test executable
 define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
-    $(CMD_printf) "Skip %5s ... $($(1)_PROD_PACKAGE)/$1\n" "0s"; \
+    $(CMD_printf) "Skip %5s ... $($(1)_PROD_PACKAGE)/$1 ($($(1)_TEST_SKIP_MSG))\n" "0s"; \
   else \
     $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
     [ -d $($(1)_objdir) ] || $(CMD_mkdir) -p $($(1)_objdir) &&\
@@ -1124,6 +1135,8 @@ ifeq ($(strip $(4)),test)
 .PHONY: runtests_$(1) unittests_$(1)
 ifeq ($(strip $(filter $(1),$(SKIP_UNITTESTS))),$(1))
 $(1)_NO_TESTRUN := yes
+$(1)_TEST_SKIP_MSG:=Explicitly skipped via SKIP_UNITTESTS
+$(call AlpakaTestsFlags,$1)
 endif
 runtests_$(6) += unittests_$(1)
 unittests_$(6) += unittests_$(1)
