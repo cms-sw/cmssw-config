@@ -1,13 +1,16 @@
 #!/bin/bash
-
+env > foo.txt
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets ] || exit 0
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
 if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
-#No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set or set to "default"
-if  [ "${SCRAM_TARGET}" = "" ] ; then
+if [ "${USER_SCRAM_TARGET}" != "" ] ; then
+  SCRAM_TARGET=${USER_SCRAM_TARGET}
+  echo "RUNTIME:variable:SCRAM_TARGET=${SCRAM_TARGET}"
+elif  [ "${SCRAM_TARGET}" = "" ] ; then
   SCRAM_TARGET="$(${SCRAM} tool info self | grep '^SCRAM_TARGET=' | sed 's|.*=||')"
 fi
+#No need to overirde LD_LIBRARY_PATH if SCRAM_TARGET is not set or set to "default"
 if [ "${SCRAM_TARGET}" = "" ] || [ "${SCRAM_TARGET}" = "default" ] ; then exit 0 ; fi
 
 nocona=""
