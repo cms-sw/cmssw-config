@@ -1,5 +1,5 @@
 #!/bin/bash
-env > foo.txt
+
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets ] || exit 0
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
