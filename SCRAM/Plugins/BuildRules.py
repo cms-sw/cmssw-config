@@ -452,6 +452,10 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             sname = store['name'].upper().replace("/", "_")
             ref.write("SCRAMSTORENAME_%s:=%s\n" % (sname, storename))
             ref.write("ALL_PRODUCT_STORES+=$(SCRAMSTORENAME_%s)\n" % sname)
+        ref.write("ALPAKA_SELECTED_BACKENDS:=%s\n" % self.cache['SELECTED_ALPAKA_BACKENDS'])
+        for bend in self.cache['SELECTED_ALPAKA_BACKENDS'].split(' '):
+          if not bend: continue
+          ref.write("ALPAKA_BACKEND_SUFFIX_%s:=%s\n" % (bend,self.cache["SUPPORTED_ALPAKA_BACKENDS"][bend]))
         ref.close()
         return
 
