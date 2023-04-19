@@ -11,21 +11,21 @@ endef
 
 ifeq ($(strip $(UNITTESTING)),yes)
 $(foreach b,$(ALPAKA_SELECTED_BACKENDS),\
-  $(eval $(call ShellCMDs,alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$b)))\
+  $(eval $(call ShellCMDs,$(b)IsEnabled))\
   $(eval AlpakaTest_$b:=\
-    $(if $(strip $(filter alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$b),$(CMD_alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$b)))),\
+    $(if $(strip $(filter $(b)IsEnabled,$(CMD_$(b)IsEnabled))),\
       true,\
-      $(CMD_alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$b))))\
+      $(CMD_$(b)IsEnabled)))\
   $(eval SKIP_ALPAKA_TESTS_$b:=$(shell $(AlpakaTest_$b) >/dev/null 2>&1 || $(CMD_echo) yes)))
 
 define AlpakaTestsFlag
 ifeq ($(strip $(filter alpaka-$2,$($(1)_LOC_USE))-$(SKIP_ALPAKA_TESTS_$2)),alpaka-$2-yes)
 $(1)_NO_TESTRUN := yes
-$(1)_TEST_SKIP_MSG:=Failed to run alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$2)
+$(1)_TEST_SKIP_MSG:=Failed to run $(notdir $(AlpakaTest_$2))
 else
 ifeq ($(strip $(filter $2,$($(1)_LOC_USE))-$(SKIP_ALPAKA_TESTS_$2)),$2-yes)
 $(1)_NO_TESTRUN := yes
-$(1)_TEST_SKIP_MSG:=Failed to run alpakaIsEnabled$(ALPAKA_BACKEND_SUFFIX_$2)
+$(1)_TEST_SKIP_MSG:=Failed to run $(notdir $(AlpakaTest_$2))
 endif
 endif
 endef
