@@ -1979,7 +1979,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                             if xclass == "TEST":
                                 fh.write("%s_CLASS := TEST\n" % sname)
                                 if self.core.get_flag_value("NO_TESTRUN").lower() in ["yes", "1"]:
-                                    fh.write("{0}_TEST_RUNNER_CMD := echo\n{0}_NO_TESTRUN := yes\n".format(sname))
+                                    fh.write("{0}_TEST_RUNNER_CMD := echo\n{0}_NO_TESTRUN := yes\n{0}_TEST_SKIP_MSG := Disabled via BuildFile\n".format(sname))
                                 else:
                                     val = cmd if cmd else self.core.get_flag_value("TEST_RUNNER_CMD")
                                     if not val: val = "%s %s" % (sname, self.core.get_flag_value("TEST_RUNNER_ARGS"))
