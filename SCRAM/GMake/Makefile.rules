@@ -1960,6 +1960,7 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	$(CMD_cd) $(THISDIR) && $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis && $(CMD_mkdir) -p $(LOCALTOP)/llvm-analysis &&\
 	$(VERB_ECHO) $$LLVM_BASE/bin/scan-build -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin $(LLVM_CHECKERS) $(USER_LLVM_CHECKERS) \
 	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes &&\
+	CCC_OVERRIDE_OPTIONS="^--gcc-toolchain=$(GCC_CXXCOMPILER_BASE)" \
 	$$LLVM_BASE/bin/scan-build              -o $(LOCALTOP)/llvm-analysis -load-plugin $$plugin $(LLVM_CHECKERS) $(USER_LLVM_CHECKERS) \
 	  $(SCRAM) build -f $(if $(strip $(SCRAM_BUILDVERBOSE)),-v,) compile COMPILER=$(LLVM_ANALYZER) SCRAM_IGNORE_MISSING_COMPILERS=yes && $(DO_BUILD_LOG) $(SCRAM) build buildlog &&\
 	  $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
