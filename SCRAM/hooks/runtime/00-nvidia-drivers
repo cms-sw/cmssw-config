@@ -38,6 +38,7 @@ fi
 
 # check if the system supports the CUDA runtime using the compatibility drivers
 CUDA_COMPATIBILITY=${CUDA_BASE}/drivers
+[ -e ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/nvidia-drivers.xml ] && CUDA_COMPATIBILITY=$(scram_tag nvidia-drivers LIBDIR)
 if [ -d "${CUDA_COMPATIBILITY}" ] && LD_LIBRARY_PATH=$CUDA_COMPATIBILITY:$LD_LIBRARY_PATH $RUNTIME_TEST -k &> /dev/null; then
   # yes: use the compatibility drivers
   echo "RUNTIME:path:append:LD_LIBRARY_PATH=${CUDA_COMPATIBILITY}"
