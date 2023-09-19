@@ -1418,6 +1418,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             self.set('safename',safename)
             self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
             self.set("classes_file", "classes_%s" % bend)
+            self.set("classes_file_type", "ALPAKA_%s_LCG" % bend.upper())
             self.dumpBuildFileData(True, check_alpaka=False)
             self.popstash()
         self.popstash()
@@ -1562,6 +1563,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                       'NO_TESTRUN', 'PRE_TEST', 'SETENV', 'TEST_RUNNER_ARGS',
                       'ALPAKA_BACKENDS']:
                 flags_added[f] = 1
+            for backend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]:
+              for d in ["LCG_DICT_HEADER", "LCG_DICT_XML"]:
+                flags_added["ALPAKA_%s_%s" % (backend.upper(), d)] = 1
             for xpre in ["", "_REM"]:
                 for xflag in self.cache["DefaultCompilerFlags"] + self.cache["DefaultBuildFileFlagsToDump"]:
                     flag = "%s%s" % (xpre, xflag)
@@ -1738,8 +1742,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         lcgxml = []
         genreflex_args = "$(GENREFLEX_ARGS)"
         path = self.get('path')
-        hfile = self.core.get_flag_value("LCG_DICT_HEADER")
-        xfile = self.core.get_flag_value("LCG_DICT_XML")
+        class_file_type = self.get("classes_file_type", "LCG")
+        hfile = self.core.get_flag_value("%s_DICT_HEADER" % class_file_type)
+        xfile = self.core.get_flag_value("%s_DICT_XML" % class_file_type)
         xmldef = {}
         class_file = self.get("classes_file","classes")
         if not hfile:
