@@ -2019,13 +2019,18 @@ check-biglib:
 	  $(CMD_echo) Big products build is enabled ;\
 	fi
 generate-pgo:
-	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/generate-pgo && $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/use-pgo
+	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/use-pgo
+	@[ -f $(SCRAM_ADMIN_DIR)/generate-pgo ] || $(CMD_touch) $(SCRAM_CONFIGDIR)/BuildFile.xml
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/generate-pgo
 	@$(CMD_echo) "SCRAM is set to use Profile-guided optimization flags to generate the profiles"
 use-pgo:
-	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/use-pgo && $(CMD_rm) -f $(SCRAM_ADMIN_DIR)/generate-pgo
+	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/generate-pgo
+	@[ -f $(SCRAM_ADMIN_DIR)/use-pgo ] || $(CMD_touch) $(SCRAM_CONFIGDIR)/BuildFile.xml
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/use-pgo
 	@$(CMD_echo) "SCRAM is set to use Profile-guided optimization flags to use already generated profiles"
 disable-pgo:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/use-pgo $(SCRAM_ADMIN_DIR)/generate-pgo
+	$(CMD_touch) $(SCRAM_CONFIGDIR)/BuildFile.xml
 	@$(CMD_echo) "Profile-guided optimization has been disabled"
 deps-tree::
 	@$(CMD_echo) "Finding all dependencies paths from package/tool '$(wordlist 1,1,$(filter-out deps-tree,$(MAKECMDGOALS)))' to package/tool '$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))'"
