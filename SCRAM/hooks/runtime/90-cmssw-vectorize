@@ -3,6 +3,7 @@
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets ] || exit 0
 [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
+echo "RUNTIME:variable:CMSSW_CPU_TYPE=default"
 if [ "${SCRAM}" = "" ] ; then SCRAM=scram ; fi
 if [ "${USER_SCRAM_TARGET}" != "" ] ; then
   SCRAM_TARGET=${USER_SCRAM_TARGET}
@@ -81,3 +82,4 @@ for tool in  $TOOLS ; do
     fi
   done
 done
+echo "RUNTIME:variable:CMSSW_CPU_TYPE=scram_${MATCHED_TARGET}"
