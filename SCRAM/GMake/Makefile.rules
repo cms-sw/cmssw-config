@@ -2,7 +2,7 @@
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/generate-pgo)),)
   self_EX_FLAGS_ENABLE_PGO:=1
   PGO_FLAG_NAMES:=PGO PGO_GENERATE
-  export CMSSW_PGO_DIRECTORY:=$(SCRAM_TMP)/PGO
+  export CMSSW_PGO_DIRECTORY:= $(LOCALTOP)/$(SCRAM_INTwork)
 endif
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/use-pgo)),)
   self_EX_FLAGS_ENABLE_PGO:=1
