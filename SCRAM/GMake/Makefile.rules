@@ -1,13 +1,5 @@
 -include $(TOOLS_MKDIR).mk
-ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/generate-pgo)),)
-  self_EX_FLAGS_ENABLE_PGO:=1
-  PGO_FLAG_NAMES:=PGO PGO_GENERATE
-  export CMSSW_PGO_DIRECTORY:= $(LOCALTOP)/$(SCRAM_INTwork)
-endif
-ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/use-pgo)),)
-  self_EX_FLAGS_ENABLE_PGO:=1
-  PGO_FLAG_NAMES:=PGO PGO_USE
-endif
+include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pgo
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
