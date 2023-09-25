@@ -1393,7 +1393,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         if not exists(path): return
         backend = self.core.get_flag_value("ALPAKA_BACKENDS")
         if backend=="1": backend = self.cache["SELECTED_ALPAKA_BACKENDS"]
-        else: backend = " ".join([bend for bend in backend.split(" ") if bend in self.cache["SUPPORTED_ALPAKA_BACKENDS"]]).strip()
+        else:
+            sel_bends = [bend for bend in self.cache["SELECTED_ALPAKA_BACKENDS"].split(" ") if bend]
+            if backend.startswith('!'):
+                rej_bends = [bend for bend in backend[1:].split(" ") if bend]
+                backend = " ".join([bend for bend in sel_bends if not bend in rej_bends]).strip()
+            else:
+                backend = " ".join([bend for bend in backend.split(" ") if bend in sel_bends]).strip()
         if not backend: return
         parent = self.get("parent")
         pname = self.get("safename")
