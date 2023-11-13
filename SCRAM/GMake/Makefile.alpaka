@@ -10,7 +10,7 @@ endif
 endef
 
 ifeq ($(strip $(UNITTESTING)),yes)
-$(foreach b,$(ALPAKA_SELECTED_BACKENDS),\
+$(foreach b,$(self_EX_FLAGS_ALPAKA_BACKENDS),\
   $(eval $(call ShellCMDs,$(b)IsEnabled))\
   $(eval AlpakaTest_$b:=\
     $(if $(strip $(filter $(b)IsEnabled,$(CMD_$(b)IsEnabled))),\
@@ -31,6 +31,6 @@ endif
 endef
 
 define AlpakaTestsFlags
-$(foreach x,$(ALPAKA_SELECTED_BACKENDS),$(if $(strip $(UNITTEST_TYPES)),$(eval $(call UserTestsSelection,$1,$x)),$(eval $(call AlpakaTestsFlag,$1,$x))))
+$(foreach x,$(self_EX_FLAGS_ALPAKA_BACKENDS),$(if $(strip $(UNITTEST_TYPES)),$(eval $(call UserTestsSelection,$1,$x)),$(eval $(call AlpakaTestsFlag,$1,$x))))
 endef
 endif
