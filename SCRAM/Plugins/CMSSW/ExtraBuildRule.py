@@ -38,11 +38,11 @@ class ExtraBuildRule:
                 "EDM_CHECK_CLASS_VERSION:=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n"
                 "EDM_CHECK_CLASS_TRANSIENTS=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassTransients\n"
             )
-            if "_ASAN_" in environ["SCRAM_PROJECTVERSION"]:
+            if "ASAN" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libasan.so\n")
-            if "_UBSAN_" in environ["SCRAM_PROJECTVERSION"]:
+            if "UBSAN" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libubsan.so\n")
-            if "_TSAN_" in environ["SCRAM_PROJECTVERSION"]:
+            if "TSAN" in environ["SCRAM_PROJECTVERSION"]:
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libtsan.so\n")
 
         fh.write("COMPILE_PYTHON_SCRIPTS:=yes\n"
