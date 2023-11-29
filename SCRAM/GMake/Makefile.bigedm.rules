@@ -72,7 +72,7 @@ define bigobj_compile_lcgdict
 endef
 #############################################################################
 define bigobj_link_plugin
-  @$(startlog_$(1))$(CMD_echo) ">> Building $3 big plugin $@" &&\
+  @$(MAKE_JOB_SERVER_CMD)$(startlog_$(1))$(CMD_echo) ">> Building $3 big plugin $@" &&\
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(VERB_ECHO) $($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3)) &&\
   (            $($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1) $(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))) $(endlog_$(1))
