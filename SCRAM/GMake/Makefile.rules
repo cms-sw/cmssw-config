@@ -90,6 +90,10 @@ HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
+MAKE_JOB_SERVER_CMD         :=
+ifeq ($(strip $(self_EX_FLAGS_ENABLE_LTO)),1)
+MAKE_JOB_SERVER_CMD         := +
+endif
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 DEVICE_CC_EXT := dev.cc
@@ -738,7 +742,7 @@ endef
 # Library linking Rules
 # Shared library linking
 define link_lib_common
-  @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
+  @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
   export TMPDIR=$(@D) &&\
   $(VERB_ECHO)                $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
   (($(call checklibs,$(1)) && $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
@@ -763,7 +767,7 @@ endef
 # Binary/test building Rules
 # Binary building 
 define build_bin_common
-  @$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
+  @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
   export TMPDIR=$(@D) &&\
   $(VERB_ECHO)                $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
   (($(call checklibs,$(1)) && $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
