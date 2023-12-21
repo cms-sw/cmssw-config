@@ -14,6 +14,7 @@ LIB_TYPES:=$(sort $(ALL_LIB_TYPES))
 OVERRIDABLE_FLAGS:=$(strip $(sort $(TOOLS_OVERRIDABLE_FLAGS) $(foreach x,$(patsubst %_LIB,%,$(LIB_TYPES)),$x_LDFLAGS)))
 ALL_COMPILER_FLAGS:=$(sort $(filter-out CXXFLAGS_TARGETS_%,$(ALL_COMPILER_FLAGS) $(OVERRIDABLE_FLAGS)))
 FULL_RELEASE_FOR_A_PATCH := $(strip $($(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE))
+# dummy changes to test cmssw-config
 ##############################################################################
 TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
