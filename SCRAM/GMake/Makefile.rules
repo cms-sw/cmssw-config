@@ -19,6 +19,16 @@ TARGETDIR:= $(subst /,_,$(THISDIR))
 .DEFAULT_GOAL := all
 .PHONY: FORCE_TARGET
 ##############################################################################
+ifeq ($(shell [ -t 1 ] >> /proc/$${PPID}/fd/1 && echo terminal || echo pipe),terminal)
+PASS := "\033[0;32mPass\033[0m"
+FAIL := "\033[1;31mFail\033[0m"
+SKIP := "\033[1;33mSkip\033[0m"
+else
+PASS := Pass
+FAIL := Fail
+SKIP := Skip
+endif
+##############################################################################
 GetToolFlag=$($1_EX_FLAGS_$2)
 GetVariable=$($(1))
 multipletools := info
@@ -818,7 +828,8 @@ endef
 # Tesings test executable
 define run_test
   @if [ "X$($(1)_NO_TESTRUN)" == "Xyes" ] ; then \
-    $(CMD_printf) "Skip %5s ... $($(1)_PROD_PACKAGE)/$1 ($($(1)_TEST_SKIP_MSG))\n" "0s"; \
+    RESULT=$$($(CMD_echo) $(SKIP)); \
+    $(CMD_printf) "$${RESULT} %5s ... $($(1)_PROD_PACKAGE)/$1 ($($(1)_TEST_SKIP_MSG))\n" "0s"; \
   else \
     $(if $(strip $(SCRAM_BUILDVERBOSE)),$(CMD_echo) "Package "$(patsubst $(SCRAM_SOURCEDIR)/%/test,%,$(4))": Running test $(1)" &&)\
     [ -d $($(1)_objdir) ] || $(CMD_mkdir) -p $($(1)_objdir) &&\
@@ -851,7 +862,7 @@ define run_test
       $(CMD_echo) "" &&\
       $(CMD_echo) "---> test $(1) succeeded") >> $($(1)_objdir)/testing.log 2>&1 || ($(CMD_echo) "" && $(CMD_echo) "---> test $(1) had ERRORS") >> $($(1)_objdir)/testing.log) &&\
     let UT_TIME=$$(date +%s)-$${STIME} || true &&\
-    RESULT=$$($(CMD_grep) -q " test $(1) succeeded" $($(1)_objdir)/testing.log && $(CMD_echo) Pass || $(CMD_echo) Fail) &&\
+    RESULT=$$($(CMD_grep) -q " test $(1) succeeded" $($(1)_objdir)/testing.log && $(CMD_echo) $(PASS) || $(CMD_echo) $(FAIL)) &&\
     $(CMD_echo) "TestTime:$${UT_TIME}" >> $($(1)_objdir)/testing.log &&\
     $(CMD_echo) "^^^^ End Test $(1) ^^^^" >> $($(1)_objdir)/testing.log &&\
     $(CMD_sed) -i -e 's# \(Entering\|Leaving\)  *Package # \1 Recursive Package #g' $($(1)_objdir)/testing.log &&\
