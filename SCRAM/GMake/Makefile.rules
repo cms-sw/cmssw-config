@@ -637,6 +637,8 @@ endif
 ##############################################################################
 ##############################################################################
 #Compilation Rules
+FixEnv1=$(subst @{,$${,$1)
+FixEnv2=$(subst @{,\$${,$1)
 GetCompilerData=$(strip $(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_$2),$($(SCRAM_COMPILER)_$2)))
 GetCXX=$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CXX),$(if $(strip $2),$($2_CXX),$(if $(strip $3),$3,$(CXX))))
 GetCC=$(if  $(strip $($1_LOC_FLAGS_COMPILER)),$($($1_LOC_FLAGS_COMPILER)_CC),$(if $(strip $2),$($2_CC),$(CC)))
@@ -657,8 +659,8 @@ define run_compile_command
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling $(strip $($(1)_PRODUCT_TYPE) $(2)) $<" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$($(1)_$(7)_BUILD_ENV) $4 $5 $< -o $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $($(1)_$(7)_BUILD_ENV) $4 $5 $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
+  $(VERB_ECHO) "$(SCRAM_PREFIX_COMPILER_COMMAND) $($(1)_$(7)_BUILD_ENV) $(call FixEnv2,$4 $5) $< -o $@" &&\
+               ($(SCRAM_PREFIX_COMPILER_COMMAND) $($(1)_$(7)_BUILD_ENV) $(call FixEnv1,$4 $5) $< -o $@ || ($(if $(strip $6),$4 $6 $< -o $(basename $@).d && $(CMD_sed) -i -e 's|.*:|$@:|' $(basename $@).d && exit 1,exit 1))) $3 $(endlog_$(1))
 endef
 endif
 define compile_cxx_common
@@ -754,8 +756,8 @@ endef
 define link_lib_common
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)                $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8) &&\
-  (($(call checklibs,$(1)) && $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(7) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)               "$($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(call FixEnv2,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)" &&\
+  (($(call checklibs,$(1)) && $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(call FixEnv1,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
@@ -779,8 +781,8 @@ endef
 define build_bin_common
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)                $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@ &&\
-  (($(call checklibs,$(1)) && $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $4 $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)               "$($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(call FixEnv2,$4) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@" &&\
+  (($(call checklibs,$(1)) && $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker)) $(call FixEnv1,$4) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
@@ -1157,7 +1159,7 @@ NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
 define TargetLib
 $1:: $($(1)_objdir)/$4/$($(1)_product)
-$(1)_$(4)_BUILD_ENV:=CMSSW_CPU_TYPE=$4
+$(1)_$(4)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$4) &&
 all_$(1)+=$($(1)_objdir)/$4/$($(1)_product)
 $(1)_objs_$4:=$(subst $($(1)_objdir)/,$($(1)_objdir)/$4/,$(call TargetObjs,$1)) $(call NonTargetObjs,$1)
 $($(1)_objdir)/$4/compile: $($(1)_objdir)/precompile $$($(1)_objs_$4) $($(1)_compile)
@@ -1170,9 +1172,9 @@ endef
 define CommonBinaryTail
 $(eval $($(1)_PRE_INIT_FUNC))
 ifneq ($(strip $($(1)_LOC_FLAGS_TARGETS)),)
-$(1)__BUILD_ENV:=CMSSW_CPU_TYPE=default
+$(1)__BUILD_ENV:=CMSSW_CPU_TYPE=default &&
 else
-$(1)__BUILD_ENV:=CMSSW_CPU_TYPE=""
+$(1)__BUILD_ENV:=CMSSW_CPU_TYPE="" &&
 endif
 $(foreach f,$($(1)_OPENCL_DEVICE_FILES),$(eval $(call GenerateAOCX,$1,$(f))))
 ifneq ($(strip $($(1)_objs)),)

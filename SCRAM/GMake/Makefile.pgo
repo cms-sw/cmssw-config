@@ -3,13 +3,13 @@ ifeq ($(strip $(filter generate-pgo use-pgo disable-pgo clean,$(MAKECMDGOALS))),
     self_EX_FLAGS_ENABLE_PGO:=1
     PGO_FLAG_NAMES:=PGO PGO_GENERATE
     $(info Profile-guided optimization enabled)
-    $(info PGO profiles during build stage will be generated under $(LOCALTOP)/$(SCRAM_INTwork))
+    $(info PGO profiles during build stage will be generated under $(LOCALTOP)/$(SCRAM_INTwork)/PGO)
     ifeq ($(strip $(CMSSW_PGO_DIRECTORY)),)
       $(info WARNING: CMSSW_PGO_DIRECTORY environment is not set. Make sure to set it before running the application to generate PGO profiles)
     else
       $(info        PGO profiles at runtime will be generated under $(CMSSW_PGO_DIRECTORY))
     endif
-    export CMSSW_PGO_DIRECTORY:=$(LOCALTOP)/$(SCRAM_INTwork)
+    export CMSSW_PGO_DIRECTORY:=$(LOCALTOP)/$(SCRAM_INTwork)/PGO
   endif
   ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/use-pgo)),)
     self_EX_FLAGS_ENABLE_PGO:=1
