@@ -1297,7 +1297,7 @@ endef
 #safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
 define Library
 $(1)_plugintype:=$(8)
-ifeq ($(SCRAM_MULTI_TARGET),1)
+ifeq ($(strip $(SCRAM_MULTI_TARGET)$(filter alpaka/cuda alpaka/rocm,$($(1)_PRODUCT_TYPE))),1)
 ifeq ($(strip $(USER_TARGETS_ALL)),1)
 $(1)_LOC_FLAGS_TARGETS:=$(call GetCompilerData,$1,SCRAM_TARGETS)
 else ifeq ($(strip $($(1)_LOC_FLAGS_TARGETS)),1)
