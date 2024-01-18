@@ -118,7 +118,7 @@ $($(1)_objdir)/bigobj/$(3)/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)
 	$$(call big_obj,$(2),$(1),$$^,$(SCRAMSTORENAME_OBJS),$3)
 endef
 define TargetBigPlugin
-$(1)_$(3)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%$3) &&
+$(1)_$(3)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$3) &&
 $(1)_objs_$3:=$(foreach o,$($(1)_objs),$(eval n:=$(basename $(notdir $o)))\
                   $(if $(strip $(filter $3,$($(n)_LOC_FLAGS_TARGETS))),\
                        $(subst /$(n).$(BIGLIB_OBJEXT),/$3/$(n).$(BIGLIB_OBJEXT),$o),\
