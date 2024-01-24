@@ -67,15 +67,15 @@ endef
 define bigobj_compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling Bigobj LCG dictionary: $<" &&\
-  $(VERB_ECHO)                  "$($(1)__BUILD_ENV) $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv2,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)" &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $($(1)__BUILD_ENV) $(call GetCXX,$1) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv1,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO)                  "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv2,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)" &&\
+  (($(CMD_cd) $($(1)_objdir)/..; $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv1,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
 endef
 #############################################################################
 define bigobj_link_plugin
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(1))$(CMD_echo) ">> Building $3 big plugin $@" &&\
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-  $(VERB_ECHO) "$($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1) $(call FixEnv2,$(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3)) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))" &&\
-  (             $($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1) $(call FixEnv1,$(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3)) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))) $(endlog_$(1))
+  $(VERB_ECHO) "$(strip $($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1)) $(call FixEnv2,$(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3)) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))" &&\
+  (             $(strip $($(1)_$(3)_BUILD_ENV) $(call GetCXX,$1)) $(call FixEnv1,$(call BigObjAdjustFlags,$1,EDM,CXXFLAGS $(call GetFlagName,$1,LTO PGO),$3)) $(CXXSHAREDFLAGS) $(MISSING_SYMBOL_FLAGS) $(2) -o $@ $(filter-out $(strip $(foreach l,$($(1)_BIGOBJS),-l$l)),$(call BigObjAdjustFlags,$1,,LDFLAGS,$3))) $(endlog_$(1))
 endef
 #############################################################################
 #Compiler Rules for big objects
@@ -118,7 +118,9 @@ $($(1)_objdir)/bigobj/$(3)/$(1).$(BIGLIB_OBJEXT): $(subst $($(1)_objdir)/,$($(1)
 	$$(call big_obj,$(2),$(1),$$^,$(SCRAMSTORENAME_OBJS),$3)
 endef
 define TargetBigPlugin
+ifeq ($(CMS_PGO_USE),1)
 $(1)_$(3)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$3) &&
+endif
 $(1)_objs_$3:=$(foreach o,$($(1)_objs),$(eval n:=$(basename $(notdir $o)))\
                   $(if $(strip $(filter $3,$($(n)_LOC_FLAGS_TARGETS))),\
                        $(subst /$(n).$(BIGLIB_OBJEXT),/$3/$(n).$(BIGLIB_OBJEXT),$o),\
@@ -191,10 +193,12 @@ $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/plugin$(
 	$$(call bigedm_register_plugin,$1)
 $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX): $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs))
+ifeq ($(CMS_PGO_USE),1)
 ifneq ($(strip $($(1)_LOC_FLAGS_TARGETS)),)
 $(1)__BUILD_ENV:=CMSSW_CPU_TYPE=default &&
 else
 $(1)__BUILD_ENV:=CMSSW_CPU_TYPE="" &&
+endif
 endif
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetBigPlugin,$1,$2,$$v)))
 else
