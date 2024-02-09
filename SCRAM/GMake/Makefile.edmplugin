@@ -174,7 +174,7 @@ $(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(SCRAMSTORENAME_LIB)/.edmplugincache
 	  $(CMD_echo) ">> Creating edm plugin cache for $*" &&\
           $(CMD_rm) -f $@ && touch $@ &&\
           for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||') ; do \
-            $(CMD_grep) $$plugin $< >> $@ ;\
+            $(CMD_grep) $$plugin $< >> $@ || true ;\
           done ;\
 	fi
 
@@ -183,7 +183,7 @@ $(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(SCRAMSTORENAME_LIB)/.poisoned
 	  $(CMD_echo) ">> Creating edm plugin poisoned cache for $*" &&\
 	  $(CMD_rm) -f $@ && touch $@ &&\
 	  for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||;s|^plugin|plugin-poisoned-|') ; do \
-	    $(CMD_grep) $$plugin $< >> $@ ;\
+	    $(CMD_grep) $$plugin $< >> $@ || true ;\
 	  done ;\
 	fi
 
