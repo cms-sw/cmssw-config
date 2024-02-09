@@ -10,8 +10,6 @@ else
 run_edm_checks:=
 endif
 ifneq ($(strip $(SCRAM_TARGETS)),)
-  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_LIB)/.poisonededmplugincache)))
-  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_LIB)/.edmplugincache)))
   ifneq ($(strip $(edmPluginRefresh_cache)),)
     $(foreach v,$(SCRAM_TARGETS),$(eval edmPluginRefresh_cache+=$(SCRAMSTORENAME_LIB)/$v/.edmplugincache))
   endif
@@ -170,6 +168,24 @@ define GetPackagePluginCache
     $(CMD_grep) "^plugin$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^plugin|plugin-poisoned-|' >> $@ || true;\
   done
 endef
+
+$(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(SCRAMSTORENAME_LIB)/.edmplugincache
+	@if [ -e $< -a -d $(@D) ] ; then \
+	  $(CMD_echo) ">> Creating edm plugin cache for $*" &&\
+          $(CMD_rm) -f $@ && touch $@ &&\
+          for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||') ; do \
+            $(CMD_grep) $$plugin $< >> $@ || true ;\
+          done ;\
+	fi
+
+$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(SCRAMSTORENAME_LIB)/.poisonededmplugincache
+	@if [ -e $< -a -d $(@D) ] ; then \
+	  $(CMD_echo) ">> Creating edm plugin poisoned cache for $*" &&\
+	  $(CMD_rm) -f $@ && touch $@ &&\
+	  for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||;s|^plugin|plugin-poisoned-|') ; do \
+	    $(CMD_grep) $$plugin $< >> $@ || true ;\
+	  done ;\
+	fi
 
 .PHONY: poisoned_edmplugins
 ifeq ($(strip $(edmPluginRefresh_cache)),)
