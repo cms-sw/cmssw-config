@@ -849,6 +849,7 @@ define run_test
     export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
     export CMSSW_SEARCH_PATH=$(LOCALTOP)/tmp:$(CMSSW_SEARCH_PATH) &&\
     export PATH=$(LOCALTOP)/$(4):$(UNIT_TEST_PATHS):$(PATH) &&\
+    $(if $(strip $($(1)_TEST_PRE_COMMAND)),$($(1)_TEST_PRE_COMMAND))\
     $(strip $($(1)_TEST_ENV)) \
     ((\
       $(if $(strip $(${1}_USE_UNITTEST_DIR)),\

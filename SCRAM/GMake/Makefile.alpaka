@@ -1,4 +1,7 @@
 define SetAlpakaRules
+ifneq ($(strip $(filter alpaka/%,$($(1)_PRODUCT_TYPE))),)
+$(1)_TEST_PRE_COMMAND+=export SCRAM_ALPAKA_BACKEND=$(subst alpaka/,,$($(1)_PRODUCT_TYPE)) &&
+endif
 ifneq ($(strip $(filter $(DEVICE_CC_EXT),$($(1)_files_exts))),)
 ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/cuda)
 $$(eval $$(call AddCudaRules,$1,$2))
