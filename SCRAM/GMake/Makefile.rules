@@ -849,6 +849,7 @@ define run_test
     export SCRAM_TEST_PRE_TESTS="$($(1)_PRE_TEST)" &&\
     export CMSSW_SEARCH_PATH=$(LOCALTOP)/tmp:$(CMSSW_SEARCH_PATH) &&\
     export PATH=$(LOCALTOP)/$(4):$(UNIT_TEST_PATHS):$(PATH) &&\
+    $(if $(strip $($(1)_TEST_PRE_COMMAND)),$($(1)_TEST_PRE_COMMAND))\
     $(strip $($(1)_TEST_ENV)) \
     ((\
       $(if $(strip $(${1}_USE_UNITTEST_DIR)),\
@@ -984,7 +985,12 @@ ifneq ($(UNITTESTING),yes)
 	@$(CMD_echo) ">> Leaving Package $(1)" &&\
 	$(CMD_echo) ">> Package $(1) built" $(if $(HOOK_PACKAGE), && $(HOOK_PACKAGE) -e -p $1 $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
 endif
+ifneq ($(strip $(CFIPYTHON_PACKAGE_FILES)),)
+$$(foreach s,$$(CFIPYTHON_PACKAGE_FILES),$$(eval $$(call SetCfiPythonFileRules,$1,$$s)))
+$(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py | $(foreach s,$(CFIPYTHON_PACKAGE_FILES),$(SCRAMSTORENAME_CFIPYTHON)/$(1)/$(notdir $s))
+else
 $(SCRAMSTORENAME_CFIPYTHON)/$(1)/.scram: $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
+endif
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py: $(SCRAMSTORENAME_PYTHON)/$(dir $1)__init__.py
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
@@ -1007,6 +1013,11 @@ scripts_$(2): all_$(2)_scripts
 runpython_$(2): $(SCRAMSTORENAME_PYTHON)/$(1)/__init__.py
 	@:
 endif
+endef
+
+define SetCfiPythonFileRules
+$(SCRAMSTORENAME_CFIPYTHON)/$(1)/$(notdir $2): $2
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_cp) $$< $$@
 endef
 
 define TargetPlugin
@@ -1793,6 +1804,9 @@ endif
 ifneq ($(strip $(COND_SERIALIZATION)),)
 COND_SERIALIZATION_SCRIPT:=$(call find_project_file,$(COND_SERIALIZATION))
 endif
+ifneq ($(strip $(CFIPYTHON_PACKAGE_FILES)),)
+CFIPYTHON_PACKAGE_FILES:=$(strip $(foreach s,$(CFIPYTHON_PACKAGE_FILES),$(call find_project_file,$(s))))
+endif
 ##############################################################################
 self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
@@ -1867,18 +1881,20 @@ scripts_$(SCRAM_SOURCEDIR): $(addprefix scripts_, $(subdirs_$(SCRAM_SOURCEDIR)))
 ###########################################################
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% edm_checks_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
-.PHONY: skiptest_% deps-tree
-help_%_python:
+.PHONY: skiptest_% deps-tree build_target_help
+build_target_help:
+	@$(CMD_echo) "**To get useful build targets help please run \"scram build help\" from $(LOCALTOP)"
+help_%_python: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
-help_%_src:
+help_%_src: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build a shared library."
-help_%_plugins:
+help_%_plugins: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build EDM-plugins."
-help_%_bin:
+help_%_bin: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build public executables and shared libs (if any)."
-help_%_test:
+help_%_test: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build test executables and shared libs (if any)."
-help_$(SCRAM_SOURCEDIR)_%:
+help_$(SCRAM_SOURCEDIR)_%: build_target_help
 	@$(CMD_echo) "Doing \"scram build\" here will build every thing exist under this directory."
 all_% runtests_% unittests_% help_% runpython_% compile_% precompile_% edm_checks_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \

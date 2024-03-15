@@ -25,6 +25,7 @@ class ExtraBuildRule:
     def Project(self):
         common = self.buildrules
         fh = common.filehandle()
+        fh.write("CFIPYTHON_PACKAGE_FILES:=$(SCRAM_SOURCEDIR)/FWCore/ParameterSet/templates/modules.py\n")
         fh.write("COND_SERIALIZATION:=$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python"
                  "/condformats_serialization_generate.py\n")
         fh.write("ALL_EXTRA_PRODUCT_RULES+=LCG\n")
