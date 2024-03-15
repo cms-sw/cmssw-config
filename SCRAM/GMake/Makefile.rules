@@ -1881,18 +1881,20 @@ scripts_$(SCRAM_SOURCEDIR): $(addprefix scripts_, $(subdirs_$(SCRAM_SOURCEDIR)))
 ###########################################################
 .PHONY: all_% clean_% help_% runtests_% unittests_% runpython_% compile_% precompile_% edm_checks_% ufast xfast fast %_USED_BY %_USES echo_% outputlog buildlog
 .PHONY: help_%_python help_%_src help_%_plugins help_%_bin help_%_test help_$(SCRAM_SOURCEDIR)_%
-.PHONY: skiptest_% deps-tree
-help_%_python:
+.PHONY: skiptest_% deps-tree build_target_help
+build_target_help:
+	@$(CMD_echo) "**To get useful build targets help please run \"scram build help\" from $(LOCALTOP)"
+help_%_python: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here will run rules for pythin i.e. creates sym-links and compiles python modules"
-help_%_src:
+help_%_src: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build a shared library."
-help_%_plugins:
+help_%_plugins: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build EDM-plugins."
-help_%_bin:
+help_%_bin: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build public executables and shared libs (if any)."
-help_%_test:
+help_%_test: build_target_help
 	@$(CMD_echo) "Running \"scram build\" here normally build test executables and shared libs (if any)."
-help_$(SCRAM_SOURCEDIR)_%:
+help_$(SCRAM_SOURCEDIR)_%: build_target_help
 	@$(CMD_echo) "Doing \"scram build\" here will build every thing exist under this directory."
 all_% runtests_% unittests_% help_% runpython_% compile_% precompile_% edm_checks_%:
 	@if [ "X$(TARGETDIR)" = "X$*" ] ; then \
