@@ -1418,10 +1418,11 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                      "{0}_files := $(patsubst {2}/%,%,$(wildcard $(foreach dir,{2},"
                      "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
                      format(safename, parent, path, bend))
-            if bend=="rocm":
-                self.check_rocm_files("alpaka_device")
             self.pushstash()
             self.set('safename',safename)
+            if bend=="rocm":
+                self.set("check_rocm_files",False)
+                self.check_rocm_files("alpaka_device")
             self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
             self.set("classes_file", "classes_%s" % bend)
             self.set("classes_file_type", "ALPAKA_%s_LCG" % bend.upper())
@@ -1643,7 +1644,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
                     fh.write("%s_files := $(%s_files)\n" % (safename, psafename))
-                    if bend in ["rocm"]: self.check_rocm_files("alpaka_device")
+                    if bend in ["rocm"]:
+                        self.set("check_rocm_files",False)
+                        self.check_rocm_files("alpaka_device")
                     self.dumpBuildFileData(lib, False)
                     self.popstash()
                 self.set("alpaka_names"," ".join(alpaka_names))
