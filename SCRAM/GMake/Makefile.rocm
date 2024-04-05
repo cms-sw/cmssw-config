@@ -12,8 +12,8 @@ endef
 define GenerateReleaseRocmDlink
 ifneq ($(strip $(1)),)
 ifeq ($(strip $(wildcard $(PUB_DIRCACHE_MKDIR)/rocm_dlink_$(2)_release.mk)),)
-ifneq ($(strip $(wildcard $(1)/$(PUB_DIRCACHE_MKDIR)/dlink/scram.mk)),)
-$$(shell $(CMD_cat) $(1)/$(PUB_DIRCACHE_MKDIR)/dlink/*.mk > $(PUB_DIRCACHE_MKDIR)/rocm_dlink_$(2)_release.mk)
+ifneq ($(strip $(wildcard $(1)/$(PUB_DIRCACHE_MKDIR)/rocm_dlink/scram.mk)),)
+$$(shell $(CMD_cat) $(1)/$(PUB_DIRCACHE_MKDIR)/rocm_dlink/*.mk > $(PUB_DIRCACHE_MKDIR)/rocm_dlink_$(2)_release.mk)
 else
 $$(shell $(CMD_touch) $(PUB_DIRCACHE_MKDIR)/rocm_dlink_$(2)_release.mk)
 endif
