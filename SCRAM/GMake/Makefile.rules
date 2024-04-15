@@ -178,7 +178,11 @@ BASECMD_which := $(CMD_which)
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetLocalCMDs,$(subst :,$(comma),$c))))
 $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
-UNIT_TEST_PATHS:=$(LOCALTOP)/$(SCRAMSTORENAME_TEST)$(if $(strip $(RELEASETOP)),:$(RELEASETOP)/$(SCRAMSTORENAME_TEST))$(if $(strip $(FULL_RELEASE_FOR_A_PATCH)),:$(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_TEST))
+UNIT_TEST_DIRS:=$(LOCALTOP)/$(SCRAMSTORENAME_TEST) $(if $(strip $(RELEASETOP)),$(RELEASETOP)/$(SCRAMSTORENAME_TEST)) $(if $(strip $(FULL_RELEASE_FOR_A_PATCH)),$(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_TEST))
+ifneq ($(strip $(PROJECT_MULTIARCH_TARGET)),)
+UNIT_TEST_DIRS:=$(addsuffix /$(PROJECT_MULTIARCH_TARGET),$(UNIT_TEST_DIRS))
+endif
+UNIT_TEST_PATHS:=$(subst $(space),:,$(strip $(UNIT_TEST_DIRS)))
 PYTHON_RELPATH := $(shell $(CMD_echo) $(SCRAMSTORENAME_PYTHON) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
 CMD_python := $(CMD_python$(DEFAULT_PYTHON))
 ###################################
@@ -779,22 +783,22 @@ endef
 # Binary/test building Rules
 # Binary building 
 define build_bin_common
-  @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) binary) $(1)" &&\
+  @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $4 binary) $(1)" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$4) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@" &&\
-  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$4) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $5 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
-  $(call copy_bin_to_main_productstore,$(3)) $(endlog_$(2))
+  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@" &&\
+  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(call copy_bin_to_main_productstore,$(3)/$(4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
 # Binary building
 define build_bin
   $(if $(strip $($1_rocm)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call build_bin_common,$(1),$(2),$(3),$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO) $(call GetPGOFlag,$1)),$(call AdjustFlags,$1,,LDFLAGS)))
+    $(call build_bin_common,$(1),$(2),$(3),$(4),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
+    $(call build_bin_common,$(1),$(2),$(3),$(4),$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO) $(call GetPGOFlag,$1)),$(call AdjustFlags,$1,,LDFLAGS)))
 endef
 # Test executable building
 define build_test
-  $(call build_bin,$1,$2,$3)
+  $(call build_bin,$1,$2,$3,$4)
 endef  
 ##############################################################################
 # Data download and Copy
@@ -1168,7 +1172,7 @@ NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORT
 TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
-define TargetLib
+define MultiTargets
 $1:: $($(1)_objdir)/$4/$($(1)_product)
 ifeq ($(CMS_PGO_USE),1)
 $(1)_$(4)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$4) &&
@@ -1178,7 +1182,12 @@ $(1)_objs_$4:=$(subst $($(1)_objdir)/,$($(1)_objdir)/$4/,$(call TargetObjs,$1)) 
 $($(1)_objdir)/$4/compile: $($(1)_objdir)/precompile $$($(1)_objs_$4) $($(1)_compile)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 $($(1)_objdir)/$4/$($(1)_product): $($(1)_objdir)/$4/compile $$($(1)_objs_$4) $($(1)_libdeps)
+ifeq ($(strip $5),lib)
 	$$(call link_lib$($(1)_BUILDRULES),$(1),$(1),$(3),$($(1)_pluginname),$4)
+endif
+ifeq ($(strip $5),test)
+	$$(call build_test,$(1),$(1),$(3),$4)
+endif
 endef
 
 #safename,path,productstore,type,logprodstore,safepath
@@ -1219,7 +1228,10 @@ runtests_$(1) unittests_$(1): $(if $(strip $(filter runtests%,$(MAKECMDGOALS))),
 	$$(call run_test,$(1),$(3),$(5),$(2),$$(if $$(strip $$(wildcard $(LOCALTOP)/$2/$$(firstword $$($(1)_TEST_RUNNER_CMD)))),$(LOCALTOP)/$2/$$($(1)_TEST_RUNNER_CMD),$$($(1)_TEST_RUNNER_CMD)))
 endif
 ifeq ($(strip $(4)),lib)
-$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetLib,$1,$2,$3,$$v)))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
+endif
+ifeq ($(strip $(4)),test)
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
 endif
 .PHONY: precompile_$(6) compile_$(6)
 ifneq ($(strip $(4)$($(1)_files)),test1)
@@ -1300,18 +1312,7 @@ $(foreach v,$($(1)_LOC_FLAGS_TARGETS),
 )
 endef
 
-#safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
-define Binary
-$$(eval $$(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
-ALL_BINARIES += $(1)
-$(1)_product := $(1)
-$$(eval $$(call CommonBinaryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
-$$(eval $$(call CompileRules,$(1)))
-endef
-
-#safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
-define Library
-$(1)_plugintype:=$(8)
+define SetTargetFlags
 ifeq ($(strip $(SCRAM_MULTI_TARGET)$(filter alpaka/cuda alpaka/rocm,$($(1)_PRODUCT_TYPE))),1)
 ifeq ($(strip $(USER_TARGETS_ALL)),1)
 $(1)_LOC_FLAGS_TARGETS:=$(call GetCompilerData,$1,SCRAM_TARGETS)
@@ -1323,6 +1324,26 @@ endif
 else
 $(1)_LOC_FLAGS_TARGETS:=
 endif
+endef
+
+#safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
+define Binary
+ifeq ($(strip $($1_CLASS)),TEST)
+$(call SetTargetFlags,$1)
+else
+$(1)_LOC_FLAGS_TARGETS:=
+endif
+$$(eval $$(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5)))
+ALL_BINARIES += $(1)
+$(1)_product := $(1)
+$$(eval $$(call CommonBinaryTail,$(1),$(2),$(6),$(7),$(8),$(3)))
+$$(eval $$(call CompileRules,$(1)))
+endef
+
+#safename,path,safepath,scriptstore,scripts,libstore,logprodstore,plugintype
+define Library
+$(1)_plugintype:=$(8)
+$(call SetTargetFlags,$1)
 $$(eval $$(call LibraryHead,$(1),$(2),$(3),$(4),$(5),$(8)))
 $$(eval $$(call LibraryTail,$(1),$(2),$(6),$(7),$(3),$(8)))
 endef
@@ -2102,6 +2123,7 @@ skip-scripts-copy: all
 	@:
 cleanup-runtest:
 	@[ ! -d "$(UNITTEST_DIR)" ] || ($(CMD_chmod) -R +w $(UNITTEST_DIR) && $(CMD_rm) -rf $(UNITTEST_DIR)/*)
+	@[ "$(PROJECT_MULTIARCH_TARGET)" = "" ] || $(CMD_echo) ">>>> Running tests for $(PROJECT_MULTIARCH_TARGET) <<<<"
 check-headers: $(filter $(WORKINGDIR)/$(THISDIR)/%,$(CHECK_HEADERS_ALL))
         @:
 %:

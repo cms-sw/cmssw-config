@@ -108,6 +108,7 @@ if [ "${MATCHED_TARGET}" = "" ] ; then
 fi
 
 echo "IMPORTANT: Setting CMSSW environment to use '${MATCHED_TARGET}' target." 1>&2
+echo "RUNTIME:variable:PROJECT_MULTIARCH_TARGET=scram_${MATCHED_TARGET}"
 TOOLS="self"
 if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
 for tool in  $TOOLS ; do
