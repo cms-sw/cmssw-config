@@ -112,15 +112,17 @@ echo "RUNTIME:variable:PROJECT_MULTIARCH_TARGET=scram_${MATCHED_TARGET}"
 TOOLS="self"
 if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
 for tool in  $TOOLS ; do
-  for d in $(${SCRAM} tool tag $tool LIBDIR) ; do
-    v=""
-    case $d in
-      ${LOCALTOP}/* ) v=$d ;;
-      * ) if [ -d $d/scram_${MATCHED_TARGET} ] ; then v=$d ; fi ;;
-    esac
-    if [ $v ] ; then
-      echo "RUNTIME:path:replace:LD_LIBRARY_PATH=$d=$d/scram_${MATCHED_TARGET}:$d"
-    fi
+  for e in LD_LIBRARY_PATH RIVET_ANALYSIS_PATH ; do
+    for d in $(${SCRAM} tool info $tool | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
+      v=""
+      case $d in
+        ${LOCALTOP}/* ) v=$d ;;
+        * ) if [ -d $d/scram_${MATCHED_TARGET} ] ; then v=$d ; fi ;;
+      esac
+      if [ $v ] ; then
+        echo "RUNTIME:path:replace:${e}=${d}=${d}/scram_${MATCHED_TARGET}:${d}"
+      fi
+    done
   done
 done
 $PGO_ENABLED && echo "RUNTIME:variable:CMSSW_CPU_TYPE=scram_${MATCHED_TARGET}"
