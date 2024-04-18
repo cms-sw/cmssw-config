@@ -47,8 +47,8 @@
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/poison"                      type="path" handler="warn"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/src"                         type="path" handler="warn"/>
  <runtime name="CMSSW_SEARCH_PATH"     value="$LOCALTOP/external/$SCRAM_ARCH/data"   type="path" handler="warn"/>
- <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path"/>
- <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/external/$SCRAM_ARCH/lib"    type="path"/>
+ <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/lib/$SCRAM_ARCH"             type="path" handler="warn"/>
+ <runtime name="RIVET_ANALYSIS_PATH"   value="$LOCALTOP/external/$SCRAM_ARCH/lib/Rivet" type="path" handler="warn"/>
  <runtime name="LANG"                  value="C"/>
  <runtime name="TEST_SRTOPT_PATH"      value="$LOCALTOP/test/$SCRAM_ARCH"            type="path"/>
  <ifrelease name="_CXXMODULE">

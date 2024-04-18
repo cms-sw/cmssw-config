@@ -114,13 +114,25 @@ if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; th
 for tool in  $TOOLS ; do
   for e in LD_LIBRARY_PATH RIVET_ANALYSIS_PATH ; do
     for d in $(${SCRAM} tool info $tool | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
+      p="$d"
+      x="scram_${MATCHED_TARGET}"
+      isRivet=false
+      if [ $(echo $d | grep '/lib/Rivet$' | wc -l) -gt 0 ] ; then
+        p=$(echo $d | sed 's|/Rivet$||')
+        x="scram_${MATCHED_TARGET}/Rivet"
+        isRivet=true
+      fi
       v=""
-      case $d in
-        ${LOCALTOP}/* ) v=$d ;;
-        * ) if [ -d $d/scram_${MATCHED_TARGET} ] ; then v=$d ; fi ;;
+      case ${d} in
+        ${LOCALTOP}/* ) v=${d} ;;
+        * ) if [ -d ${p}/${x} ] ; then v=${d} ; fi ;;
       esac
       if [ $v ] ; then
-        echo "RUNTIME:path:replace:${e}=${d}=${d}/scram_${MATCHED_TARGET}:${d}"
+        if $isRivet ; then
+          echo "RUNTIME:path:replace:${e}=${d}=${p}/${x}"
+        else
+          echo "RUNTIME:path:replace:${e}=${d}=${p}/${x}:${d}"
+        fi
       fi
     done
   done
