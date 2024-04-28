@@ -67,8 +67,8 @@ endef
 define bigobj_compile_lcgdict
   @$(startlog_$(2)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Compiling Bigobj LCG dictionary: $<" &&\
-  $(VERB_ECHO)                  "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv2,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)" &&\
-  (($(CMD_cd) $($(1)_objdir)/..; $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) $(COMPILE_OPTIONS) -I$(LOCALTOP) $(call FixEnv1,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $(1)/$(patsubst $($(1)_objdir)/%,%,$<) -o $(1)/$(patsubst $($(1)_objdir)/%,%,$@)) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) -I. $(COMPILE_OPTIONS) $(call FixEnv2,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@" &&\
+  ((            $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1)) -I. $(COMPILE_OPTIONS) $(call FixEnv1,$(call BigObjAdjustFlags,$1,LCGDICT,CPPFLAGS CXXFLAGS $(call GetFlagName,$1,LTO PGO))) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) $< -o $@) || ($(CMD_rm) -f $< && exit 1)) $(endlog_$(2))
 endef
 #############################################################################
 define bigobj_link_plugin
@@ -105,6 +105,12 @@ $(foreach v,$($(1)_LOC_FLAGS_TARGETS),
 )
 endef
 #############################################################################
+define GetLocExTargetFlags
+$(if $(strip $($1_LOC_FLAGS_TARGETS)),$($1_LOC_FLAGS_TARGETS),
+  $(if $(strip $($1_EX_FLAGS_TARGETS)),
+    $(if $(filter 1,$(strip $($(1)_EX_FLAGS_TARGETS))),$(call GetCompilerData,$1,SCRAM_TARGETS),$($(1)_EX_FLAGS_TARGETS)),
+    $(call GetCompilerData,$1,SCRAM_TARGETS)))
+endef
 define TargetLcgDict
 $(SCRAMSTORENAME_BIGLIB)/$1/$2: $(SCRAMSTORENAME_BIGLIB)/$2
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_ln) -sf ../$$(@F) $$@
@@ -121,10 +127,10 @@ define TargetBigPlugin
 ifeq ($(CMS_PGO_USE),1)
 $(1)_$(3)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$3) &&
 endif
-$(1)_objs_$3:=$(foreach o,$($(1)_objs),$(eval n:=$(basename $(notdir $o)))\
-                  $(if $(strip $(filter $3,$($(n)_LOC_FLAGS_TARGETS))),\
-                       $(subst /$(n).$(BIGLIB_OBJEXT),/$3/$(n).$(BIGLIB_OBJEXT),$o),\
-                    $o))
+$(1)_objs_$3:=$(foreach o,$($(1)_objs),\
+                $(if $(strip $(filter $3,$(call GetLocExTargetFlags,$(basename $(notdir $o))))),\
+                  $(dir $o)/$3/$(notdir $o),\
+                  $o))
 $(SCRAMSTORENAME_BIGLIB)/$3/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/$3/plugin$(1).$(SHAREDSUFFIX) $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX) \
                 $(foreach l,$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$3/$l)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\

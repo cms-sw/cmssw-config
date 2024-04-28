@@ -1829,7 +1829,7 @@ ifneq ($(strip $(CFIPYTHON_PACKAGE_FILES)),)
 CFIPYTHON_PACKAGE_FILES:=$(strip $(foreach s,$(CFIPYTHON_PACKAGE_FILES),$(call find_project_file,$(s))))
 endif
 ##############################################################################
-self_EX_INCLUDE := $(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE))
+self_EX_INCLUDE := $(subst $(LOCALTOP)/,,$(subst $(LOCALTOP)/$(SCRAM_SOURCEDIR),$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(LOCALTOP)/poison ,$(self_EX_INCLUDE)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $f:=$(if $(strip $(RELEASETOP)),$(call AdjustFlag,DEV,$f),$(call AdjustFlag,RELEASE,$f))))
 ####### Clean up the directories which were already build but now have been removed from src area ######
 ifneq ($(strip $(REMOVED_DIRS)),)
