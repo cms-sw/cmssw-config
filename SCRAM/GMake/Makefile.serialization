@@ -9,8 +9,8 @@ endef
 define generate_CondSerialization
   @$(startlog_$(2))[ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> Generating CondFormat Serialization code from header file $< " &&\
-  $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm) &&\
-  (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
+  $(VERB_ECHO) $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm) &&\
+  (            $(COND_SERIALIZATION_SCRIPT) --output $(LOCALTOP)/$@ --package $(dir $3) -- -I$(LOCALTOP)/$(SCRAM_SOURCEDIR) $(call AdjustFlags,$1,,CPPFLAGS CXXFLAGS,llvm) || ($(CMD_rm) -f $@ && exit 1)) $(endlog_$(2))
 endef
 
 #safename,$path,$file

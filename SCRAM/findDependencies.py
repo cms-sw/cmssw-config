@@ -33,34 +33,31 @@ def doexec():
       l = l.rstrip('\n')
       if re1.search(l): break
       l = re2.sub(r'', l)
-      sp1 = l.split()
+      sp1 = [x for x in l.split() if x]
       if len(sp1) == 0: continue
-      if len(sp1[0]) < 4: continue
-      sp2 = sp1[0].split('/')
-      tsp1 = ""
-      foundsrc = 0
-      for t in sp2:
-        if foundsrc == 1: tsp1 += "%s/" % t
-        if t == "src": foundsrc = 1
-      tsp1 = tsp1[:-1]
-      if tsp1 == "": continue
-      if getnext == 1:
-        depname = tsp1
-        getnext = 0
-      else:
-        if sp1[0][:4] == "tmp/":
-          if reCC.search(sp1[0]):
-            getnext = 1
+      for sp in sp1:
+        if len(sp) < 4: continue
+        sp2 = sp.split('/')
+        tsp1 = ""
+        foundsrc = 0
+        for t in sp2:
+          if foundsrc == 1: tsp1 += "%s/" % t
+          if t == "src": foundsrc = 1
+        tsp1 = tsp1[:-1]
+        if tsp1 == "": continue
+        if getnext == 1:
+          depname = tsp1
+          getnext = 0
         else:
-          if sp1[0][:3] == "src":
-            if depname not in uses:
-              uses[depname] = "%s " % tsp1
-            else:
-              uses[depname] += "%s " % tsp1
-            if tsp1 not in usedby:
-              usedby[tsp1] = "%s " % depname
-            else: 
-              usedby[tsp1] += "%s " % depname
+          if sp[:4] == "tmp/":
+            if reCC.search(sp):
+              getnext = 1
+          else:
+            if sp[:3] == "src":
+              if depname not in uses: uses[depname] = set([])
+              uses[depname].add(tsp1)
+              if tsp1 not in usedby: usedby[tsp1] = set([])
+              usedby[tsp1].add(depname)
 
 
 def write2File(path, data, type_= None, prod2src=None):
@@ -190,6 +187,10 @@ for root, dirs, files in os.walk(directory):
       for line in fileinput.input(name):
         prod2src.append(line)
 
+for x in list(uses.keys()):
+  uses[x]=" ".join(uses[x])
+for x in list(usedby.keys()):
+  usedby[x]=" ".join(usedby[x])
 
 write2File(rel + "/etc/dependencies/uses.out", uses)
 write2File(rel + "/etc/dependencies/usedby.out", usedby)
