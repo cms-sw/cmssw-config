@@ -794,7 +794,7 @@ endef
 define build_bin
   $(if $(strip $($1_rocm)),
     $(call build_bin_common,$(1),$(2),$(3),$(4),$(call AdjustFlags,$1,,ROCM_FLAGS) $(call AdjustRocmHostFlags,$1,CXXFLAGS $(call GetFlagName,$1,LTO PGO)),$(call AdjustRocmHostFlags,$1,LDFLAGS)),
-    $(call build_bin_common,$(1),$(2),$(3),$(4),$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO) $(call GetPGOFlag,$1)),$(call AdjustFlags,$1,,LDFLAGS)))
+    $(call build_bin_common,$(1),$(2),$(3),$(4),$(call AdjustFlags,$1,,CXXFLAGS $(call GetFlagName,$1,LTO PGO) $(call GetPGOFlag,$1),,,$4),$(call AdjustFlags,$1,,LDFLAGS)))
 endef
 # Test executable building
 define build_test
