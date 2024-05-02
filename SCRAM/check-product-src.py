@@ -2,12 +2,14 @@
 import sys
 from subprocess import getstatusoutput
 from os.path import exists, normpath
+from os import getenv
 
 allowed_usage = {
   "test": ["test"]
 }
 
 err=0
+rel=getenv("RELEASETOP", "")
 with open(sys.argv[1]) as ref:
   data = ""
   for line in ref.readlines():
@@ -22,6 +24,7 @@ with open(sys.argv[1]) as ref:
     if " " in items[0]: items[0] = [x for x in items[0].split(" ") if x.startswith("tmp/")][-1]
     if not items[0].startswith("tmp/"): continue
     items = [x for x in items[1].split(" ") if x]
+    if rel: items = [x.replace(rel+"/","") for x in items]
     if not items[0].startswith("src/"): continue
     src_parts = items[0].split("/")
     src_pkg = "/".join(src_parts[:3])+"/"
