@@ -28,6 +28,7 @@ def doexec():
   reCC = re.compile(r'(\.o|\.cc)\s*:$')
   re1 = re.compile(r'^[^:]+ :\s*$')
   re2 = re.compile(r'\s*\\$')
+  re3 = re.compile(r'/.*?/CMSSW_[0-9]+_[0-9]+_[^/]+/')
   with open(name, 'r', encoding="utf-8") as file:
     for l in file:
       l = l.rstrip('\n')
@@ -36,6 +37,7 @@ def doexec():
       sp1 = [x for x in l.split() if x]
       if len(sp1) == 0: continue
       for sp in sp1:
+        sp = re3.sub('',sp)
         if len(sp) < 4: continue
         sp2 = sp.split('/')
         tsp1 = ""
