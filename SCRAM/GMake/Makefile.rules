@@ -1245,6 +1245,8 @@ $(WORKINGDIR)/cache/prod/$(1): $($(1)_objdir)/$($(1)_product)
 ifneq ($(strip $($(1)_product)),)
 ifneq ($(wildcard $($(1)_objdir)/$($(1)_product).dep),)
 -include $($(1)_objdir)/$($(1)_product).dep
+else
+-include $(wildcard $($(1)_objs:.o=.d))
 endif
 endif
 $(WORKINGDIR)/cache/msg/$(2)/$(1).msg: $(logfile_$(1)) FORCE_TARGET
