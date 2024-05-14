@@ -1680,6 +1680,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "dxr"
 	@$(CMD_echo) "  Generate DXR indexes for the release."
 	@$(CMD_echo) ""
+	@$(CMD_echo) "mozsearch"
+	@$(CMD_echo) "  Generate MozSearch indexes for the release."
+	@$(CMD_echo) ""
 	@$(CMD_echo) "gindices"
 	@$(CMD_echo) "  Generate glimpse indexes for the release."
 	@$(CMD_echo) ""
@@ -2036,6 +2039,18 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 	  $(CMD_rm) -rf $(LOCALTOP)/llvm-analysis/*/failures
 endif
 endif
+endif
+ifneq ($(strip $(MOZSEARCH_BASE)),)
+mozsearch:
+	@$(CMD_rm) -rf $(LOCALTOP)/mozsearch && $(CMD_mkdir) -p $(LOCALTOP)/mozsearch &&\
+        export SCRAM_DXR_RUN=yes &&\
+        export DXR_CXX="clang++ $(mozsearch_EX_FLAGS_INDEX_FLAGS)" &&\
+        export DXR_CC="clang $(mozsearch_EX_FLAGS_INDEX_FLAGS)" &&\
+        MKJOBS=$$(echo $(MAKEFLAGS) | sed 's|.* -j||;s| .*||') &&\
+        $(SCRAM) b -f -k -j $$MKJOBS compile COMPILER=llvm-analyzer SCRAM_IGNORE_MISSING_COMPILERS=yes
+else
+mozsearch:
+	@$(CMD_echo) "**** ERROR: mozsearch tool not available."
 endif
 ifneq ($(strip $(PY3_DXR_BASE)),)
 dxr:    $(SCRAM_SOURCEDIR)/dxr.config
