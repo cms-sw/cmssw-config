@@ -1423,7 +1423,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             if bend=="rocm":
                 self.set("check_rocm_files",False)
                 self.check_rocm_files("alpaka_device")
-            self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
+            use_private = []
+            for f in ["USE_ALPAKA" , "USE_ALPAKA_" + bend.upper()]:
+                for u in [d for d in self.core.get_flag_value(f).split(" ") if d]:
+                    if u=="1": u=parent
+                    if not u in use_private: use_private.append(u)
+            self.set('use_private', 'alpaka-%s %s' % (bend, " ".join(use_private)))
             self.set("classes_file", "classes_%s" % bend)
             self.set("classes_file_type", "ALPAKA_%s_LCG" % bend.upper())
             self.dumpBuildFileData(True, check_alpaka=False)

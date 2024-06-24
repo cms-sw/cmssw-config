@@ -387,7 +387,7 @@ Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFI
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(DLINK_LIBDIR) \
   $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) \
   $(if $(strip $($1_rocm)),$(call TOOLS_LIB_FUNC,$1,ROCM_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
-GetPublicProducts=$($1) $(if $(strip $($2_PRODUCT_TYPE)),$($1/$($2_PRODUCT_TYPE)))
+GetPublicProducts=$(strip $($1) $(if $(strip $($2_PRODUCT_TYPE)),$(filter-out $2,$($1/$($2_PRODUCT_TYPE)))))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
