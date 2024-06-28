@@ -390,7 +390,7 @@ Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,
 GetPublicProducts=$(strip $($1) $(if $(strip $($2_PRODUCT_TYPE)),$(filter-out $2,$($1/$($2_PRODUCT_TYPE)))))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
-CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
+CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_echo) $$(($$($(CMD_echo) -e $(2)$(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),\\n$($(dep)_ORDER)) | sort -n | head -1)-1))),$(2))
 FindToolDependency=$(sort $(filter-out $(subst $(semicolon),$(space),$(3)),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
