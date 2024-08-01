@@ -387,10 +387,10 @@ Tool_CPPFLAGS=$(strip $(call PreTool_CPPFLAGS,$1) $(call AdjustFlags,$1,,CPPDEFI
 Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,-L) $(DLINK_LIBDIR) \
   $(if $(filter TEST_LIBRARY LIBRARY,$($(1)_CLASS)$($(1)_plugintype)),$(call TOOLS_LIB_FUNC,$1,CUDA_DLINK_LIB)) \
   $(if $(strip $($1_rocm)),$(call TOOLS_LIB_FUNC,$1,ROCM_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
-GetPublicProducts=$($1) $(if $(strip $($2_PRODUCT_TYPE)),$($1/$($2_PRODUCT_TYPE)))
+GetPublicProducts=$(strip $($1) $(if $(strip $($2_PRODUCT_TYPE)),$(filter-out $2,$($1/$($2_PRODUCT_TYPE)))))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
-CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_python3) \-c 'print(sorted([$(2) $(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),$(comma)$($(dep)_ORDER))])[0]-1)'),$(2))
+CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_echo) $$(($$($(CMD_echo) -e $(2)$(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),\\n$($(dep)_ORDER)) | sort -n | head -1)-1))),$(2))
 FindToolDependency=$(sort $(filter-out $(subst $(semicolon),$(space),$(3)),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
@@ -1680,6 +1680,9 @@ project_help help_$(SCRAM_SOURCEDIR):
 	@$(CMD_echo) "dxr"
 	@$(CMD_echo) "  Generate DXR indexes for the release."
 	@$(CMD_echo) ""
+	@$(CMD_echo) "mozsearch"
+	@$(CMD_echo) "  Generate MozSearch indexes for the release."
+	@$(CMD_echo) ""
 	@$(CMD_echo) "gindices"
 	@$(CMD_echo) "  Generate glimpse indexes for the release."
 	@$(CMD_echo) ""
@@ -2037,6 +2040,18 @@ checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
 endif
 endif
 endif
+ifneq ($(strip $(MOZSEARCH_BASE)),)
+mozsearch:
+	@$(CMD_rm) -rf $(LOCALTOP)/mozsearch && $(CMD_mkdir) -p $(LOCALTOP)/mozsearch &&\
+        export SCRAM_DXR_RUN=yes &&\
+        export DXR_CXX="clang++ $(mozsearch_EX_FLAGS_INDEX_FLAGS)" &&\
+        export DXR_CC="clang $(mozsearch_EX_FLAGS_INDEX_FLAGS)" &&\
+        MKJOBS=$$(echo $(MAKEFLAGS) | sed 's|.* -j||;s| .*||') &&\
+        $(SCRAM) b -f -k -j $$MKJOBS compile COMPILER=llvm-analyzer SCRAM_IGNORE_MISSING_COMPILERS=yes
+else
+mozsearch:
+	@$(CMD_echo) "**** ERROR: mozsearch tool not available."
+endif
 ifneq ($(strip $(PY3_DXR_BASE)),)
 dxr:    $(SCRAM_SOURCEDIR)/dxr.config
 	@$(CMD_mkdir) -p dxr && SCRAM_DXR_RUN=yes $(PY3_DXR_BASE)/bin/dxr-build.py -v -f $(SCRAM_SOURCEDIR)/dxr.config
@@ -2051,7 +2066,13 @@ endif
 disable-multi-targets:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is disabled."
 enable-multi-targets:
-	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is enabled."
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/multi-targets &&\
+        $(CMD_echo) "Building with multi-targets is enabled." &&\
+        if [ $$($(CMD_grep) '"SCRAM_TARGET"' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_grep) '"default"' | $(CMD_wc) -l) -gt 0 ] ; then \
+          $(CMD_sed) -i -e '/"SCRAM_TARGET"/s/"default"/"auto"/' $(SCRAM_CONFIGDIR)/Self.xml &&\
+          $(SCRAM) setup self >/dev/null &&\
+          $(CMD_echo) "SCRAM TARGET set to auto" ;\
+        fi
 check-multi-targets:
 	@if [ -f $(SCRAM_ADMIN_DIR)/multi-targets ] ; then \
 	  $(CMD_echo) Building with multi-targets is enabled ;\

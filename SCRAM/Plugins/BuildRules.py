@@ -1386,6 +1386,17 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.searchPackageFiles()
         self.dumpBuildFileData(True, check_alpaka)
 
+    def alpaka_extra_flags(self, bend):
+        self.set('use_private', 'alpaka-%s' % bend)
+        extra_use = []
+        for f in ["USE_ALPAKA", "USE_ALPAKA_" + bend.upper()]:
+            for u in [d for d in self.core.get_flag_value(f).split(" ") if d]:
+                if u=="1": u=parent
+                if not u in extra_use: extra_use.append(u)
+        if extra_use:
+            self.set('use_public',  '%s' % " ".join(extra_use))
+        return
+
     def alpaka_template_generic(self):
         if not self.cache["SELECTED_ALPAKA_BACKENDS"]: return
         fh = self.data["FH"]
@@ -1423,7 +1434,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             if bend=="rocm":
                 self.set("check_rocm_files",False)
                 self.check_rocm_files("alpaka_device")
-            self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
+            self.alpaka_extra_flags(bend)
             self.set("classes_file", "classes_%s" % bend)
             self.set("classes_file_type", "ALPAKA_%s_LCG" % bend.upper())
             self.dumpBuildFileData(True, check_alpaka=False)
@@ -1590,7 +1601,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                             fh.write("%s_%s_LOC_FLAGS_%s   := %s\n" % (safename, m.group(1), m.group(2), v))
                         flags_added[flag] = 1
             for flag in flags:
-                if flag.startswith('USE_ALPAKA_'): continue
+                if flag.startswith('USE_ALPAKA'): continue
                 if flag not in flags_added:
                     v = self.core.get_flag_value(flag)
                     fh.write("%s_LOC_FLAGS_%s   := %s\n" % (safename, flag, v))
@@ -1606,7 +1617,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 val = self.fixData(self.core.get_data(data), data, localbf)
                 if val:
                     fh.write("%s_LOC_%s   := %s\n" % (safename, data, " ".join(val)))
-            val = self.fixData(self.core.get_data("USE"), "USE", localbf) + self.get("use").split(" ")
+            ex_use = self.get("use_public") + self.get("use")
+            val = self.fixData(self.core.get_data("USE"), "USE", localbf) + [u for u in ex_use.split(" ") if u]
             if val:
                 locuse = " ".join(val)
                 if lib:
@@ -1639,7 +1651,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     safename = psafename+self.alpaka_safename(bend)
                     alpaka_names.append(safename)
                     self.set("safename", safename)
-                    self.set('use_private', 'alpaka-%s %s' % (bend, self.core.get_flag_value("USE_ALPAKA_" + bend.upper())))
+                    self.alpaka_extra_flags(bend)
                     fh.write("%s := self/%s\n" % (safename, path))
                     fh.write("%s_CLASS := %s\n" % (safename, ptype))
                     fh.write("%s_PRODUCT_TYPE:=alpaka/%s\n" % (safename, bend))
