@@ -2066,7 +2066,13 @@ endif
 disable-multi-targets:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is disabled."
 enable-multi-targets:
-	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is enabled."
+	@$(CMD_touch) $(SCRAM_ADMIN_DIR)/multi-targets &&\
+        $(CMD_echo) "Building with multi-targets is enabled." &&\
+        if [ $$($(CMD_grep) '"SCRAM_TARGET"' $(SCRAM_CONFIGDIR)/Self.xml | $(CMD_grep) '"default"' | $(CMD_wc) -l) -gt 0 ] ; then \
+          $(CMD_sed) -i -e '/"SCRAM_TARGET"/s/"default"/"auto"/' $(SCRAM_CONFIGDIR)/Self.xml &&\
+          $(SCRAM) setup self >/dev/null &&\
+          $(CMD_echo) "SCRAM TARGET set to auto" ;\
+        fi
 check-multi-targets:
 	@if [ -f $(SCRAM_ADMIN_DIR)/multi-targets ] ; then \
 	  $(CMD_echo) Building with multi-targets is enabled ;\
