@@ -1268,6 +1268,8 @@ all_$(1): $($(1)_objdir)/link $$(all_$(1))
 else
 precompile_$(6):
 compile_$(6):
+all_$(1): $$(all_$(1)) $($(1)_libdeps)
+	@:
 endif
 endif
 endef
