@@ -1231,7 +1231,9 @@ ifeq ($(strip $(4)),lib)
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
 endif
 ifeq ($(strip $(4)),test)
+ifneq ($(strip $($(1)_files)),1)
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
+endif
 endif
 .PHONY: precompile_$(6) compile_$(6)
 ifneq ($(strip $(4)$($(1)_files)),test1)
