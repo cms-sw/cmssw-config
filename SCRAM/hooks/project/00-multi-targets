@@ -1,8 +1,8 @@
 #!/bin/bash
 #Create local multi-targets is exists in RELEASETOP
 if [ -f "${RELEASETOP}/.SCRAM/${SCRAM_ARCH}/multi-targets" ] ; then
-  MULTIARCH_TARGET=$(grep '^SCRAM_TARGET:=' ${RELEASETOP}/.SCRAM/${SCRAM_ARCH}/MakeData/variables.mk | sed 's|.*=||;s| ||g')
-  if [ "${MULTIARCH_TARGET}" = "auto" ] ; then
+  MULTIARCH_TARGET=$(grep '"SCRAM_TARGET"' ${LOCALTOP}/config/Self.xml | grep ' value=' | sed 's|^ .*value="||;s|".*||')
+  if [ "${MULTIARCH_TARGET}" != "default" ] && [ "${MULTIARCH_TARGET}" != "" ] ; then
     touch ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets
   fi
 fi
