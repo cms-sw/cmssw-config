@@ -180,7 +180,7 @@ $(foreach c,$(ALL_CMDS)         ,$(eval $(call ShellCMDs,$c)))
 $(foreach c,$(CMDS_COMPILERS_MAP),$(eval $$(call SetCompilerCMDs,$(subst :,$(comma),$c))))
 UNIT_TEST_DIRS:=$(LOCALTOP)/$(SCRAMSTORENAME_TEST) $(if $(strip $(RELEASETOP)),$(RELEASETOP)/$(SCRAMSTORENAME_TEST)) $(if $(strip $(FULL_RELEASE_FOR_A_PATCH)),$(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_TEST))
 ifneq ($(strip $(PROJECT_MULTIARCH_TARGET)),)
-UNIT_TEST_DIRS:=$(addsuffix /$(PROJECT_MULTIARCH_TARGET),$(UNIT_TEST_DIRS))
+UNIT_TEST_DIRS:=$(foreach d,$(UNIT_TEST_DIRS),$d/$(PROJECT_MULTIARCH_TARGET) $d)
 endif
 UNIT_TEST_PATHS:=$(subst $(space),:,$(strip $(UNIT_TEST_DIRS)))
 PYTHON_RELPATH := $(shell $(CMD_echo) $(SCRAMSTORENAME_PYTHON) | $(CMD_sed) 's|[a-zA-Z0-9_-]*|..|g')
