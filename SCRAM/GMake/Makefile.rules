@@ -2073,20 +2073,20 @@ endif
 project_help help_$(SCRAM_SOURCEDIR)::
 	@$(CMD_echo) -e "\
 enable-cuda enable-rocm disable-cuda disable-rocm\n\
-  Enable/Disable Cuda/Rocm Alpaka backends build rules.\n\
+  Enable/Disable CUDA/ROCm alpaka backends build rules.\n\
 \n\
 enable-cuda:comma-separated-compute-capabilities enable-rocm:comma-separated-compute-capabilities\n\
-  Set cuda/rocm compute capabilities and enable cuda/rocm alpaka backend if disabled.\n\
+  Set CUDA/ROCm compute capabilities and enable CUDA/ROCm alpaka backend if disabled.\n\
      enable-cuda:sm_75,sm_89\n\
      enable-rocm:gfx1100\n\
 \n\
 enable-cuda:native enable-rocm:native\n\
-  Find out native compute capabilities of cuda/rocm and set those.\n\
-  Also enable cuda/rocm alpaka backend if it was disabled.\n\
+  Find out native compute capabilities of CUDA/ROCm and set those.\n\
+  Also enable CUDA/ROCm alpaka backend if it was disabled.\n\
 \n\
 enable-cuda:reset enable-rocm:reset\n\
-  Reset cuda/rocm compute capabilities and set them from the project release area.\n\
-  Also enable cuda/rocm alpaka backend if it was disabled.\n\
+  Reset CUDA/ROCm compute capabilities and set them from the project release area.\n\
+  Also enable CUDA/ROCm alpaka backend if it was disabled.\n\
 \n\
 enable-gpus:native\n\
   Enable/Disable alpaka gpus backends if not support on local host. It also calls\n\
