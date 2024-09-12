@@ -15,7 +15,6 @@ elif [ "${backend}" = "cuda" ] ; then
   if [ "${CAPS}" = "native" ] ; then
     DOTS=$(cudaComputeCapabilities | awk '{ print $2 }' | sort -u)
     CAPS=$(echo $DOTS | sed -e 's#\.*##g')
-    
     if [ "${CAPS}" = "" ] ; then
       echo "Warning: Unable to find cuda compute capabilities." >&2
       exit 0
