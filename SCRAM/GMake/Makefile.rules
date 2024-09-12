@@ -2089,7 +2089,7 @@ enable-cuda:reset enable-rocm:reset\n\
   Also enable CUDA/ROCm alpaka backend if it was disabled.\n\
 \n\
 enable-gpus:native\n\
-  Enable/Disable alpaka gpus backends if not support on local host. It also calls\n\
+  Enable/Disable alpaka gpus backends if not supported on local host.\n\
   Also set native compute capabilities for the enabled alpaka backends.\n"
 
 enable-cuda enable-rocm disable-cuda disable-rocm:
