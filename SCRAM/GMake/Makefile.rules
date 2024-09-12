@@ -1604,7 +1604,7 @@ project_clean clean_$(SCRAM_SOURCEDIR) vclean cache_clean distclean:
 	fi
 	$(CMD_rm) -rf $(SCRAM_INTwork) $(COMMON_WORKINGDIR)/cache/packs
 
-project_help help_$(SCRAM_SOURCEDIR):
+project_help help_$(SCRAM_SOURCEDIR)::
 	@$(CMD_echo) "------------ Help for Project-level Builds rules/targets ------------"
 	@$(CMD_echo) ""
 	@$(CMD_echo) "help"
@@ -2067,6 +2067,52 @@ else
 dxr:
 	@$(CMD_echo) "**** ERROR: py2-dxr tool not available."
 endif
+.PHONY: enable-cuda enable-rocm disable-cuda disable-rocm enable-cuda\$(colon)sm_% enable-rocm\$(colon)gfx%
+.PHONY: enable-cuda\$(colon)native enable-cuda\$(colon)reset enable-rocm\$(colon)native enable-rocm\$(colon)reset
+.PHONY: enable-gpus\$(colon)native
+project_help help_$(SCRAM_SOURCEDIR)::
+	@$(CMD_echo) -e "\
+enable-cuda enable-rocm disable-cuda disable-rocm\n\
+  Enable/Disable Cuda/Rocm Alpaka backends build rules.\n\
+\n\
+enable-cuda:comma-separated-compute-capabilities enable-rocm:comma-separated-compute-capabilities\n\
+  Set cuda/rocm compute capabilities and enable cuda/rocm alpaka backend if disabled.\n\
+     enable-cuda:sm_75,sm_89\n\
+     enable-rocm:gfx1100\n\
+\n\
+enable-cuda:native enable-rocm:native\n\
+  Find out native compute capabilities of cuda/rocm and set those.\n\
+  Also enable cuda/rocm alpaka backend if it was disabled.\n\
+\n\
+enable-cuda:reset enable-rocm:reset\n\
+  Reset cuda/rocm compute capabilities and set them from the project release area.\n\
+  Also enable cuda/rocm alpaka backend if it was disabled.\n\
+\n\
+enable-gpus:native\n\
+  Enable/Disable alpaka gpus backends if not support on local host. It also calls\n\
+  Also set native compute capabilities for the enabled alpaka backends.\n"
+
+enable-cuda enable-rocm disable-cuda disable-rocm:
+	@$(SCRAM_CONFIGDIR)/SCRAM/utils/alpaka-backends.sh "$@"
+enable-cuda\$(colon)sm_%: $(if $(strip $(filter cuda,$(ALPAKA_SELECTED_BACKENDS))),,enable-cuda)
+	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
+enable-rocm\$(color)gfx%: $(if $(strip $(filter rocm,$(ALPAKA_SELECTED_BACKENDS))),,enable-rocm)
+	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
+enable-cuda\$(colon)native enable-cuda\$(colon)reset: $(if $(strip $(filter cuda,$(ALPAKA_SELECTED_BACKENDS))),,enable-cuda)
+	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
+enable-rocm\$(colon)native enable-rocm\$(colon)reset: $(if $(strip $(filter rocm,$(ALPAKA_SELECTED_BACKENDS))),,enable-rocm)
+	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
+enable-gpus\$(colon)native:
+	@for t in cuda rocm ; do \
+          $(CMD_echo) ">> Checking $$t" &&\
+          OUT="$$($(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "enable-$$t:native" 2>&1)" &&\
+          $(CMD_echo) "$$OUT" &&\
+          if [ $$($(CMD_echo) "$$OUT" | grep 'Warning: Unable to find.*compute capabilities' | $(CMD_wc) -l) -gt 0 ] ; then \
+            $(SCRAM_CONFIGDIR)/SCRAM/utils/alpaka-backends.sh disable-$$t ;\
+          else \
+            $(SCRAM_CONFIGDIR)/SCRAM/utils/alpaka-backends.sh enable-$$t ;\
+          fi;\
+        done
 disable-multi-targets:
 	@$(CMD_rm) -f $(SCRAM_ADMIN_DIR)/multi-targets && $(CMD_echo) "Building with multi-targets is disabled."
 enable-multi-targets:
