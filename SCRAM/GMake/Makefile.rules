@@ -1435,7 +1435,9 @@ ifneq ($(strip $(wildcard $(SCRAM_TOOLS_DIR)/alpaka)),)
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.alpaka
 endif
 ifneq ($(strip $(ROOTRFLX_BASE)),)
+ifneq ($(strip $(SCRAM_MULTIPLE_COMPILERS)-$(SCRAM_COMPILER)),yes-$(LLVM_ANALYZER))
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.lcgdict
+endif
 endif
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.serialization
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pch
@@ -2096,7 +2098,7 @@ enable-cuda enable-rocm disable-cuda disable-rocm:
 	@$(SCRAM_CONFIGDIR)/SCRAM/utils/alpaka-backends.sh "$@"
 enable-cuda\$(colon)sm_%: $(if $(strip $(filter cuda,$(ALPAKA_SELECTED_BACKENDS))),,enable-cuda)
 	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
-enable-rocm\$(color)gfx%: $(if $(strip $(filter rocm,$(ALPAKA_SELECTED_BACKENDS))),,enable-rocm)
+enable-rocm\$(colon)gfx%: $(if $(strip $(filter rocm,$(ALPAKA_SELECTED_BACKENDS))),,enable-rocm)
 	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
 enable-cuda\$(colon)native enable-cuda\$(colon)reset: $(if $(strip $(filter cuda,$(ALPAKA_SELECTED_BACKENDS))),,enable-cuda)
 	@$(SCRAM_CONFIGDIR)/SCRAM/utils/backend-setup.sh "$@"
