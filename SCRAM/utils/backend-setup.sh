@@ -43,8 +43,10 @@ elif [ "${backend}" = "rocm" ] ; then
     CAPS=$(echo ${CAPS} | tr ',' ' ')
   fi
   cp -f ${TOOL} ${TOOL}.tmp
-  #Remove existing capabilities flag
-  sed -r -i -e '/flags ROCM_FLAGS=.*gfx[0-9a-f]+/d' ${TOOL}.tmp
+  # remove existing capabilities flags
+  sed -r -i -e '/ROCM_FLAGS/s/--offload-arch=gfx[0-9a-f]+//g' ${TOOL}.tmp
+  # remove empty ROCM_FLAGS lines
+  sed -r -i -e '/ROCM_FLAGS=" *"/d' ${TOOL}.tmp
 
   #add support for the capabilities found on this machine
   for CAP in $CAPS; do
