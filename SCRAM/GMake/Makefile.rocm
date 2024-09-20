@@ -38,14 +38,14 @@ endef
 
 define generate_rocm_device_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
-  $(CMD_echo) ">> ROCM Device Code Obj $@ " &&\
+  $(CMD_echo) ">> ROCm Device Code Obj $@ " &&\
   $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CMD_objcopy) -j '__CLANG_OFFLOAD_BUNDLE*' $^ $@" &&\
               ($(SCRAM_PREFIX_COMPILER_COMMAND) $(CMD_objcopy)  -j '__CLANG_OFFLOAD_BUNDLE*' $^ $@) $(endlog_$(1))
 endef
 
 define generate_rocm_a
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) && $(CMD_rm) -f $(SCRAMSTORENAME_STATIC)/$(@F) &&\
-  $(CMD_echo) ">> ROCM Device Code library $@ " &&\
+  $(CMD_echo) ">> ROCm Device Code library $@ " &&\
   $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CMD_ar) crs $@ $^" &&\
               ($(SCRAM_PREFIX_COMPILER_COMMAND)  $(CMD_ar) crs $@ $^) $(endlog_$(1))
 endef
