@@ -56,8 +56,8 @@ def mkprocessfile (infile, outfile, data):
     ecount = data["editcount"]
     bigprod = False
     plugin = False
-    reBigProd = re.compile("^ALL_BIGPRODS\s*\+=\s*([^\s]+)\s*$")
-    reReg1 = re.compile("^\s*[^\s]+_(LOC_USE|relbigobj\+=.*)")
+    reBigProd = re.compile("^ALL_BIGPRODS\\s*\\+=\\s*([^\\s]+)\\s*$")
+    reReg1 = re.compile("^\\s*[^\\s]+_(LOC_USE|relbigobj\\+=.*)")
     for line in iref.readlines():
         line = line.strip("\n")
         if reBigProd.match(line):
@@ -118,36 +118,36 @@ toolvar = ["INCLUDE","LIB"]
 
 skline=0
 mkprocess = {"skiplines": [], "editlines": []}
-mkprocess["skiplines"].append(re.compile("^.+_(files|XDEPS|SKIP_FILES|libcheck|parent)\s+[:+]=.*"))
-mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS)).+)\s+[:+]=.*"))
-mkprocess["skiplines"].append(re.compile("^.+_LOC_USE\s*[+]="))
-mkprocess["skiplines"].append(re.compile("^.+_EX_((?!LIB).+)\s+[:+]=.*"))
-mkprocess["skiplines"].append(re.compile("^(ALL_COMMONRULES|NON_XML_BUILDFILE)\s+\+=.*"))
-mkprocess["skiplines"].append(re.compile("^.+_PACKAGE\s+:=\s+self\/.*"))
-mkprocess["skiplines"].append(re.compile("^.+\$\(call\s+.*"))
+mkprocess["skiplines"].append(re.compile("^.+_(files|XDEPS|SKIP_FILES|libcheck|parent)\\s+[:+]=.*"))
+mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS)).+)\\s+[:+]=.*"))
+mkprocess["skiplines"].append(re.compile("^.+_LOC_USE\\s*[+]="))
+mkprocess["skiplines"].append(re.compile("^.+_EX_((?!LIB).+)\\s+[:+]=.*"))
+mkprocess["skiplines"].append(re.compile("^(ALL_COMMONRULES|NON_XML_BUILDFILE)\\s+\\+=.*"))
+mkprocess["skiplines"].append(re.compile("^.+_PACKAGE\\s+:=\\s+self\\/.*"))
+mkprocess["skiplines"].append(re.compile("^.+\\$\\(call\\s+.*"))
 
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_USE\s*:=\s*(.+)$")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_USE\\s*:=\\s*(.+)$")})
 mkprocess["editlines"][-1]["cont"] = 1
 mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_USE := $(foreach d, %s,$(if $($(d)_EX_FLAGS_NO_RECURSIVE_EXPORT),,$d))" % (m.group(1), m.group(2))';
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_FLAGS_USE_SOURCE_ONLY(\s*.+)")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+)_LOC_FLAGS_USE_SOURCE_ONLY(\\s*.+)")})
 mkprocess["editlines"][-1]["cont"] = 1
 mkprocess["editlines"][-1]["value"] = 'eline="%s_EX_FLAGS_USE_SOURCE_ONLY%s" % (m.group(1), m.group(2))';
 
-mkprocess["editlines"].append({"reg": re.compile("^\s*ALL_PRODS(\s+\+=.+)$")})
+mkprocess["editlines"].append({"reg": re.compile("^\\s*ALL_PRODS(\\s+\\+=.+)$")})
 mkprocess["editlines"][-1]["value"] = 'eline="ALL_EXTERNAL_PRODS%s" % m.group(1)'
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+)\s+self(\s*.*)$")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+)\\s+self(\\s*.*)$")})
 mkprocess["editlines"][-1]["value"] = 'eline="%s %s%s" % (m.group(1), tool, m.group(2))'
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+)\s+self\/(.+)$")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+)\\s+self\\/(.+)$")})
 mkprocess["editlines"][-1]["value"] = 'eline="%s %s/%s" % (m.group(1), tool, m.group(2))'
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+_BuildFile\s+:=\s+)(.+\/cache\/bf\/([^\s]+))\s*$")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+_BuildFile\\s+:=\\s+)(.+\\/cache\\/bf\\/([^\\s]+))\\s*$")})
 mkprocess["editlines"][-1]["value"] = 'eline="%s$(%s)/.SCRAM/$(SCRAM_ARCH)/MakeData/DirCache.mk" % (m.group(1), basevar)'
 
-mkprocess["editlines"].append({"reg": re.compile("^(.+)_forbigobj\s*\+=(.+)$")})
+mkprocess["editlines"].append({"reg": re.compile("^(.+)_forbigobj\\s*\\+=(.+)$")})
 mkprocess["editlines"][-1]["value"] = 'eline="%s_relbigobj+=%s" % (m.group(1), m.group(2))'
 
 mkprocess["skipcount"] = len(mkprocess["skiplines"])
@@ -192,7 +192,7 @@ for tool in tools:
             if val:
                 fh.write("%s_EX_%s := %s\n" % (tool, var, val))
                 if (tool == "self") and (var == "LIBDIR") and proj_name in tools:
-                    fh.write("self_EX_%s += \$(%s_EX_%s)\n" % (var, proj_name, var))
+                    fh.write("self_EX_%s += \\$(%s_EX_%s)\n" % (var, proj_name, var))
     if "USE" in tc:
         x = " ".join([t.lower() for t in tc["USE"]])
         if x:
@@ -230,7 +230,7 @@ for tool in tools:
             sproj = 20000
         else:
             base = tc["%s_BASE" % tool.upper().replace("-","_")]
-        SCRAM.run_command("grep -v '.*:{0}\$' {1}/order > {1}/order.new; "
+        SCRAM.run_command("grep -v '.*:{0}\\$' {1}/order > {1}/order.new; "
                           "mv {1}/order.new {1}/order".format(tool, stooldir))
         if base and exists(base):
             infile = join(base, ".SCRAM", arch, "MakeData", "DirCache.mk")

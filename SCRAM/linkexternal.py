@@ -197,7 +197,7 @@ def main():
     cache["ignorefiles"]["LIBDIR"][re.compile("^pkgconfig$")]="d";
     cache["ignorefiles"]["LIBDIR"][re.compile("^archive$")]="d";
     cache["ignorefiles"]["LIBDIR"][re.compile("^cmake$")]="d";
-    cache["ignorefiles"]["LIBDIR"][re.compile('^__.SYMDEF\s+SORTED$')]="f";
+    cache["ignorefiles"]["LIBDIR"][re.compile('^__.SYMDEF\\s+SORTED$')]="f";
     cache["ignorefiles"]["PYTHONPATH"][re.compile("^CVS$")]="d";
     cache["ignorefiles"]["CMSSW_SEARCH_PATH"][re.compile("^etc$")]="d";
     cache["ignorefiles"]["CMSSW_SEARCH_PATH"][re.compile("^.package-checksum$")]="f";
