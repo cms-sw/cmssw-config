@@ -50,6 +50,7 @@ def doexec():
         if getnext == 1:
           depname = tsp1
           getnext = 0
+          if depname not in uses: uses[depname] = set([])
         else:
           if sp[:4] == "tmp/":
             if reCC.search(sp):
