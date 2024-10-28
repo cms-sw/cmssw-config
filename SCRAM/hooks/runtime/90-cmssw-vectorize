@@ -109,10 +109,10 @@ fi
 
 echo "IMPORTANT: Setting CMSSW environment to use '${MATCHED_TARGET}' target." 1>&2
 echo "RUNTIME:variable:PROJECT_MULTIARCH_TARGET=scram_${MATCHED_TARGET}"
-TOOLS="self"
+TOOLS="self python-paths"
 if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
 for tool in  $TOOLS ; do
-  for e in LD_LIBRARY_PATH RIVET_ANALYSIS_PATH ; do
+  for e in LD_LIBRARY_PATH RIVET_ANALYSIS_PATH PATH PYTHON3PATH; do
     for d in $(${SCRAM} tool info $tool | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
       p="$d"
       x="scram_${MATCHED_TARGET}"
