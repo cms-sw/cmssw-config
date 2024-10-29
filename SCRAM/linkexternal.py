@@ -229,8 +229,7 @@ def main():
                     cache["defaultlinks"][x.upper()] = 1
         if "SCRAM_TARGETS" in flags:
             for x in flags["SCRAM_TARGETS"]:
-                cf = "LIBDIR"
-                if cf in cache["defaultlinks"]:
+                for cf in list(cache["defaultlinks"].keys()):
                     ux = "%s_%s" %  (x.upper().replace("-","_"), cf)
                     cache["validlinks"][ux] = join(cache["validlinks"][cf], "scram_"+x)
                     cache["defaultlinks"][ux] = 1
@@ -386,7 +385,7 @@ def main():
             for s in cache["extradir"]:
                 ldir = join(externals, "%s%s" % (type, s))
                 if isdir(ldir):
-                    if ldir not in cache["dirused"]:
+                    if not [d for d in cache["dirused"] if (d==ldir) or (d.startswith(ldir+"/"))]:
                         SCRAM.run_command("rm -rf %s" % ldir)
                 else:
                     break
