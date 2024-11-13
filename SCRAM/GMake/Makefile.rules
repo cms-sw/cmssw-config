@@ -379,7 +379,7 @@ $(if $(subst undefined,,$(origin ADJUST_PROD$1_FILE$7_TYPE$6_COMP$4_$8_$9_$3)),$
 endef
 TOOLS_FLAGS_FUNC=$(strip $($(2)_LOC_FLAGS_$(1)_ALL))
 TOOLS_DIR_FUNC=$(strip $(foreach d,$(wildcard $(2) $(filter-out $(2),$($(1)_LOC_$(2)_ALL))),$(if $(strip $(SYSTEM_$2_$d)),$4,$3)$d))
-TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(addprefix -l,$($(1)_LOC_$(2)_ALL)))
+TOOLS_LIB_FUNC=$(strip $(addprefix -l,$($2)) $(foreach l,$($(1)_LOC_$(2)_ALL),$(call get_link_lib_arg,$1,$l)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval PreTool_$f=$$(call TOOLS_FLAGS_FUNC,$f,$$1)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval Tool_$f=$$(PreTool_$f)))
 $(foreach x,$(strip $(patsubst %_LIB,%,$(LIB_TYPES))),$(eval Tool_$(x)_LDFLAGS=$$(strip $$(call PreTool_$(x)_LDFLAGS,$$1) $$(call TOOLS_DIR_FUNC,$$1,LIBDIR,-L) $$(call TOOLS_LIB_FUNC,$$1,$(x)_LIB))))
@@ -1128,6 +1128,7 @@ $(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$(filter-out $$(addprefix %.,$(FILE_EXT_CC_MAP)),$$(notdir $$($(1)_files))))) $$(foreach e,$(FILE_EXT_CC_MAP),$$(if $$(strip $$(filter %.$$e,$$(notdir $$($(1)_files)))),$$e,)))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
+$(foreach u,$($(1)_LOC_FLAGS_FORCE_LINK),$(foreach l,$($(u)_EX_LIB),$(eval $(1)_$(l)_force_link:=1)))
 ifneq ($(strip $(filter alpaka/%,$($(1)_PRODUCT_TYPE))),)
 $$(eval $$(call SetAlpakaRules,$1,$6))
 else
@@ -1804,6 +1805,11 @@ ifneq ($(strip $(filter deps-tree,$(MAKECMDGOALS))),)
     DEPS_TREE_DEPENDENCY:=$(wordlist 2,2,$(filter-out deps-tree,$(MAKECMDGOALS)))
 $(MAKECMDGOALS)::
 	@:
+endif
+ifeq ($(strip $(filter -Wl$(comma)--as-needed,$(self_EX_FLAGS_LDFLAGS))),)
+get_link_lib_arg=-l$2
+else
+get_link_lib_arg=$(if $(strip $($(1)_$(2)_force_link)),-Wl$(comma)--no-as-needed -l$2 -Wl$(comma)--as-needed,-l$2)
 endif
 HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
