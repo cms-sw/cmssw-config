@@ -1568,7 +1568,6 @@ ProjectRename projectrename PROJECTRENAME:
 .PHONY: all project project_all all_$(SCRAM_SOURCEDIR) ProjectPluginRefresh CompilePython PostBuild
 all: all_$(TARGETDIR)
 	@if [ "X$(TARGETDIR)" != "X$(SCRAM_SOURCEDIR)" ] ; then \
-	  $(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog ;\
 	  $(MAKE) -f $(SCRAM_MAKEFILE) PostBuild ;\
 	fi
 project project_all all_$(SCRAM_SOURCEDIR): $(SCRAM_SOURCEDIR)
@@ -1894,7 +1893,6 @@ LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR)) | prebuild
-	@$(DO_BUILD_LOG) $(MAKE) -f $(SCRAM_MAKEFILE) ufast outputlog
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 prebuild: $(prebuild)
 	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----" $(if $(HOOK_PROJECT), && $(HOOK_PROJECT) -s $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
