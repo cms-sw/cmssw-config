@@ -36,7 +36,7 @@ class ExtraBuildRule:
         else:
             fh.write(
                 "EDM_WRITE_CONFIG:=edmWriteConfigs\n"
-                "EDM_CHECK_CLASS_VERSION:=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassVersion\n"
+                "EDM_CHECK_CLASS_VERSION:=$(SCRAM_SOURCEDIR)/FWCore/Reflection/scripts/edmCheckClassVersion\n"
                 "EDM_CHECK_CLASS_TRANSIENTS=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassTransients\n"
             )
             if "ASAN" in environ["SCRAM_PROJECTVERSION"]:
