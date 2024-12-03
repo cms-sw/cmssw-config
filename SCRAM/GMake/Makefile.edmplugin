@@ -88,13 +88,13 @@ endef
 ifneq ($(strip $(EDM_CHECK_CLASS_VERSION)),)
 EDM_CHECK_CLASS_VERSION_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_VERSION))
 ifeq ($(strip $(EDM_CHECK_CLASS_VERSION_SCRIPT)),)
-EDM_CHECK_CLASS_VERSION_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Version test" && $(CMD_true)
+$(error Unable to find $(EDM_CHECK_CLASS_VERSION))
 endif
 endif
 ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
 EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(call find_project_file,$(EDM_CHECK_CLASS_TRANSIENTS))
 ifeq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT)),)
-EDM_CHECK_CLASS_TRANSIENTS_SCRIPT:=$(CMD_echo) ">> Skipped running EDM Class Transients test" && $(CMD_true)
+$(error Unable to find $(EDM_CHECK_CLASS_TRANSIENTS))
 endif
 endif
 
