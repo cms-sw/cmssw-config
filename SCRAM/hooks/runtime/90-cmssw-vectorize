@@ -19,6 +19,10 @@ if [ "${SCRAM_TARGET}" = "" ] || [ "${SCRAM_TARGET}" = "default" ] ; then exit 0
 #No need to overirde LD_LIBRARY_PATH if project is not build with multi-micro-archs
 [ "${SCRAM_TARGETS}" = "" ] && exit 0
 
+#Set min support micro-arch
+MIN_MICROARCH=$(echo ${SCRAM_ALL_MICROARCHS} | tr ' ' '\n' | head -1)
+echo "RUNTIME:variable:SCRAM_MIN_SUPORTED_MICROARCH=${MIN_MICROARCH}"
+
 #Prepare an order list of psABI
 SEL_TARGETS=""
 if [ "${SCRAM_TARGET}" = "auto" ] ; then
