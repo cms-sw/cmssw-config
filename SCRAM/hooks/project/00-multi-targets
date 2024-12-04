@@ -1,8 +1,36 @@
 #!/bin/bash
-#Create local multi-targets is exists in RELEASETOP
 if [ -f "${RELEASETOP}/.SCRAM/${SCRAM_ARCH}/multi-targets" ] ; then
-  MULTIARCH_TARGET=$(grep '"SCRAM_TARGET"' ${LOCALTOP}/config/Self.xml | grep ' value=' | sed 's|^ .*value="||;s|".*||')
-  if [ "${MULTIARCH_TARGET}" != "default" ] && [ "${MULTIARCH_TARGET}" != "" ] ; then
+  source ${LOCALTOP}/config/SCRAM/support-psabi-micro-archs.sh
+  MULTI_ARCH=false
+  if [ "${MULTIARCH_TARGET}" = "auto" ] ; then
+    if [ "${SCRAM_DEFAULT_MICROARCH}" != "" -a "${PSABI_ARCHS}" != "" ] ; then
+      if [ $(echo " ${PSABI_ARCHS} " | grep " ${SCRAM_DEFAULT_MICROARCH} " | wc -l) -eq 0 ] ; then
+        smarch=""
+        for march in ${PSABI_ARCHS} ; do
+          if [ $(echo " ${SCRAM_TARGETS} " | grep " ${march} " | wc -l) -gt 0 ] ; then
+            smarch="$march"
+            break
+          fi
+        done
+        if [ "${smarch}" != "" ] ; then
+          echo "WARNING: You host supported psABI(${PSABI_ARCHS}) do not match SCRAM default psABI ${SCRAM_DEFAULT_MICROARCH}." 1>&2
+          echo "         Additional build/runtime micro-architecture ${smarch} is enabled." 1>&2
+          if [ "${smarch}" != "${SCRAM_TARGETS}" ] ; then
+            sed -iE -e "s|SCRAM_TARGETS=\"[^\"]+\"|SCRAM_TARGETS=\"$smarch\"|" ${LOCALTOP}/config/Self.xml
+          fi
+          MULTI_ARCH=true
+        else
+          echo "WARNING: Your host psABI(${PSABI_ARCHS}) do not match any of support SCRAM microarchs: ${SCRAM_DEFAULT_MICROARCH}(default) ${SCRAM_TARGETS}" 1>&2
+          echo "         You might not be able to build or run your application on this host." 1>&2
+        fi
+      fi
+    else
+      echo "WARNING: Unable to find project's default micro-architecture or system supported psABI micro-architectures." 1>&2
+    fi
+  fi
+  if $MULTI_ARCH ; then
     touch ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets
+  else
+    echo "Development area is created without multi-microarchitectures support. Default micro-architecture will be used for build and runtime." 1>&2
   fi
 fi
