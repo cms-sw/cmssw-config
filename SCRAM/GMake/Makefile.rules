@@ -546,7 +546,7 @@ define copy_bin_to_main_productstore
 endef
 
 define copy_test_to_main_productstore
-  $(call install_name_tool_rpath, ${LOCALTOP)/$(patsubst test%, lib%,$1),$@) && $(call copy_build_product,$(1))
+  $(call install_name_tool_rpath, ${LOCALTOP)/$(patsubst test%,lib%,$1),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_py_to_main_productstore
@@ -785,8 +785,8 @@ endef
 define build_bin_common
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $4 binary) $(1)" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@" &&\
-  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$5) $(CXXSHAREDOBJECTFLAGS) $(if $(strip $4),$($(1)_objs_$4),$($(1)_objs)) $6 -o $@" &&\
+  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$5) $(CXXSHAREDOBJECTFLAGS) $(if $(strip $4),$($(1)_objs_$4),$($(1)_objs)) $6 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)/$(4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
