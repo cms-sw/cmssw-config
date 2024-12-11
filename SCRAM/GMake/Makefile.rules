@@ -1169,7 +1169,7 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
-NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT)))
+NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(filter-out $(DEVICE_CC_EXT),$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT))))
 TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
