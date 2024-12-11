@@ -22,7 +22,7 @@ define generate_lcgdict_cxxmodule0
   $(CMD_echo) ">> Building LCG reflex dict from header file $(patsubst $(LOCALTOP)/%,%,$4)" &&\
   $(VERB_ECHO)                $(ROOTRFLX_BASE)/bin/rootcling -reflex -f $@ -inlineInputHeader $($(5)_GENREFLEX_ARGS) -rmf $(basename $@).rootmap -rml $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(call AdjustFlags,$1,LCGDICT,GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
   (($(SCRAM_GENREFLEX_PREFIX) $(ROOTRFLX_BASE)/bin/rootcling -reflex -f $@ -inlineInputHeader $($(5)_GENREFLEX_ARGS) -rmf $(basename $@).rootmap -rml $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(call Tool_DependencyPCMS,$1) $(call AdjustFlags,$1,LCGDICT,GENREFLEX_CPPFLAGS) $(call AdjustFlags,$1,LCGDICT,CPPFLAGS) $(4) $(3) &&\
-  $(CMD_touch) -r $@ $(basename $@).rootmap $(basename $@)*.pcm && $(CMD_mv) $(basename $@).rootmap $(basename $@)*.pcm $(6)/) || ($(CMD_rm) -f $@ && exit 1)) \
+  $(CMD_touch) -r $@ $(basename $@).rootmap $(basename $@)*.pcm && $(CMD_cp) -f $(basename $@).rootmap $(basename $@)*.pcm $(6)/) || ($(CMD_rm) -f $@ && exit 1)) \
   $(endlog_$(2))
 endef
 
