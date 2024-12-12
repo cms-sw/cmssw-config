@@ -1317,6 +1317,7 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/serial)
 $$(foreach ext,$(filter $(DEVICE_CC_EXT),    $($(1)_files_exts)),$$(eval $$(call CXXCompileRule,$(1),$$(ext),$(1),$($(1)_BUILDRULES))))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(foreach ext,$(filter $(DEVICE_CC_EXT),   $($(1)_files_exts)),$$(eval $$(call CXXCompileRule,$(1),$$(ext),$(1),$($(1)_BUILDRULES),$$(v)/))))
 endif
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
