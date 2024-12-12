@@ -2,7 +2,7 @@
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pgo
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
-ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)),)
+ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)$(wildcard $(SCRAMSTORENAME_LIB)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
 $(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_scram_$v:=$u))
 SCRAM_TARGETS:=$(addprefix scram_,$(self_EX_FLAGS_SCRAM_TARGETS))
@@ -546,7 +546,7 @@ define copy_bin_to_main_productstore
 endef
 
 define copy_test_to_main_productstore
-  $(call install_name_tool_rpath, ${LOCALTOP)/$(patsubst test%, lib%,$1),$@) && $(call copy_build_product,$(1))
+  $(call install_name_tool_rpath, ${LOCALTOP)/$(patsubst test%,lib%,$1),$@) && $(call copy_build_product,$(1))
 endef
 
 define copy_py_to_main_productstore
@@ -726,7 +726,7 @@ endef
 ##############################################################################
 # Dictionary compilation
 define processTmpMMDData
-  [ -f $(basename $@).d ] && $(CMD_sed) -e 's# $1# $3#g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $(basename $@).d | $(CMD_grep) -v '^ *\\$$' > $<.dx; $(CMD_mv) $<.dx $(basename $@).d
+  dep=$(basename $@).d; [ -f $$dep ] && ($(CMD_sed) -e 's# $1# $3#g;s#$2:#$<:#g;s#^  *\.\./\(\.\./\)*# #g' $$dep | $(CMD_grep) -v '^ *\\$$' >$@.dx; $(CMD_mv) $@.dx $$dep)
 endef
 define compile_python
   $(CMD_echo) ">> Compiling python$(if $(strip $($2_LOC_FLAGS_PYTHON_VERSION)),$($2_LOC_FLAGS_PYTHON_VERSION),$(DEFAULT_PYTHON)) modules $1" &&\
@@ -785,8 +785,8 @@ endef
 define build_bin_common
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $4 binary) $(1)" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@" &&\
-  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$5) $(CXXSHAREDOBJECTFLAGS) $($(1)_objs) $6 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
+  $(VERB_ECHO)               "$(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$5) $(CXXSHAREDOBJECTFLAGS) $(if $(strip $4),$($(1)_objs_$4),$($(1)_objs)) $6 -o $@" &&\
+  (($(call checklibs,$(1)) && $(strip $($(1)__BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$5) $(CXXSHAREDOBJECTFLAGS) $(if $(strip $4),$($(1)_objs_$4),$($(1)_objs)) $6 -o $@) || ($(call delete_build_prod,$(3)) && exit 1)) &&\
   $(call copy_bin_to_main_productstore,$(3)/$(4)) $(endlog_$(2))
   @$(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))
 endef
@@ -1169,7 +1169,7 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
-NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT)))
+NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(filter-out $(DEVICE_CC_EXT),$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT))))
 TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
@@ -1188,6 +1188,9 @@ ifeq ($(strip $5),lib)
 endif
 ifeq ($(strip $5),test)
 	$$(call build_test,$(1),$(1),$(3),$4)
+endif
+ifeq ($(strip $5),bin)
+	$$(call build_bin,$(1),$(1),$(3),$4)
 endif
 endef
 
@@ -1229,6 +1232,9 @@ runtests_$(1) unittests_$(1): $(if $(strip $(filter runtests%,$(MAKECMDGOALS))),
 	$$(call run_test,$(1),$(3),$(5),$(2),$$(if $$(strip $$(wildcard $(LOCALTOP)/$2/$$(firstword $$($(1)_TEST_RUNNER_CMD)))),$(LOCALTOP)/$2/$$($(1)_TEST_RUNNER_CMD),$$($(1)_TEST_RUNNER_CMD)))
 endif
 ifeq ($(strip $(4)),lib)
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
+endif
+ifeq ($(strip $(4)),bin)
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call MultiTargets,$1,$2,$3,$$v,$4)))
 endif
 ifeq ($(strip $(4)),test)
@@ -1311,6 +1317,7 @@ define CompileRules
 $(foreach ext,$(filter $(CXXSRC_FILES_SUFFIXES),    $($(1)_files_exts)),$(eval $(call CXXCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 ifeq ($(strip $($(1)_PRODUCT_TYPE)),alpaka/serial)
 $$(foreach ext,$(filter $(DEVICE_CC_EXT),    $($(1)_files_exts)),$$(eval $$(call CXXCompileRule,$(1),$$(ext),$(1),$($(1)_BUILDRULES))))
+$$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(foreach ext,$(filter $(DEVICE_CC_EXT),   $($(1)_files_exts)),$$(eval $$(call CXXCompileRule,$(1),$$(ext),$(1),$($(1)_BUILDRULES),$$(v)/))))
 endif
 $(foreach ext,$(filter $(CSRC_FILES_SUFFIXES),      $($(1)_files_exts)),$(eval $(call CCompileRule,$(1),$(ext),$(1),$($(1)_BUILDRULES))))
 $(foreach ext,$(filter $(FORTRANSRC_FILES_SUFFIXES),$($(1)_files_exts)),$(eval $(call F77CompileRule,$(1),$(ext),$(1))))
@@ -1335,7 +1342,9 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,productstore,type,logprodstore
 define Binary
-ifeq ($(strip $($1_CLASS)),TEST)
+ifeq ($(strip $($1_CLASS)),BINARY)
+$(call SetTargetFlags,$1)
+else ifeq ($(strip $($1_CLASS)),TEST)
 $(call SetTargetFlags,$1)
 else
 $(1)_LOC_FLAGS_TARGETS:=
@@ -1893,6 +1902,7 @@ LIBDIR := $(wildcard $(LIBDIR))
 self_EX_LIBDIR := $(wildcard $(self_EX_LIBDIR))
 PHONY: $(SCRAM_SOURCEDIR) prebuild postbuild runtests_$(SCRAM_SOURCEDIR) unittests_$(SCRAM_SOURCEDIR) runpython_$(SCRAM_SOURCEDIR) compile_$(SCRAM_SOURCEDIR) precompile_$(SCRAM_SOURCEDIR) edm_checks_$(SCRAM_SOURCEDIR) scripts_$(SCRAM_SOURCEDIR)
 $(SCRAM_SOURCEDIR): $($(SCRAM_SOURCEDIR)) $(subdirs_$(SCRAM_SOURCEDIR)) | prebuild
+	@if [ "$(SCRAM_MULTI_TARGET)" = "1" ] ; then $(CMD_mkdir) -p $(SCRAMSTORENAME_LIB) ; $(CMD_touch) $(SCRAMSTORENAME_LIB)/multi-targets ; fi
 	@$(MAKE) -f $(SCRAM_MAKEFILE) PostBuild
 prebuild: $(prebuild)
 	@$(CMD_echo) ">> Building $(SCRAM_PROJECTNAME) version $(SCRAM_PROJECTVERSION) ----" $(if $(HOOK_PROJECT), && $(HOOK_PROJECT) -s $(if $(KEEP_ON_BUILDING), || $(CMD_true)))
