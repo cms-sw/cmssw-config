@@ -20,7 +20,7 @@ define CodeCheckRule
 ALL_CodeCheckRules+=$(WORKINGDIR)/code-checks/$1.yaml
 $(WORKINGDIR)/code-checks/$1.yaml: $(SCRAM_SOURCEDIR)/$1
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	if [ $$$$($(CMD_grep) '/$$<"' $(LLVM_CCDB_EXT) | $(CMD_grep) '"file":' |  wc -l) -gt 0 ] ; then \
+	if [ $$$$($(CMD_grep) '$$<"' $(LLVM_CCDB_EXT) | $(CMD_grep) '"file":' |  wc -l) -gt 0 ] ; then \
 	  $(CMD_echo) clang-tidy $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter "'$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'" $$< &&\
 	  clang-tidy             $(USER_CODE_CHECKS_ARGS) -export-fixes $$@ $(CODE_CHECKS_ARG) -header-filter '$(LOCALTOP)/$(SCRAM_SOURCEDIR)/.*'   $$< ; \
 	fi &&\
@@ -89,7 +89,7 @@ endif
 ifneq ($(strip $(filter code-checks-internal,$(MAKECMDGOALS))),)
   CODE_CHECK_FILES:=
   ifeq ($(strip $(USER_CODE_CHECKS_FILES)$(USER_CODE_CHECKS_FILE)),)
-    CODE_CHECK_FILES:=$(patsubst $(LOCALTOP)/$(SCRAM_SOURCEDIR)/%,%,$(shell python -c 'import json;print "\n".join([x["file"] for x in json.load(open("compile_commands.json")) if "/test/" not in x["file"] ])'))
+    CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell python3 -c 'import json;print ("\n".join([x["file"] for x in json.load(open("compile_commands.json")) if "/test/" not in x["file"] ]))'))
   else ifneq ($(strip $(USER_CODE_CHECKS_FILE)),)
     CODE_CHECK_FILES:=$(patsubst $(SCRAM_SOURCEDIR)/%,%,$(shell $(CMD_cat) $(USER_CODE_CHECKS_FILE)))
   else
