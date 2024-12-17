@@ -39,6 +39,7 @@ if [ "X${IGNORE_EXTENSIONS}" != "X" ] ; then
 fi
 grep -E '^[^ ]*\.('${SOURCE_EXTENSIONS}') ' $TMPDIR/uses.out | tr ' ' '\n' | sort -u > $TMPDIR/uses-sel.out
 ALL_EXTS=$(sed 's|^.*\.||' $TMPDIR/uses-sel.out | sort -u | tr '\n' '|' | sed 's/|*$//;s/^|*//')
+rm -f $TMPDIR/selected-source-files.txt.tmp
 if [ -e src/.git ] ; then
   (cd src; git diff --name-only $CMSSW_VERSION | grep -f ${PKG_REGEX_FILE}) > $TMPDIR/selected-source-files.txt.tmp
 fi
