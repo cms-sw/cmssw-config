@@ -1,12 +1,12 @@
 #!/bin/bash
 
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets -o -e ${LOCALTOP}/lib/${SCRAM_ARCH}/multi-targets ] || exit 0
-[ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
 PGO_ENABLED=false
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/use-pgo -o -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/generate-pgo ] && PGO_ENABLED=true
 $PGO_ENABLED && echo "RUNTIME:variable:CMSSW_CPU_TYPE=default"
 source ${LOCALTOP}/config/SCRAM/support-psabi-micro-archs.sh
+
 if [ "${USER_SCRAM_TARGET}" != "" ] ; then
   SCRAM_TARGET=${USER_SCRAM_TARGET}
   echo "RUNTIME:variable:SCRAM_TARGET=${SCRAM_TARGET}"
@@ -63,7 +63,9 @@ if [ "${MATCHED_TARGET}" = "" ] ; then
 fi
 
 #Set env for the best matched psABI
-echo "IMPORTANT: Setting CMSSW environment to use '${MATCHED_TARGET}' target." 1>&2
+if [ "${SCRAM_RUNTIME_TYPE}" != "BUILD" ] ; then
+  echo "IMPORTANT: Setting CMSSW environment to use '${MATCHED_TARGET}' target." 1>&2
+fi
 echo "RUNTIME:variable:PROJECT_MULTIARCH_TARGET=scram_${MATCHED_TARGET}"
 TOOLS="self python-paths"
 if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
