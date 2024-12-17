@@ -2,3 +2,8 @@
 echo "RUNTIME:path:remove:LD_LIBRARY_PATH=${RELEASETOP}/external/${SCRAM_ARCH}/lib"
 echo "RUNTIME:path:remove:PATH=${RELEASETOP}/external/${SCRAM_ARCH}/bin"
 echo "RUNTIME:path:remove:CMSSW_SEARCH_PATH=${RELEASETOP}/external/${SCRAM_ARCH}/data"
+source ${LOCALTOP}/config/SCRAM/support-psabi-micro-archs.sh
+for uarch in ${SCRAM_TARGETS} ; do
+  echo "RUNTIME:path:remove:LD_LIBRARY_PATH=${RELEASETOP}/external/${SCRAM_ARCH}/lib/${uarch}"
+  echo "RUNTIME:path:remove:PATH=${RELEASETOP}/external/${SCRAM_ARCH}/bin/${uarch}"
+done
