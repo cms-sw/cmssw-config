@@ -67,7 +67,7 @@ code-checks-apply:
 	@echo PYTHONPATH=$$PYTHONPATH && echo PYTHON3PATH=$$PYTHON3PATH
 	@echo PATH=$$PATH
 	@env
-	@which python3 ; python3 -c 'import yaml' || true
+	@which python3 ; python3 -c 'import yaml' || true ; ls -l $(LOCALTOP)/config/SCRAM/hooks/runtime
 	@if [ -d $(WORKINGDIR)/code-checks ] ; then \
 	  $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/fix-code-checks-yaml.py $(WORKINGDIR)/code-checks &&\
 	  $(CMD_echo) clang-apply-replacements $(USER_CODE_CHECKS_APPLY_ARGS) $(WORKINGDIR)/code-checks &&\
