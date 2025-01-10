@@ -30,6 +30,8 @@ define pcm_build_rules0
 $(1)_pcm_name:=$(2)r_rdict.pcm
 $(1)_ROOTMAP_FILES += $($(1)_objdir)/$(6)/$(2)r.rootmap
 $(1)_libdeps += $($(1)_objdir)/$(6)/$(2)r.rootmap
+all_$(1) += $(7)/$(2)r.rootmap
+$(7)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.rootmap
 $($(1)_objdir)/$(6)/$(2)r.rootmap: $($(1)_objdir)/$(6)/$(2)r.cc
 	@$(CMD_echo) "01:$(CMD_rm) -f $(7)/$(2)r.rootmap $(WORKINGDIR)/rootpcms/$(1)" > $$(call AutoCleanFile,$$<,lcgdict)
 	@[ -f $$< ] || $(CMD_rm) -f $$@
@@ -76,9 +78,12 @@ $(WORKINGDIR)/rootpcms/$(1): $(foreach l,$($(1)_EX_USE) $($(1)_EX_FLAGS_USE_SOUR
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
 endef
 
+PCMToRootMap=$(patsubst %_rdict,%,$(basename $1)).rootmap
 define TargetPCM
-all_$(1)+=$4/$2/$3
+all_$(1)+=$4/$2/$3 $4/$2/$(call PCMToRootMap,$3)
 $4/$2/$3: $4/$3
+	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_ln) -sf ../$$(@F) $$@
+$4/$2/$(call PCMToRootMap,$3): $4/$(call PCMToRootMap,$3)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_ln) -sf ../$$(@F) $$@
 endef
 

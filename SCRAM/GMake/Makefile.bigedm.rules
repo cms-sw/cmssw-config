@@ -27,7 +27,7 @@ $(foreach pk,$($(1)_PACKAGES),$(foreach p,$($(pk)_forbigobj),$(eval $(p)_bigobj 
 endef
 #############################################################################
 define bigedm_register_plugin
-  @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh &&\
+  @$(startlog_$(1)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
     $(CMD_echo) "module $(<F)" > $(<D)/$(1).edmplugin &&\
@@ -35,10 +35,10 @@ define bigedm_register_plugin
     $(CMD_cp) -f $< $@ && $(CMD_cp) $(<D)/$(1).edmplugin $(@D)/$(1).edmplugin &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(1).edmplugin $(@D)/$(<F)" > $(call AutoCleanFile,$<,bigedm) &&\
     $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,bigedm) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
+    $(CMD_echo) "--- $(strip Registered $2) EDM Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $(2)/$(1).edmplugin $(2)/$(<F) ;\
-  fi $(endlog_$(2))
+    $(CMD_rm) -f $(@D)/$(1).edmplugin $@ ;\
+  fi $(endlog_$(1))
 endef
 #############################################################################
 define big_obj
@@ -133,8 +133,7 @@ $(1)_objs_$3:=$(foreach o,$($(1)_objs),\
                   $o))
 $(SCRAMSTORENAME_BIGLIB)/$3/plugin$(1).$(SHAREDSUFFIX): $(WORKINGDIR)/$(2)/$3/plugin$(1).$(SHAREDSUFFIX) $(SCRAMSTORENAME_BIGLIB)/plugin$(1).$(SHAREDSUFFIX) \
                 $(foreach l,$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$3/$l)
-	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-	$(CMD_cp) -f $$< $$@
+	$$(call bigedm_register_plugin,$1,$3)
 $(WORKINGDIR)/$(2)/$3/plugin$(1).$(SHAREDSUFFIX): $$($(1)_objs_$3) $(WORKINGDIR)/$(2)/plugin$(1).$(SHAREDSUFFIX)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs_$3),$3)
 $(foreach l,$($(1)_xr_dicts),$(eval $(call TargetLcgDict,$3,$l)))
@@ -214,16 +213,22 @@ endif
 endef
 #############################################################################
 ifneq ($(strip $(SCRAMSTORENAME_BIGLIB)),)
-bigedmPluginRefresh_cache   := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
-PLUGIN_REFRESH_CMDS         += bigedmPluginRefresh
-$(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
+GENERATED_BIGEDMPLUGIN_DIR:=$(if $(strip $(_BUILD_TIME_MICROARCH)),$(SCRAMSTORENAME_BIGLIB)/$(_BUILD_TIME_MICROARCH),$(SCRAMSTORENAME_BIGLIB))
+bigedmPluginRefresh_cache := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
+PLUGIN_REFRESH_CMDS       += bigedmPluginRefresh
+$(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
 	$(call run_plugin_refresh_cmd,edmPluginRefresh)
 $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh:
 	@:
 ifneq ($(strip $(SCRAM_TARGETS)),)
-  $(foreach v,$(SCRAM_TARGETS),$(eval $(call CreateTargetSymlink,$v,$(SCRAMSTORENAME_BIGLIB)/.edmplugincache)))
   $(foreach v,$(SCRAM_TARGETS),$(eval bigedmPluginRefresh_cache+=$(SCRAMSTORENAME_BIGLIB)/$v/.edmplugincache))
 endif
+ifneq ($(GENERATED_BIGEDMPLUGIN_DIR),$(SCRAMSTORENAME_BIGLIB))
+$(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
+	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
+endif
+$(SCRAMSTORENAME_BIGLIB)/%/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
+	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
 endif
 .PHONY: check_biglib_dependents
 external/$(SCRAM_ARCH)/objs-full/% external/$(SCRAM_ARCH)/objs-full/%:

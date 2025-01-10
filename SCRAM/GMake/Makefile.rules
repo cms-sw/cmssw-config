@@ -2,10 +2,12 @@
 include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.pgo
 $(foreach f,LLVM_ANALYZER,$(eval $f:=$(self_EX_FLAGS_$f)))
 SCRAM_TARGETS:=
+IsBuildTimeMicroarch=yes
 ifneq ($(strip $(wildcard $(SCRAM_ADMIN_DIR)/multi-targets)$(wildcard $(SCRAMSTORENAME_LIB)/multi-targets)),)
 SCRAM_MULTI_TARGET:=1
 $(foreach v,$(self_EX_FLAGS_SCRAM_TARGETS),$(eval u:=$(shell echo $v | tr '[a-z-]' '[A-Z_]' | tr '.' '_'))$(eval TARGETS_FLAGS_scram_$v:=$u))
 SCRAM_TARGETS:=$(addprefix scram_,$(self_EX_FLAGS_SCRAM_TARGETS))
+IsBuildTimeMicroarch=$(strip $(filter $(if $1,X$(1)X,XX),X$(_BUILD_TIME_MICROARCH)X))
 else
 SCRAM_MULTI_TARGET:=0
 endif
@@ -356,7 +358,7 @@ $(dir $2)$1/$(notdir $2): $2
 endef
 #type,flag
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
-#$1,  $2,   $3,   $4,     $5
+#$1,  $2,   $3,   $4,     $5,            $6
 #prod,types,flags,compiler,compiler_type,target
 AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(TARGETS_FLAGS_$6))))
 #$1,  $2,  $3,  $4,      $5,      $6,            $7,             $8,          $9
@@ -765,7 +767,7 @@ define link_lib_common
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
-  true $(if $(strip $6),&& $(CMD_echo) ">> Skipping EDM Checks for $1/$6",$(call run_edm_checks,$1,$2,$3,$4)) $(endlog_$(2))
+  true $(call run_edm_checks,$1,$2,$3,$4,$6) $(endlog_$(2))
   @($(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))) &&\
   ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1))
 endef
@@ -1026,7 +1028,7 @@ endef
 
 define TargetPlugin
 all_$(2) += $(5)/$(10)/$(8)
-$(5)/$(10)/$(8): $($(2)_objdir)/$(10)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(1)_extra_deps)
+$(5)/$(10)/$(8): $($(2)_objdir)/$(10)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $($(1)_extra_deps) $(if $(strip $(_BUILD_TIME_MICROARCH)),,$(5)/$(8))
 	$$(call $(3)_register_plugin,$(1),$(9),$(10))
 endef
 define addPlugin
@@ -1047,7 +1049,7 @@ ifeq ($$(strip $(3)),edm)
 $(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE)/.scram
 endif
 endif
-$(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps)
+$(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps) $(if $(strip  $(_BUILD_TIME_MICROARCH)),$(5)/$(_BUILD_TIME_MICROARCH)/$(8))
 	$$(call $(3)_register_plugin,$(1),$(9))
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetPlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$$v)))
 endef
@@ -1073,7 +1075,7 @@ endef
 endif
 
 define F77CompileRule
-$($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
+$($(1)_objdir)/$(5)%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $($(1)_objdir)/precompile
 	$$(call compile_fortran$(4),$(1),$3,$(subst /,,$(5)))
 endef
 
@@ -1169,7 +1171,9 @@ $$(eval $$(call AddDNNRules,$1,$2))
 endif
 endef
 
-NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(filter-out $(DEVICE_CC_EXT),$(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT))))
+NonTargetExtList=$(sort $(CSRC_FILES_SUFFIXES) $(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES) $(ROCMSRC_FILES_SUFFIXES) $(EXTRA_FILE_EXT))
+NonTargetExtListFiltered=$(if $(strip $(filter alpaka/serial,$($(1)_PRODUCT_TYPE))),$(filter-out $(DEVICE_CC_EXT),$(NonTargetExtList)),$(NonTargetExtList))
+NonTargetExt=$(addsuffix .$(OBJEXT),$(addprefix %.,$(NonTargetExtListFiltered)))
 TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENERATED_SOURCES)),$($(1)_objs))
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
@@ -1327,7 +1331,7 @@ $(foreach v,$($(1)_LOC_FLAGS_TARGETS),
 endef
 
 define SetTargetFlags
-ifeq ($(strip $(SCRAM_MULTI_TARGET)$(filter alpaka/cuda alpaka/rocm,$($(1)_PRODUCT_TYPE))),1)
+ifeq ($(strip $(SCRAM_MULTI_TARGET)),1)
 ifeq ($(strip $(USER_TARGETS_ALL)),1)
 $(1)_LOC_FLAGS_TARGETS:=$(call GetCompilerData,$1,SCRAM_TARGETS)
 else ifeq ($(strip $($(1)_LOC_FLAGS_TARGETS)),1)

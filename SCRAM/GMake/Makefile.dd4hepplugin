@@ -6,24 +6,27 @@ define dd4hep_register_plugin
   @$(startlog_$(2)) \
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    if [ "$(strip $3)" = "" ] ; then \
-      $(EDM_TOOLS_PREFIX) $(DD4HEP_CORE_LISTCOMPONENTS) $< > $(<D)/$(@F).tmp &&\
-      $(CMD_cat) $(<D)/$(@F).tmp | $(CMD_sed) 's|$<:|$(<F):|' > $(<D)/$(@F) &&\
-      $(CMD_rm) -f $(<D)/$(@F).tmp &&\
-      ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
-      ($(call install_name_tool,@rpath/$(<F),$<) && $(CMD_cp) -f $< $(@D)/$(<F)) || ($(CMD_rm) -f $< $@ $(@D)/$(<F) && exit 1)) &&\
-      $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-      $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(<F) $@" > $(call AutoCleanFile,$<,edm) &&\
-      $(CMD_echo) "--- Registered DD4HEP Plugin: $(1)"; \
-    else \
-      ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
-      ($(call install_name_tool,@rpath/$(<F),$<) && $(CMD_cp) -f $< $(@D)/$(<F)) || ($(CMD_rm) -f $< $@ $(@D)/$(<F) && exit 1)) &&\
-      $(CMD_ln) -sf ../$(@F) $@ &&\
-      $(CMD_echo) "--- Symlinked DD4HEP Plugin $1/$3";\
-    fi ;\
+    $(if $(call IsBuildTimeMicroarch,$3),$(call dd4hep_register_plugin_imp,$1,$2,$3),$(call dd4hep_register_plugin_copy,$1,$2,$3)) &&\
+    ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
+    ($(call install_name_tool,@rpath/$(<F),$<) && $(CMD_cp) -f $< $(@D)/$(<F)) || ($(CMD_rm) -f $< $@ $(@D)/$(<F) && exit 1)) &&\
+    $(VERB_ECHO) $(CMD_cp) -f $(<D)/$(@F) $@ &&\
+    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
+    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(<F) $@" > $(call AutoCleanFile,$<,edm) &&\
+    $(CMD_echo) "--- $(strip Registered $3) DD4HEP Plugin: $(1)" ; \
   else \
     $(CMD_rm) -f $@ $(@D)/$(<F) ;\
   fi $(endlog_$(2))
+endef
+define dd4hep_register_plugin_imp
+  $(VERB_ECHO) $(EDM_TOOLS_PREFIX) $(DD4HEP_CORE_LISTCOMPONENTS) $< &&\
+  $(EDM_TOOLS_PREFIX) $(DD4HEP_CORE_LISTCOMPONENTS) $< > $(<D)/$(@F).tmp &&\
+  $(CMD_cat) $(<D)/$(@F).tmp | $(CMD_sed) 's|$<:|$(<F):|' > $(<D)/$(@F) &&\
+  $(CMD_rm) -f $(<D)/$(@F).tmp
+endef
+define dd4hep_register_plugin_copy
+  rdir="" ; [ "$3" != "" ] && rdir=".." ; \
+  $(VERB_ECHO) $(CMD_cp) -f $(@D)/$${rdir}/$(_BUILD_TIME_MICROARCH)/$(@F) $(<D)/$(@F) && \
+  $(CMD_cp) -f $(@D)/$${rdir}/$(_BUILD_TIME_MICROARCH)/$(@F) $(<D)/$(@F)
 endef
 
 define dd4hep_plugin_clean
@@ -35,4 +38,5 @@ define dd4hepPlugin
 $$(eval $$(call addPlugin,$1,$2,dd4hep,yes,$3,,,lib$(1).components,$1,$4))
 endef
 
-
+%/.dd4hepcache:
+	@:

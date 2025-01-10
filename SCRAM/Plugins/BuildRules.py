@@ -1189,20 +1189,25 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
         self.processTemplate("Project")
         self.createSymLinks()
-
+        generatedDirs = []
         for ptype in self.getPluginTypes():
+            pluginDir="GENERATED_%sPLUGIN_DIR" % ptype.upper()
+            for dir in self.getPluginProductDirs(ptype):
+                if pluginDir in generatedDirs: continue
+                generatedDirs.append(pluginDir)
+                fh.write("{0}:=$(if $(strip $(_BUILD_TIME_MICROARCH)),$({1})/$(_BUILD_TIME_MICROARCH),$({1}))\n".format(pluginDir, dir))
             refreshcmd = self.getPluginData("Refresh", ptype)
             cachefile = self.getPluginData("Cache", ptype)
             fh.write("PLUGIN_REFRESH_CMDS += {0}\n"
                      "define do_{0}\n"
-                     "  echo \"@@@@ Refreshing Plugins:{0}\" &&\\\n"
+                     "  $(CMD_echo) \"@@@@ Refreshing Plugins:{0} for $(1)\" &&\\\n"
                      "$(EDM_TOOLS_PREFIX) {0} $(1)\n"
                      "endef\n".format(refreshcmd))
             for dir in self.getPluginProductDirs(ptype):
-                fh.write("$({3})/{0}: $(SCRAM_INTwork)/cache/{1}_{2} "
+                fh.write("$({4})/{0}: $(SCRAM_INTwork)/cache/{1}_{2} "
                          "$(SCRAM_INTwork)/cache/prod/{2}\n"
                          "\t$(call run_plugin_refresh_cmd,{2})\n"
-                         "{2}_cache := $({3})/{0}\n".format(cachefile, ptype, refreshcmd, dir))
+                         "{2}_cache := $({3})/{0}\n".format(cachefile, ptype, refreshcmd, dir, pluginDir))
             fh.write("$(SCRAM_INTwork)/cache/{0}_{1}: \n"
                      "\t@:\n"
                      "-include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.{0}plugin\n".format(ptype, refreshcmd))

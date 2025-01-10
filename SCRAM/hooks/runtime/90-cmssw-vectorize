@@ -1,5 +1,4 @@
 #!/bin/bash
-
 [ -e ${LOCALTOP}/.SCRAM/${SCRAM_ARCH}/multi-targets -o -e ${LOCALTOP}/lib/${SCRAM_ARCH}/multi-targets ] || exit 0
 [ $(uname -m) = "x86_64" ] || exit 0
 PGO_ENABLED=false
@@ -21,7 +20,14 @@ if [ "${SCRAM_TARGET}" = "" ] || [ "${SCRAM_TARGET}" = "default" ] ; then exit 0
 
 #Set min support micro-arch
 MIN_MICROARCH=$(echo ${SCRAM_ALL_MICROARCHS} | tr ' ' '\n' | head -1)
-echo "RUNTIME:variable:SCRAM_MIN_SUPORTED_MICROARCH=${MIN_MICROARCH}"
+echo "RUNTIME:variable:SCRAM_MIN_SUPPORTED_MICROARCH=${MIN_MICROARCH}"
+
+#Set build time env _BUILD_TIME_MICROARCH if needed
+if [ "${SCRAM_RUNTIME_TYPE}" = "BUILD" ] ; then
+  if [ $(echo " ${PSABI_ARCHS} " | grep " ${SCRAM_DEFAULT_MICROARCH} " | wc -l) -eq 0 ] ; then
+    echo "RUNTIME:variable:_BUILD_TIME_MICROARCH=scram_${MIN_MICROARCH}"
+  fi
+fi
 
 #Prepare an order list of psABI
 SEL_TARGETS=""

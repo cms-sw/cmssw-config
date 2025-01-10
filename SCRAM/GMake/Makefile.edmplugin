@@ -3,8 +3,15 @@ ifneq ($(strip $(edmPluginRefresh_cache)),)
 endif
 ifndef SCRAM_NOEDM_CHECKS
 define run_edm_checks
-  $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4)) \
-  $(if $(strip $($(1)_ROOTMAP_FILES)),$(call check_edm_class_transients,$1,$($(1)_ROOTMAP_FILES),$3,$4))
+  $(if $(strip $($(1)_CLASSES_DEF_XML)$($(1)_ROOTMAP_FILES)),\
+    $(if $(call IsBuildTimeMicroarch,$5),\
+      $(call run_edm_checks_imp,$1,$2,$3,$4,$5),\
+      && $(CMD_echo) ">> Skipping $(strip $5 EDM) Checks for $(1)"),\
+   )
+endef
+define run_edm_checks_imp
+  $(if $(strip $($(1)_CLASSES_DEF_XML)),$(call check_edm_class_version,$1,$($(1)_CLASSES_DEF_XML),$3,$4,$5)) \
+  $(if $(strip $($(1)_ROOTMAP_FILES)),$(call check_edm_class_transients,$1,$($(1)_ROOTMAP_FILES),$3,$4,$5))
 endef
 else
 run_edm_checks:=
@@ -18,8 +25,13 @@ endif
 ifndef SCRAM_NOEDMWRITECONFIG
 EDM_WRITE_CONFIG_DB:=edm_write_config
 define edm_write_config
+  $(if $(call IsBuildTimeMicroarch,$2),\
+    $(call edm_write_config_imp,$1,$2),\
+    $(CMD_echo) ">> Skipping $(strip $2 EDM) Write config for $(1)")
+endef
+define edm_write_config_imp
   $(CMD_rm) -rf $(<D)/$(EDM_WRITE_CONFIG_DB) && $(CMD_mkdir) -p $(<D)/$(EDM_WRITE_CONFIG_DB) &&\
-  $(CMD_echo) "@@@@ Running $(EDM_WRITE_CONFIG) for $(1)" &&\
+  $(CMD_echo) "@@@@ Running $(strip $2 EDM) write config for $(1)" &&\
   ($(CMD_cd) $(<D)/$(EDM_WRITE_CONFIG_DB) && $(EDM_TOOLS_PREFIX) $(EDM_WRITE_CONFIG) -p $(LOCALTOP)/$<) &&\
   $(CMD_touch) $(SCRAM_INTwork)/$(SCRAM_SOURCEDIR)/$($(1)_PROD_PACKAGE)/.$(EDM_WRITE_CONFIG_DB) &&\
   for file in `$(CMD_ls) $(<D)/$(EDM_WRITE_CONFIG_DB)`; do \
@@ -43,10 +55,10 @@ define check_duplicate_cfi_config
 endef
 else
 define  check_duplicate_cfi_config
-  $(CMD_echo) "@@@@ Skipping Duplicate CFI check for $1 due to SCRAM_NOEDMWRITECONFIG"
+  $(CMD_echo) "@@@@ Skipping $(strip $2 Duplicate) CFI check for $1 due to SCRAM_NOEDMWRITECONFIG"
 endef
 define edm_write_config
-  $(CMD_echo) "@@@@ Skipping $(EDM_WRITE_CONFIG) for $(1) due to SCRAM_NOEDMWRITECONFIG"
+  $(CMD_echo) "@@@@ Skipping $(strip $2 EDM) write config for $(1) due to SCRAM_NOEDMWRITECONFIG"
 endef
 endif
 
@@ -54,7 +66,7 @@ define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(if $(strip $3),$(CMD_echo) ">> Skipping edm_write_config for $3 $1",($(call edm_write_config,$(1)) || ($(CMD_rm) -f $< && exit 1))) &&\
+    ($(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $< && exit 1) &&\
     plugin=$(patsubst lib%,plugin%,$(<F)) &&\
     $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
@@ -62,7 +74,7 @@ define edm_register_plugin
     $(CMD_cp) -f $(<D)/$(@F) $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "--- Registered EDM Plugin: $(1)"; \
+    $(CMD_echo) "--- $(strip Registered $3) EDM Plugin: $(1)"; \
   else \
     $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
   fi $(endlog_$(2))
@@ -104,9 +116,9 @@ ifneq ($(strip $(UPDATE_CLASSVERSION)),)
 define update_edm_class_version
   && for x in $2; do \
     fname=`$(CMD_basename) $$x` &&\
-    $(CMD_echo) ">> Checking $$x for EDM Class Version update" &&\
+    $(CMD_echo) ">> Checking $(strip $5 $$x) for EDM Class Version update" &&\
     [ -d $(@D)/$$fname ] || $(CMD_mkdir) -p $(@D)/$$fname &&\
-    $(VERB_ECHO)  $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $@ -x $$x &&\
+    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $@ -x $$x &&\
     (($(CMD_cd) $(@D)/$$fname && $(EDM_CHECK_CLASS_VERSION_SCRIPT) -g -l $(LOCALTOP)/$@ -x $(LOCALTOP)/$$x) || ($(CMD_true))) &&\
     if [ -f $(@D)/$$fname/classes_def.xml.generated ] ; then \
       if [ "X`$(CMD_diff) $(@D)/$$fname/classes_def.xml.generated $$x | $(CMD_wc) -l`" != "X0" ] ; then \
@@ -116,7 +128,7 @@ define update_edm_class_version
     fi;\
     $(CMD_rm) -rf $(@D)/$$fname ;\
   done &&\
-  $(CMD_echo) "@@@@ ----> Generated EDM Class Version"
+  $(CMD_echo) "@@@@ ----> Generated $(strip $5 EDM) Class Version $(1)"
 endef
 else
 define update_edm_class_version
@@ -124,11 +136,11 @@ endef
 endif
 define check_edm_class_version
   $(call update_edm_class_version,$1,$2,$3) && for x in $2; do \
-    $(CMD_echo) ">> Checking EDM Class Version for $$x in $(@F)" &&\
-    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x &&\
-    ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) || exit 1;\
+    $(CMD_echo) ">> Checking $(strip $5 EDM) Class Version for $$x in $(1)" &&\
+    $(VERB_ECHO) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $3/$5/$(@F) -x $(LOCALTOP)/$$x &&\
+    (($(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_VERSION_SCRIPT) -l $3/$5/$(@F) -x $(LOCALTOP)/$$x) || ($(CMD_echo) "$(EDM_CHECKSUM_HELP_MSG)" && $(call delete_build_prod,$(3)) && exit 1)) || exit 1;\
   done &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Version "
+  $(CMD_echo) "@@@@ ----> OK $(strip $5 EDM) Class Version $(1)"
 endef
 else
 define check_edm_class_version
@@ -138,10 +150,10 @@ endif
 ifneq ($(strip $(EDM_CHECK_CLASS_TRANSIENTS)),)
 clean_rootmaps=for r in $(notdir $($(1)_ROOTMAP_FILES)); do $(CMD_rm) -f $(LOCALTOP)/$2/$$r; done
 define check_edm_class_transients
-  && $(CMD_echo) ">> Checking EDM Class Transients in $(@F)" &&\
-  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$(notdir $2),-f $r) &&\
-  ((cd $(LOCALTOP)/$3 && $(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $(@F) $(foreach r,$(nordir $2),-f $r)) || ($(call clean_rootmaps,$1,$3) && $(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
-  $(CMD_echo) "@@@@ ----> OK  EDM Class Transients "
+  && $(CMD_echo) ">> Checking $(strip $5 EDM) Class Transients in $(1)" &&\
+  $(VERB_ECHO) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $3/$5/$(@F) $(foreach r,$(notdir $2),-f $r) &&\
+  (($(EDM_TOOLS_PREFIX) $(EDM_CHECK_CLASS_TRANSIENTS_SCRIPT) -l $3/$5/$(@F) $(foreach r,$(nordir $2),-f $r)) || ($(call clean_rootmaps,$1,$3) && $(call delete_plugin_build_prod,$(3)) && exit 1)) &&\
+  $(CMD_echo) "@@@@ ----> OK $(strip $5 EDM) Class Transients $(1)"
 endef
 else
 define check_edm_class_transients
@@ -153,10 +165,10 @@ define getPluginCacheForPackage
 $(strip $(if $(strip $(RELEASETOP)),\
      $(if $(strip $(IS_PATCH)),\
           $(if $(strip $($(1)_inpatch)),\
-               $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache,\
-               $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
-          $(RELEASETOP)/$(SCRAMSTORENAME_LIB)/.edmplugincache),\
-     $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_LIB)/.edmplugincache))
+               $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache,\
+               $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache),\
+          $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache),\
+     $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache))
 endef
 define GetPackagePluginCache
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
@@ -167,23 +179,18 @@ define GetPackagePluginCache
   done
 endef
 
-$(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(SCRAMSTORENAME_LIB)/.edmplugincache
-	@if [ -e $< -a -d $(@D) ] ; then \
-	  $(CMD_echo) ">> Creating edm plugin cache for $*" &&\
-          $(CMD_rm) -f $@ && touch $@ &&\
-          for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||') ; do \
-            $(CMD_grep) $$plugin $< >> $@ || true ;\
-          done ;\
-	fi
-
-$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(SCRAMSTORENAME_LIB)/.poisonededmplugincache
-	@if [ -e $< -a -d $(@D) ] ; then \
-	  $(CMD_echo) ">> Creating edm plugin poisoned cache for $*" &&\
-	  $(CMD_rm) -f $@ && touch $@ &&\
-	  for plugin in $$(find $(@D) -name 'plugin*.so' -type f | $(CMD_sed) -e 's|.*/||;s|^plugin|plugin-poisoned-|') ; do \
-	    $(CMD_grep) $$plugin $< >> $@ || true ;\
-	  done ;\
-	fi
+ifneq ($(GENERATED_EDMPLUGIN_DIR),$(SCRAMSTORENAME_LIB))
+$(SCRAMSTORENAME_LIB)/.edmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.edmplugincache
+	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
+$(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache
+	@$(CMD_rm) -f $@
+	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
+endif
+$(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.edmplugincache
+	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
+$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache
+	@$(CMD_rm) -f $@
+	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 
 .PHONY: poisoned_edmplugins
 ifeq ($(strip $(edmPluginRefresh_cache)),)
@@ -250,7 +257,7 @@ $(PUB_DIRCACHE_MKDIR)/edmplugins:
 	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
 	@$(CMD_echo) ">> Generated $@"
 
-$(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
+$(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	$(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
 	for d in $(WORKINGDIR)/edmplugins/poison $(COMMON_WORKINGDIR)/cache/packs ; do \
