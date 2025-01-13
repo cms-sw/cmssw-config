@@ -225,10 +225,12 @@ ifneq ($(strip $(SCRAM_TARGETS)),)
 endif
 ifneq ($(GENERATED_BIGEDMPLUGIN_DIR),$(SCRAMSTORENAME_BIGLIB))
 $(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
-	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
+	@$(CMD_rm) -f $@
+	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 endif
 $(SCRAMSTORENAME_BIGLIB)/%/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
-	@$(VERB_ECHO) $(CMD_cp) -f $< $@ && $(CMD_cp) -f $< $@
+	@$(CMD_rm) -f $@
+	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 endif
 .PHONY: check_biglib_dependents
 external/$(SCRAM_ARCH)/objs-full/% external/$(SCRAM_ARCH)/objs-full/%:
