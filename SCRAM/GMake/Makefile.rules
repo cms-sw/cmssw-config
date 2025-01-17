@@ -1130,7 +1130,7 @@ $(1)_prodsrc      := $$(addprefix $(patsubst $(SCRAM_SOURCEDIR)/%,%,$2/),$$($(1)
 $(1)_files_exts   := $$(sort $$(patsubst .%,%,$$(suffix $$(filter-out $$(addprefix %.,$(FILE_EXT_CC_MAP)),$$(notdir $$($(1)_files))))) $$(foreach e,$(FILE_EXT_CC_MAP),$$(if $$(strip $$(filter %.$$e,$$(notdir $$($(1)_files)))),$$e,)))
 $(1)_LOC_USE      += $$(if $$(strip $$(filter $(FORTRANSRC_FILES_SUFFIXES),$$($(1)_files_exts))),$(F77_TYPE_COMPILER),)
 $(1)_objs         := $$(addprefix $$($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_files)))
-$(foreach u,$($(1)_LOC_FLAGS_FORCE_LINK),$(foreach l,$($(u)_EX_LIB),$(eval $(1)_$(l)_force_link:=1)))
+$(foreach u,$(call Uniq,$(strip $($(1)_LOC_FLAGS_FORCE_LINK) $(foreach x,$($(1)_LOC_USE),$(if $(strip $($(x)_EX_FLAGS_FORCE_LINK)),$x)))),$(foreach l,$($(u)_EX_LIB),$(eval $(1)_$(l)_force_link:=1)))
 ifneq ($(strip $(filter alpaka/%,$($(1)_PRODUCT_TYPE))),)
 $$(eval $$(call SetAlpakaRules,$1,$6))
 else
@@ -1818,11 +1818,7 @@ ifneq ($(strip $(filter deps-tree,$(MAKECMDGOALS))),)
 $(MAKECMDGOALS)::
 	@:
 endif
-ifeq ($(strip $(filter -Wl$(comma)--as-needed,$(self_EX_FLAGS_LDFLAGS))),)
-get_link_lib_arg=-l$2
-else
-get_link_lib_arg=$(if $(strip $($(1)_$(2)_force_link)),-Wl$(comma)--no-as-needed -l$2 -Wl$(comma)--as-needed,-l$2)
-endif
+get_link_lib_arg=$(if $(strip $($(1)_$(2)_force_link)),-Wl$(comma)--push-state -Wl$(comma)--no-as-needed -l$2 -Wl$(comma)--pop-state,-l$2)
 HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
 HOOK_PRODUCT := $(if $(strip $(USER_HOOK_PRODUCT)),$(USER_HOOK_PRODUCT),$(HOOK_PRODUCT))
@@ -1985,7 +1981,7 @@ echo_%:
 	@$(CMD_echo) "$* = $(subst ",\",$($*))"
 $(SCRAMSTORENAME_PYTHON)/__init__.py:
 	@$(CMD_touch) $@
-$(COMMON_WORKINGDIR)/cache/python_symlinks: $(addsuffix __init__.py,$(addprefix python/,$(dir $(ALL_PYTHON_DIRS)))) | $(COMMON_WORKINGDIR)/cache/project_links
+$(COMMON_WORKINGDIR)/cache/python_symlinks: $(addsuffix /__init__.py,$(addprefix python/,$(ALL_PACKAGES))) | $(COMMON_WORKINGDIR)/cache/project_links
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) && $(CMD_touch) $@
 $(WORKINGDIR)/%/productautocleanup: FORCE_TARGET
 	@for dir in $(foreach x,$(patsubst productautocleanup,,$(notdir $(patsubst %/,%,$(dir $(wildcard $(@D)/*/AUTOCLEAN.*.clean))))),$(if $(findstring all_$x,$($(subst /,_,$*))),,$x)) ; do \
