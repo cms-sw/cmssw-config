@@ -192,7 +192,7 @@ $(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.edmpluginca
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 $(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache
 	@$(CMD_rm) -f $@
-	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
+	@if [ -d $(@D) -a -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 
 .PHONY: poisoned_edmplugins
 ifeq ($(strip $(edmPluginRefresh_cache)),)
