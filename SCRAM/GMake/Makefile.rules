@@ -1818,7 +1818,7 @@ ifneq ($(strip $(filter deps-tree,$(MAKECMDGOALS))),)
 $(MAKECMDGOALS)::
 	@:
 endif
-get_link_lib_arg=$(if $(strip $($(1)_$(2)_force_link)),-Wl$(comma)--push-state -Wl$(comma)--no-as-needed -l$2 -Wl$(comma)--pop-state,-l$2)
+get_link_lib_arg=$(if $(strip $($(1)_$(2)_force_link)$($(2)_EX_CUDA_DLINK_LIB)),-Wl$(comma)--push-state -Wl$(comma)--no-as-needed -l$2 -Wl$(comma)--pop-state,-l$2)
 HOOK_PROJECT := $(if $(strip $(USER_HOOK_PROJECT)),$(USER_HOOK_PROJECT),$(HOOK_PROJECT))
 HOOK_PACKAGE := $(if $(strip $(USER_HOOK_PACKAGE)),$(USER_HOOK_PACKAGE),$(HOOK_PACKAGE))
 HOOK_PRODUCT := $(if $(strip $(USER_HOOK_PRODUCT)),$(USER_HOOK_PRODUCT),$(HOOK_PRODUCT))
