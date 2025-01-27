@@ -328,6 +328,8 @@ FFLAGS_COMPILER:=f77compiler
 GetCompilerType=$(if $(strip $1),$1,$(if $(strip $($2_COMPILER)),$($2_COMPILER),cxxcompiler))
 GetCompiler=$(if $(strip $2),$2,$(if $(strip $($1_LOC_FLAGS_COMPILER)),$($1_LOC_FLAGS_COMPILER),$(SCRAM_COMPILER)))
 GetVectorFlag=$(strip $(if $($1_LOC_FLAGS_COMPILER),$($($1_LOC_FLAGS_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2),$($(SCRAM_COMPILER)-cxxcompiler_EX_FLAGS_$3_TARGETS_$2)))
+GetCMSMicroArchCppFlags=-DCMS_MICRO_ARCH='"$(if $(strip $1),$(patsubst scram_%,%,$1),$(SCRAM_DEFAULT_MICROARCH))"'
+GetCMSMicroArchFlag=$(if $(strip $(filter CPPFLAGS,$1)),$(call GetCMSMicroArchCppFlags,$2))
 
 define UserTestsSelection
 ifeq ($(strip $(filter $(UNITTEST_TYPES),$($(1)_LOC_USE))),)
@@ -360,7 +362,7 @@ endef
 AdjustFlag=$(strip $(filter-out $(strip $(REM_$1_$2) $(REM_$2)),$($2)) $($1_$2))
 #$1,  $2,   $3,   $4,     $5,            $6
 #prod,types,flags,compiler,compiler_type,target
-AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(TARGETS_FLAGS_$6))))
+AdjustFlags=$(eval s:=$(patsubst %.o,%,$(@F)))$(strip $(foreach f,$3,$(strip $(call GetCMSMicroArchFlag,$f,$6)) $(call AdjustFlagsImp,$1,$2,$f,$(call GetCompiler,$1,$4),$s,$(subst $(space),_,$2),$(if $(subst undefinedXundefined,,$(origin $1_FILE$(s)_LOC_FLAGS_REM_$f)X$(origin $1_FILE$(s)_LOC_FLAGS_$f)),$s,),$(call GetCompilerType,$5,$f),$(TARGETS_FLAGS_$6))))
 #$1,  $2,  $3,  $4,      $5,      $6,            $7,             $8,          $9
 #prod,type,flag,compiler,filename,types_one_word,over_file_flags,compile_type,target
 define AdjustFlagsImp
