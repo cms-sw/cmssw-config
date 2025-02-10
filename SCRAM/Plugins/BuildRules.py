@@ -1393,7 +1393,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
     def alpaka_extra_flags(self, bend):
         self.set('use_private', 'alpaka-%s' % bend)
-        extra_use = [self.get("parent")]
+        extra_use = []
         for f in ["USE_ALPAKA", "USE_ALPAKA_" + bend.upper()]:
             for u in [d for d in self.core.get_flag_value(f).split(" ") if d]:
                 if u=="1": continue
