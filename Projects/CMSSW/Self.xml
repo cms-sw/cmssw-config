@@ -29,6 +29,7 @@
   <flags CODE_CHECK_ALPAKA_BACKEND="serial"/>
   <flags ENABLE_LTO="@ENABLE_LTO@"/>
   <flags ENABLE_PGO="@ENABLE_PGO@"/>
+  <flags ENABLE_TOOL_PCM="1"/>
  </client>
  <runtime name="CMSSW_GIT_HASH"        value="@PROJECT_GIT_HASH@"/>
  <runtime name="CMSSW_BASE"            value="$LOCALTOP"/>

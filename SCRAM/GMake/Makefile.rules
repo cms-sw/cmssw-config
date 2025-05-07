@@ -413,7 +413,7 @@ endef
 define ProductCommonVarsTools
 $(eval $(call ProductOrder,$1,$2,$3,$4))
 $(foreach type,INCLUDE LIB $(LIB_TYPES) LIBDIR,$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariable:$(1):$(type):EX,1)))
-ifeq ($(strip $($(1)_EX_FLAGS_GENERATE_PCM)),1)
+ifeq ($(strip $($(1)_EX_FLAGS_GENERATE_PCM)$(self_EX_FLAGS_ENABLE_TOOL_PCM)),11)
 ALL_PCM_TOOLS+=$1
 endif
 $(foreach type,$(foreach f,$(ALL_COMPILER_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_EX_$(type)_ALL,FindToolDepVariableR:$(1):$(type):EX,)))
@@ -892,6 +892,7 @@ define run_test
   fi
 endef
 ##############################################################################
+ifeq ($(strip $(self_EX_FLAGS_ENABLE_TOOL_PCM)),1)
 define set_tool_pcm_generation_rules
 .PHONY: generate_tool_pcm_$1
 ifneq ($(wildcard $(SCRAM_CONFIGDIR)/SCRAM/GMake/pcm-headers/$(1).h),)
@@ -912,6 +913,7 @@ generate_tool_pcm_$1:
 	@$(CMD_echo) "ERROR: $(1) toolfile requested to generate $(1).pcm but $(SCRAM_CONFIGDIR)/SCRAM/GMake/pcm-headers/$(1).h file missing." && exit 1
 endif
 endef
+endif
 ##############################################################################
 define config_update
   @[ -d  $(@D)] || $(CMD_mkdir) -p $(@D) ; $(CMD_touch) $@ ;\
