@@ -1,0 +1,14 @@
+CUDA_PCM_CHKSUM_FILE:=$(SCRAMSTORENAME_LIB)/pcm_stamps/$(strip $(firstword $(shell $(CMD_echo) $(CUDA_BASE) | $(CMD_md5sum) -t)))
+.PHONY: generate_tool_pcm_cuda
+CUDA_PCM_STAMPFILE:=$(strip $(call find_project_file,$(CUDA_PCM_CHKSUM_FILE)))
+$(CUDA_PCM_CHKSUM_FILE) $(SCRAMSTORENAME_LIB)/cuda.pcm:
+	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
+  export CLING_MODULES_CACHE_PATH=$(WORKINGDIR) &&\
+  $(CMD_echo) '#include <cuda_runtime.h>' | root -b -n -l &&\
+  $(CMD_mv) $(WORKINGDIR)/cuda.pcm $(SCRAMSTORENAME_LIB)/cuda.pcm &&\
+  $(CMD_touch) $@ &&\
+  $(CMD_echo) ">> Generated $(SCRAMSTORENAME_LIB)/cuda.pcm"
+%/$(CUDA_PCM_CHKSUM_FILE):
+	@$(CMD_echo) ">> Cuda PCM available via $*"
+generate_tool_pcm_cuda: $(if $(CUDA_PCM_STAMPFILE),$(CUDA_PCM_STAMPFILE),$(CUDA_PCM_CHKSUM_FILE))
+
