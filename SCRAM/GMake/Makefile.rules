@@ -896,14 +896,20 @@ ifeq ($(strip $(self_EX_FLAGS_ENABLE_TOOL_PCM)),1)
 define set_tool_pcm_generation_rules
 .PHONY: generate_tool_pcm_$1
 ifneq ($(wildcard $(SCRAM_CONFIGDIR)/SCRAM/GMake/pcm-headers/$(1).h),)
-$(eval PCM_CHKSUM_FILE:=$(SCRAMSTORENAME_LIB)/pcm_stamps/$(strip $(firstword $(shell $(CMD_echo) $($(2)_BASE) | $(CMD_md5sum) -t))))
+$(eval PCM_CHKSUM_FILE:=$(SCRAMSTORENAME_LIB)/pcm_stamps/$(1)-$(strip $(firstword $(shell $(CMD_echo) $1/$(notdir $($(2)_BASE)) | $(CMD_md5sum) -t))))
 $(eval PCM_STAMPFILE:=$(strip $(call find_project_file,$(PCM_CHKSUM_FILE))))
 $(PCM_CHKSUM_FILE) $(SCRAMSTORENAME_LIB)/$(1).pcm:
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\
-  export CLING_MODULES_CACHE_PATH=$(WORKINGDIR) &&\
+  $(CMD_rm) -f $$(@D)/$(1)-* &&\
+  pcm_dir=$(WORKINGDIR)/tool-pcm/$1 &&\
+  $(CMD_rm)   -rf $$$${pcm_dir} &&\
+  $(CMD_mkdir) -p $$$${pcm_dir} &&\
+  export CLING_MODULES_CACHE_PATH=$$$${pcm_dir} &&\
+  export CLING_PREBUILT_MODULE_PATH=$$$${pcm_dir} &&\
   $(CMD_cat) $(SCRAM_CONFIGDIR)/SCRAM/GMake/pcm-headers/$(1).h | root -b -n -l &&\
-  $(CMD_mv) $(WORKINGDIR)/$(1).pcm $(SCRAMSTORENAME_LIB)/$(1).pcm &&\
+  $(CMD_mv) $$$${pcm_dir}/$(1).pcm $(SCRAMSTORENAME_LIB)/$(1).pcm &&\
   $(CMD_touch) $$@ &&\
+  $(CMD_rm) -rf $$$${pcm_dir} &&\
   $(CMD_echo) ">> Generated $(SCRAMSTORENAME_LIB)/$(1).pcm"
 %/$(PCM_CHKSUM_FILE):
 	@$(CMD_echo) ">> $(2) PCM available via $$*"
