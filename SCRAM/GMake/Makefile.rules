@@ -896,7 +896,7 @@ ifeq ($(strip $(self_EX_FLAGS_ENABLE_TOOL_PCM)),1)
 define set_tool_pcm_generation_rules
 .PHONY: generate_tool_pcm_$1
 ifneq ($(wildcard $(SCRAM_CONFIGDIR)/SCRAM/GMake/pcm-headers/$(1).h),)
-$(eval PCM_CHKSUM_FILE:=$(SCRAMSTORENAME_LIB)/pcm_stamps/$(1)-$(strip $(firstword $(shell $(CMD_echo) $1/$(notdir $($(2)_BASE)) | $(CMD_md5sum) -t))))
+$(eval PCM_CHKSUM_FILE:=$(SCRAMSTORENAME_LIB)/pcm_stamps/$(1)-$(strip $(firstword $(shell $(CMD_echo) root/$(ROOT_VERSION)/$(1)/$($(2)_VERSION) | $(CMD_md5sum) -t))))
 $(eval PCM_STAMPFILE:=$(strip $(call find_project_file,$(PCM_CHKSUM_FILE))))
 $(PCM_CHKSUM_FILE) $(SCRAMSTORENAME_LIB)/$(1).pcm:
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) &&\

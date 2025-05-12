@@ -523,13 +523,18 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         basevar = "%s_BASE" % tool.upper()
         basevar = basevar.replace("-", "_")
         tools = self.getTools()
-        if 'VARIABLES' not in tools[tool]:
-            return
+        proj_lc = environ['SCRAM_PROJECTNAME'].lower()
         if type not in self.cache['ToolVariables']:
             self.cache['ToolVariables'][type] = {}
+        if ('TOOLVERSION' in tools[tool]) and (tool != proj_lc):
+            ver = "%s_VERSION" % tool.upper()
+            keys.append("%s:=%s" % (ver, tools[tool]['TOOLVERSION']))
+            self.cache['ToolVariables'][type][ver] = 1
+        if 'VARIABLES' not in tools[tool]:
+            return
         if basevar in tools[tool]['VARIABLES']:
             basedir = tools[tool][basevar]
-            if tool == environ['SCRAM_PROJECTNAME'].lower():
+            if tool == proj_lc:
                 keys.append("%s_FULL_RELEASE:=%s" % (basevar, basedir))
             else:
                 keys.append("%s:=%s" % (basevar, basedir))
