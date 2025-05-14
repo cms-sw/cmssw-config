@@ -1,10 +1,16 @@
 .PHONY: checkdeps
+define checkdeps_check_tool
+  if [ $$($(CMD_echo) " $$CHG_TOOLS " | $(CMD_grep) " echo_$(1)_USED_BY " | $(CMD_wc) -l) -eq 0 ] ; then \
+    CHG_TOOLS="$$CHG_TOOLS echo_$(1)_USED_BY" &&\
+    $(CMD_echo) "Tool changed: $1" ;\
+  fi
+endef
 $(LOCALTOP)/$(WORKINGDIR)/checkdeps.txt: $(wildcard $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected/*.xml $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/available/*.xml)
 	@$(CMD_rm) -f $@ && $(CMD_touch) $@
 	@CHG_TOOLS="" &&\
 	for tool in $$($(CMD_diff) -NawBr $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected $(RELEASETOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected | $(CMD_grep) '^diff ' | $(CMD_sed) 's|^.*/||;s|\.xml$$||' | $(CMD_sort) -u) ; do \
-	  CHG_TOOLS="$$CHG_TOOLS echo_$${tool}_USED_BY" &&\
-	  $(CMD_echo) "Tool changed: $${tool}";\
+	  $(call checkdeps_check_tool,$${tool}) &&\
+	  if [ $$($(CMD_echo) " $(self_EX_FLAGS_ALPAKA_BACKENDS) " | $(CMD_grep) " $$tool " | $(CMD_wc) -l) -gt 0 ] ; then $(call checkdeps_check_tool,alpaka); fi;\
 	done ;\
 	if [ "$$CHG_TOOLS" != "" ] ; then \
 	  $(MAKE) -f $(SCRAM_MAKEFILE) $$CHG_TOOLS | $(CMD_grep) '_USED_BY' | $(CMD_sed) 's|_USED_BY *= *||' | $(CMD_tr) ' ' '\n' | $(CMD_grep) '^\(self\|$(LC_PROJECTNAME)\)/' | $(CMD_cut) -d/ -f2,3 | $(CMD_sort) -u > $@ ;\
