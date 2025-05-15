@@ -5,18 +5,26 @@ define checkdeps_check_tool
     $(CMD_echo) "Tool changed: $1" ;\
   fi
 endef
-$(LOCALTOP)/$(WORKINGDIR)/checkdeps.txt: $(wildcard $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected/*.xml $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/available/*.xml)
-	@$(CMD_rm) -f $@ && $(CMD_touch) $@
-	@CHG_TOOLS="" &&\
-	for tool in $$($(CMD_diff) -NawBr $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected $(RELEASETOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected | $(CMD_grep) '^diff ' | $(CMD_sed) 's|^.*/||;s|\.xml$$||' | $(CMD_sort) -u) ; do \
+$(LOCALTOP)/$(WORKINGDIR)/checkdeps.txt: $(wildcard config/toolbox/$(SCRAM_ARCH)/tools/selected/*.xml config/toolbox/$(SCRAM_ARCH)/tools/available/*.xml config/Self.xml)
+	@$(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
+	CHG_TOOLS="" && EX_TOOLS="" &&\
+	ALPAKA_BACKEND=$$($(CMD_echo) $(ALPAKA_SELECTED_BACKENDS) | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^serial$$'| $(CMD_sort)) &&\
+	if [ -e  "$(RELEASETOP)/$(SCRAM_ADMIN_DIR)/MakeData/variables.mk" ]  ; then \
+	  REL_ALPAKA_BACKEND=$$($(CMD_grep) 'ALPAKA_SELECTED_BACKENDS:=' $(RELEASETOP)/$(SCRAM_ADMIN_DIR)/MakeData/variables.mk | $(CMD_sed) 's|.*:=||' | $(CMD_tr) ' ' '\n' | $(CMD_grep) -v '^serial$$' | $(CMD_sort)) &&\
+	  if [ "$${REL_ALPAKA_BACKEND}" != "$${ALPAKA_BACKEND}" ] ; then \
+	    EX_TOOLS="alpaka" &&\
+	    $(CMD_echo) "Alpaka backend selection changed in local area" ;\
+	  fi ;\
+	fi ;\
+	for tool in $${EX_TOOLS} $$($(CMD_diff) -NawBr $(LOCALTOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected $(RELEASETOP)/config/toolbox/$(SCRAM_ARCH)/tools/selected | $(CMD_grep) '^diff ' | $(CMD_sed) 's|^.*/||;s|\.xml$$||' | $(CMD_sort) -u) ; do \
 	  $(call checkdeps_check_tool,$${tool}) &&\
-	  if [ $$($(CMD_echo) " $(self_EX_FLAGS_ALPAKA_BACKENDS) " | $(CMD_grep) " $$tool " | $(CMD_wc) -l) -gt 0 ] ; then $(call checkdeps_check_tool,alpaka); fi;\
+	  if [ $$($(CMD_echo) " $${ALPAKA_BACKEND} " | $(CMD_grep) " $$tool " | $(CMD_wc) -l) -gt 0 ] ; then $(call checkdeps_check_tool,alpaka); fi;\
 	done ;\
 	if [ "$$CHG_TOOLS" != "" ] ; then \
 	  $(MAKE) -f $(SCRAM_MAKEFILE) $$CHG_TOOLS | $(CMD_grep) '_USED_BY' | $(CMD_sed) 's|_USED_BY *= *||' | $(CMD_tr) ' ' '\n' | $(CMD_grep) '^\(self\|$(LC_PROJECTNAME)\)/' | $(CMD_cut) -d/ -f2,3 | $(CMD_sort) -u > $@ ;\
 	fi
 checkdeps: $(LOCALTOP)/$(WORKINGDIR)/checkdeps.txt
 	@if [ -s $< ] ; then \
-	  git cms-addpkg -f $< ;\
-	fi ;\
-	git cms-checkdeps -a -A
+	  git cms-addpkg -f $< &&\
+	  git cms-checkdeps -a -A ;\
+	fi
