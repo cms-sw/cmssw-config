@@ -1730,6 +1730,8 @@ project_help help_$(SCRAM_SOURCEDIR)::
 	@$(CMD_echo) "check-headers"
 	@$(CMD_echo) "  To run header consistency checks"
 	@$(CMD_echo) ""
+	@$(CMD_echo) "setup-cuda"
+	@$(CMD_echo) "  If CMS distributed cuda is not accessible then use a local installation from $$USER_CUDA_BASE"
 	@$(CMD_echo) "dxr"
 	@$(CMD_echo) "  Generate DXR indexes for the release."
 	@$(CMD_echo) ""
@@ -2225,8 +2227,22 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos cleanup-runtest
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos cleanup-runtest setup-cuda
 use-ibeos: $(WORKINGDIR)/das_client/dasgoclient
+CUDA_SETUP_SCRIPT:=SCRAM/hooks/project/90-cuda-setup
+setup-cuda:
+	@SCRAM_SITE_HOOK_DIR=$$(PYTHONPATH=$(SCRAM_TOOL_HOME) $(CMD_python3) -c 'from SCRAM import get_site_hooks;print(get_site_hooks())') &&\
+  if [ "$${SCRAM_SITE_HOOK_DIR}" = "" ] ; then \
+    $(CMD_echo) "ERROR: Unable to find SCRAM site hooks directory" ; \
+    exit 1; \
+  elif [ ! -f "$${SCRAM_SITE_HOOK_DIR}/${CUDA_SETUP_SCRIPT}" ] ; then \
+    $(CMD_echo) "ERROR: No such file: $${SCRAM_SITE_HOOK_DIR}/${CUDA_SETUP_SCRIPT}"; \
+    exit 1;\
+  else \
+    $(CMD_echo) "Running $${SCRAM_SITE_HOOK_DIR}/${CUDA_SETUP_SCRIPT}" &&\
+    $${SCRAM_SITE_HOOK_DIR}/${CUDA_SETUP_SCRIPT} &&\
+    $(SCRAM) build -r echo_NVCC ;\
+  fi
 $(WORKINGDIR)/das_client/dasgoclient: $(WORKINGDIR)/das_client/das_client
 	@ln -sf das_client $@
 	@$(CMD_echo) ">> Created $@"
