@@ -39,12 +39,16 @@ class ExtraBuildRule:
                 "EDM_CHECK_CLASS_VERSION:=$(SCRAM_SOURCEDIR)/FWCore/Reflection/scripts/edmCheckClassVersion\n"
                 "EDM_CHECK_CLASS_TRANSIENTS=$(SCRAM_SOURCEDIR)/FWCore/Utilities/scripts/edmCheckClassTransients\n"
             )
-            if "ASAN" in environ["SCRAM_PROJECTVERSION"]:
-                fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libasan.so\n")
-            if "UBSAN" in environ["SCRAM_PROJECTVERSION"]:
-                fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libubsan.so\n")
-            if "TSAN" in environ["SCRAM_PROJECTVERSION"]:
-                fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libtsan.so\n")
+            for san in ["ASAN", "UBSAN", "TSAN", "LSAN"]:
+                if not san in environ["SCRAM_PROJECTVERSION"]:
+                    continue
+                gcc = common.getTool("gcc-cxxcompiler")
+                preload_libs = gcc.get("RUNTIME", {}).get("PATH:GCC_RUNTIME_%s" % san, [])
+                if preload_libs:
+                    if common.isToolAvailable("resolv") and (int(gcc['TOOLVERSION'].split(".")[0])>12):
+                        preload_libs.append("libresolv.so")
+                    fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=%s\n" % ":".join(preload_libs))
+                break
 
         fh.write("COMPILE_PYTHON_SCRIPTS:=yes\n"
                  "self_EX_FLAGS_CPPDEFINES+=-DCMSSW_GIT_HASH='\"$(CMSSW_GIT_HASH)\"' "
