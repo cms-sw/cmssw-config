@@ -22,11 +22,11 @@ $(foreach b,$(self_EX_FLAGS_ALPAKA_BACKENDS),\
   $(eval SKIP_ALPAKA_TESTS_$b:=$(shell $(AlpakaTest_$b) >/dev/null 2>&1 || $(CMD_echo) yes)))
 
 define AlpakaTestsFlag
-ifeq ($(strip $(filter alpaka-$2,$($(1)_LOC_USE))-$(SKIP_ALPAKA_TESTS_$2)),alpaka-$2-yes)
+ifeq ($(strip $(firstword $(filter alpaka-$2,$($(1)_LOC_USE)))-$(SKIP_ALPAKA_TESTS_$2)),alpaka-$2-yes)
 $(1)_NO_TESTRUN := yes
 $(1)_TEST_SKIP_MSG:=Failed to run $(notdir $(AlpakaTest_$2))
 else
-ifeq ($(strip $(filter $2,$($(1)_LOC_USE))-$(SKIP_ALPAKA_TESTS_$2)),$2-yes)
+ifeq ($(strip $(firstword $(filter $2,$($(1)_LOC_USE)))-$(SKIP_ALPAKA_TESTS_$2)),$2-yes)
 $(1)_NO_TESTRUN := yes
 $(1)_TEST_SKIP_MSG:=Failed to run $(notdir $(AlpakaTest_$2))
 endif
