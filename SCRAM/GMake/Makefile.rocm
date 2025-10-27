@@ -80,7 +80,9 @@ ifeq ($(strip $(SYNTAX_ONLY)),)
 $(1)_rocmobjs     := $$(addprefix $($(1)_objdir)/, $$(addsuffix .$(OBJEXT),$$($(1)_rocmfiles)))
 $(1)_PRE_INIT_FUNC+=$$$$(eval $$$$(call SetRocmRules,$1,$2))
 endif
-$(1)_LOC_USE      += $(if $(strip $(filter $(ROCM_TYPE_COMPILER),$($(1)_LOC_USE))),,$(ROCM_TYPE_COMPILER))
+ifeq ($(strip $(filter $(ROCM_TYPE_COMPILER),$($(1)_LOC_USE))),)
+$(1)_LOC_USE      += $(ROCM_TYPE_COMPILER)
+endif
 else
 $(WORKINGDIR)/cache/rocm_dlink/$(1): $$($(1)_rocm_dlink_deps)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
