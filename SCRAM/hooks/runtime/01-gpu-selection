@@ -1,54 +1,49 @@
 #!/bin/bash
-#Do not do any thing for BUILD env
-[ "${SCRAM_RUNTIME_TYPE}" = "BUILD" ] && exit
-
-function run_cudaIsEnabled (){
+function check_cuda (){
   timeout 10 nvidia-smi
 }
 
-function run_rocmIsEnabled (){
-  timeout 10 rocm-smi
+function check_rocm (){
+  test -e /dev/kfd
 }
 
-function remove_variables(){
-  tinfo=$(scram tool info $1)
-  for var in LIBDIR:LD_LIBRARY_PATH PYTHONDIR:PYTHON3PATH BINDIR:PATH ; do
-    tag=$(echo $var | sed 's|:.*||')
-    e=$(echo $var | sed 's|.*:||')
-    v=$(echo "${tinfo}" | grep "^${e}=" | sed 's|.*=||')
-    if [ "$v" != "" ] ; then
-			echo "RUNTIME:path:remove:$e=$v"
-    fi
-  done
+function check_cpu (){
+  true
 }
 
-SELF_TOOL=$(scram tool info self)
-gpu_tools=$(echo "${SELF_TOOL}" | grep GPU_EXCLUSIVE_TOOLS+= | sed 's|^.*=||')
-[ "${gpu_tools}" = "" ] && exit 0
-tools_types="cuda rocm"
-for tt in $tools_types ; do eval "${tt}_ENABLED=''" ; done
-for tool in $gpu_tools ; do
-  [ -e ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/${tool}.xml ] || continue
-  set_env=false
-  for tt in $tools_types ; do
-    [ -e ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/${tool}-${tt}.xml ] || continue
-    if ${set_env} ; then
-      remove_variables ${tool}-${tt}
-      continue
-    fi
-    var="${tt}_ENABLED"
-    if [[ "${!var}" == "" ]] ; then
-      if run_${tt}IsEnabled >/dev/null 2>&1 ; then
-        eval "${var}=true"
-      else
-        eval "${var}=false"
-      fi
-    fi
-    if [ "${!var}" = "true" ]  ; then
-      set_env=true
-    else
-      remove_variables ${tool}-${tt}
+
+gpu_types=$(scram tool info self | grep SCRAM_GPU_VENDORS+= | sed 's|^.*=||')
+[ "${gpu_types}" = "" ] && exit 0
+selected_gpu="cpu"
+if [ "${SCRAM_RUNTIME_TYPE}" = "BUILD" ] ; then
+  selected_gpu="${gpu_types}"
+else
+  for gpu in $gpu_types; do
+    if check_${gpu} >/dev/null 2>&1 ; then
+      selected_gpu="${gpu}"
+      break
     fi
   done
-  ${set_env} && remove_variables ${tool}
+fi
+
+TOOLS="self python-paths"
+for tool in  $TOOLS ; do
+  tool_data=$(${SCRAM} tool info $tool)
+  for e in LD_LIBRARY_PATH PATH PYTHON3PATH; do
+    for d in $(echo "${tool_data}" | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
+      ok=false
+      case ${d} in
+        ${LOCALTOP}/external/$SCRAM_ARCH/* ) ok=true ;;
+        ${LOCALTOP}/* ) continue ;;
+      esac
+      for gpu in ${selected_gpu} ; do
+        x="scram_${gpu}"
+        update=$ok
+        if ! $ok ; then
+          [ -d ${d}/${x} ] && update=true
+        fi
+        $update && echo "RUNTIME:path:replace:${e}=${d}=${d}/${x}:${d}"
+      done
+    done
+  done
 done

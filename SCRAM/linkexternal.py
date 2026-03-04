@@ -235,6 +235,14 @@ def main():
                     cache["defaultlinks"][ux] = 1
                     if cf in cache["ignorefiles"]:
                         cache["ignorefiles"][ux] = cache["ignorefiles"][cf]
+        if "SCRAM_GPU_VENDORS" in flags:
+            for x in flags["SCRAM_GPU_VENDORS"]:
+                for cf in list(cache["defaultlinks"].keys()):
+                    ux = "%s_%s" %  (x.upper().replace("-","_"), cf)
+                    cache["validlinks"][ux] = join(cache["validlinks"][cf], "scram_"+x)
+                    cache["defaultlinks"][ux] = 1
+                    if cf in cache["ignorefiles"]:
+                        cache["ignorefiles"][ux] = cache["ignorefiles"][cf]
         if "SKIP_TOOLS_SYMLINK" in flags:
             for t in flags["SKIP_TOOLS_SYMLINK"]:
                 cache["skipTools"][t.lower()] = 1
