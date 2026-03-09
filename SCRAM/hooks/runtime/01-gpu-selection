@@ -1,10 +1,13 @@
 #!/bin/bash
 function check_cuda (){
-  timeout 10 nvidia-smi
+  timeout 10 nvidia-smi -L
 }
 
 function check_rocm (){
-  test -e /dev/kfd
+  if [ -r /dev/kfd ] && grep -q 0x1002 /sys/class/drm/card*/device/vendor >/dev/null 2>&1 ; then
+    return 0
+  fi
+  return 1
 }
 
 function check_cpu (){
