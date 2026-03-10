@@ -76,8 +76,9 @@ echo "RUNTIME:variable:PROJECT_MULTIARCH_TARGET=scram_${MATCHED_TARGET}"
 TOOLS="self python-paths"
 if [ -f ${LOCALTOP}/config/toolbox/${SCRAM_ARCH}/tools/selected/cmssw.xml ] ; then TOOLS="${TOOLS} cmssw" ; fi
 for tool in  $TOOLS ; do
+  tool_data=$(${SCRAM} tool info $tool)
   for e in LD_LIBRARY_PATH RIVET_ANALYSIS_PATH PATH PYTHON3PATH; do
-    for d in $(${SCRAM} tool info $tool | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
+    for d in $(echo "${tool_data}" | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
       p="$d"
       x="scram_${MATCHED_TARGET}"
       isRivet=false

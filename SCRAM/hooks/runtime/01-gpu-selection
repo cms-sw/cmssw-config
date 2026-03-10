@@ -1,0 +1,52 @@
+#!/bin/bash
+function check_cuda (){
+  timeout 10 nvidia-smi -L
+}
+
+function check_rocm (){
+  if [ -r /dev/kfd ] && grep -q 0x1002 /sys/class/drm/card*/device/vendor >/dev/null 2>&1 ; then
+    return 0
+  fi
+  return 1
+}
+
+function check_cpu (){
+  true
+}
+
+
+gpu_types=$(scram tool info self | grep SCRAM_GPU_VENDORS+= | sed 's|^.*=||')
+[ "${gpu_types}" = "" ] && exit 0
+selected_gpu="cpu"
+if [ "${SCRAM_RUNTIME_TYPE}" = "BUILD" ] ; then
+  selected_gpu="${gpu_types}"
+else
+  for gpu in $gpu_types; do
+    if check_${gpu} >/dev/null 2>&1 ; then
+      selected_gpu="${gpu}"
+      break
+    fi
+  done
+fi
+
+TOOLS="self python-paths"
+for tool in  $TOOLS ; do
+  tool_data=$(${SCRAM} tool info $tool)
+  for e in LD_LIBRARY_PATH PATH PYTHON3PATH; do
+    for d in $(echo "${tool_data}" | grep "^$e=" | sed "s|^$e=||" | tr ':' '\n') ; do
+      ok=false
+      case ${d} in
+        ${LOCALTOP}/external/$SCRAM_ARCH/* ) ok=true ;;
+        ${LOCALTOP}/* ) continue ;;
+      esac
+      for gpu in ${selected_gpu} ; do
+        x="scram_${gpu}"
+        update=$ok
+        if ! $ok ; then
+          [ -d ${d}/${x} ] && update=true
+        fi
+        $update && echo "RUNTIME:path:replace:${e}=${d}=${d}/${x}:${d}"
+      done
+    done
+  done
+done

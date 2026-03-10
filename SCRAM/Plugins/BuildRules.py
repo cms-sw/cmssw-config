@@ -527,7 +527,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         if type not in self.cache['ToolVariables']:
             self.cache['ToolVariables'][type] = {}
         if ('TOOLVERSION' in tools[tool]) and (tool != proj_lc):
-            ver = "%s_VERSION" % tool.upper()
+            ver = "%s_VERSION" % tool.upper().replace("-", "_")
             keys.append("%s:=%s" % (ver, tools[tool]['TOOLVERSION']))
             self.cache['ToolVariables'][type][ver] = 1
         if 'VARIABLES' not in tools[tool]:
@@ -550,7 +550,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             toolPrefix = "%s_" % ctool
         xkeys = []
         for v in tools[tool]['VARIABLES']:
-            if v in ["INCLUDE", "LIBDIR", "BINDIR"]:
+            if v in ["INCLUDE", "LIBDIR", "BINDIR", "PYTHONDIR"]:
                 continue
             if (v == basevar) or (v not in tools[tool]):
                 continue
