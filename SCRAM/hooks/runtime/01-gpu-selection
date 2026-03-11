@@ -18,7 +18,7 @@ function check_cpu (){
 gpu_types=$(scram tool info self | grep SCRAM_GPU_VENDORS+= | sed 's|^.*=||')
 [ "${gpu_types}" = "" ] && exit 0
 selected_gpu="cpu"
-if [ "${SCRAM_RUNTIME_TYPE}" = "BUILD" ] ; then
+if [ "${SCRAM_RUNTIME_TYPE}" = "BUILD" -o "${USER_SCRAM_RUNTIME_TYPE}" = "BUILD" ] ; then
   selected_gpu="${gpu_types}"
 else
   for gpu in $gpu_types; do
