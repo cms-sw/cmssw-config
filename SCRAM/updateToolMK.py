@@ -238,7 +238,7 @@ for tool in tools:
 
 ref = open("%s/all.mk" % stooldir, "w")
 with open("%s/order" % stooldir) as ref1:
-    for line in [l.strip("\n").split(":",1)[-1] for l in ref1.readlines() if ":" in l]:
+    for line in [l.strip("\n").split(":",1)[-1] for l in sorted(ref1.readlines()) if ":" in l]:
         ref.write("include %s/%s.mk\n" % (stooldir, line))
 ref.close()
 
