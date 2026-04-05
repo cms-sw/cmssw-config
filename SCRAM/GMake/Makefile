@@ -1,6 +1,10 @@
 ifndef THISDIR
 $(error "You must pass in a value for THISDIR (normally current dir name from LOCALTOP).")
 endif
+ifeq ($(strip $(MAKECMDGOALS)-$(SKIP_EXTERNAL_LINK)),ExternalLinks-yes)
+  $(shell touch $(SCRAM_INTwork)/ExternalLinks.txt)
+  $(error Skip Internal ExternalLinks)
+endif
 ifndef SCRAM_ADMIN_DIR
 SCRAM_ADMIN_DIR:= .SCRAM/$(SCRAM_ARCH)
 endif
@@ -35,11 +39,13 @@ $(TOOLS_MKDIR).mk: $(ToolTimeStamps)
 	  $(TOOL_MAKE_SCRIPT) $(SCRAM_ARCH) > $@.tmp ;\
 	else \
 	  $(TOOL_MAKE_SCRIPT) $(SCRAM_ARCH) $(notdir $?) > $@.tmp ;\
-	fi
-	@cat $(TOOLS_MKDIR)/*.mk >> $@.tmp
-	@mv $@.tmp $@
+	fi ;\
+	cat $(TOOLS_MKDIR)/*.mk >> $@.tmp &&\
+	mv $@.tmp $@ &&\
+	if [ -e $(SCRAM_INTwork)/ExternalLinks.txt ] ; then $(SCRAM) build ExternalLinks ; fi ;\
+	rm -f $(SCRAM_INTwork)/ExternalLinks.txt
 
 $(SCRAM_TOOLS_DIR)/%: $(SCRAM_CONFIGDIR)/toolbox/$(SCRAM_ARCH)/tools/selected/%.xml
-	@for tool in $*; do $(SCRAM) setup $* && touch $@; done
+	@export SKIP_EXTERNAL_LINK=yes; for tool in $*; do $(SCRAM) setup $* && touch $@; done
 
 $(SCRAM_CONFIGDIR)/% $(PUB_DIRCACHE_MKDIR)/% $(DIRCACHE_MKDIR)/%:
