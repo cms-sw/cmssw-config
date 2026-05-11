@@ -8,7 +8,7 @@ AdjustCudaHostFlags=$(foreach x,$2,$(filter-out $(call GetVariable,REM_CUDA_HOST
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 Tool_DependencyCudaDLINK=$(foreach x,$($(1)_LOC_CUDA_DLINK_LIB_ALL),-l$x)
 define cuda_dlink_deps
-$(addprefix $(WORKINGDIR)/cache/cuda_dlink/,$(foreach u,$($(1)_LOC_USE),$($u)))
+$(foreach u,$($(1)_LOC_USE),$(eval v:=$($u))$(addprefix $(WORKINGDIR)/cache/cuda_dlink/,$(strip $v $(if $(strip $(filter $($(v)$(ALPAKA_BACKEND_SUFFIX_cuda)_CLASS),LIBRARY)),$(v)$(ALPAKA_BACKEND_SUFFIX_cuda)))))
 endef
 
 define GenerateReleaseCudaDlink

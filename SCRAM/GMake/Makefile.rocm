@@ -6,7 +6,7 @@ SET_PRODUCT_VARIABLES += ROCM_DLINK_LIB
 AdjustRocmHostFlags=$(foreach x,$2,$(filter-out $(call GetVariable,REM_ROCM_HOST_$x) $(call GetVariable,ROCM_HOST_$x) $(call AdjustFlags,$1,rocm,REM_ROCM_HOST_$x) $(call GetToolFlag,rocm,REM_ROCM_HOST_$x) $(call GetToolFlag,,ROCM_HOST_$x),$(call AdjustFlags,$1,,$x,llvm)) $(call GetVariable,ROCM_HOST_$x) $(call GetToolFlag,rocm,ROCM_HOST_$x))
 DLINK_LIBDIR:=$(foreach d,$(strip $(LOCALTOP) $(RELEASETOP) $(FULL_RELEASE_FOR_A_PATCH)),$(if $(strip $(wildcard $(d)/$(SCRAMSTORENAME_STATIC))),-L$(d)/$(SCRAMSTORENAME_STATIC),))
 define rocm_dlink_deps
-$(addprefix $(WORKINGDIR)/cache/rocm_dlink/,$(foreach u,$($(1)_LOC_USE),$($u)))
+$(foreach u,$($(1)_LOC_USE),$(eval v:=$($u))$(addprefix $(WORKINGDIR)/cache/rocm_dlink/,$(strip $v $(if $(strip $(filter $($(v)$(ALPAKA_BACKEND_SUFFIX_rocm)_CLASS),LIBRARY)),$(v)$(ALPAKA_BACKEND_SUFFIX_rocm)))))
 endef
 
 define GenerateReleaseRocmDlink
