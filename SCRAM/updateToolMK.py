@@ -85,13 +85,16 @@ def mkprocessfile (infile, outfile, data):
                 break
         if skip:
             continue
+        exec_locals = {"tool": tool, "basevar": basevar}
         for edit in data["editlines"]:
             reg = edit["reg"]
             m = reg.match(line)
             if m:
                 v = edit["value"]
-                exec (v)
-                line = locals()['eline']
+                exec_locals["m"] = m
+                exec_locals.pop("eline", None)
+                exec(v, globals(), exec_locals)
+                line = exec_locals["eline"]
                 if "cont" not in edit:
                     break
         oref.write(line+"\n")
