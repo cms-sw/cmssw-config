@@ -1208,11 +1208,32 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 fh.write("{0}:=$(if $(strip $(_BUILD_TIME_MICROARCH)),$({1})/$(_BUILD_TIME_MICROARCH),$({1}))\n".format(pluginDir, dir))
             refreshcmd = self.getPluginData("Refresh", ptype)
             cachefile = self.getPluginData("Cache", ptype)
-            fh.write("PLUGIN_REFRESH_CMDS += {0}\n"
-                     "define do_{0}\n"
-                     "  $(CMD_echo) \"@@@@ Refreshing Plugins:{0} for $(1)\" &&\\\n"
-                     "$(EDM_TOOLS_PREFIX) {0} $(1)\n"
-                     "endef\n".format(refreshcmd))
+            if refreshcmd == "edmPluginRefresh":
+                fh.write(
+                    "PLUGIN_REFRESH_CMDS += edmPluginRefresh\n"
+                    "define do_edmPluginRefresh\n"
+                    "  $(CMD_echo) \"@@@@ Refreshing non-ROCm Plugins:edmPluginRefresh for $(1)\" &&\\\n"
+                    "  rm -f $(1)/.edmplugincache &&\\\n"
+                    "  normal_plugins=\"$(foreach p,$(sort $(ALL_PRODS) $(ALL_EXTERNAL_PLUGIN_PRODS)),"
+                    "$(if $($(p)_rocm),,$(wildcard $(1)/plugin$(p).so)))\" ;\\\n"
+                    "  if [ -n \"$$normal_plugins\" ]; then "
+                    "$(EDM_TOOLS_PREFIX) edmPluginRefresh $$normal_plugins ; fi &&\\\n"
+                    "  $(CMD_echo) \"@@@@ Refreshing ROCm Plugins:edmPluginRefresh for $(1)\" &&\\\n"
+                    "  rocm_plugins=\"$(foreach p,$(sort $(ALL_PRODS) $(ALL_EXTERNAL_PLUGIN_PRODS)),"
+                    "$(if $($(p)_rocm),$(wildcard $(1)/plugin$(p).so)))\" ;\\\n"
+                    "  if [ -n \"$$rocm_plugins\" ]; then "
+                    "LD_LIBRARY_PATH=\"$(RELEASETOP)/external/$(SCRAM_ARCH)/lib/scram_rocm:$$LD_LIBRARY_PATH\" "
+                    "$(EDM_TOOLS_PREFIX) edmPluginRefresh $$rocm_plugins ; fi\n"
+                    "endef\n"
+                )
+            else:
+                fh.write(
+                    "PLUGIN_REFRESH_CMDS += {0}\n"
+                    "define do_{0}\n"
+                    "  $(CMD_echo) \"@@@@ Refreshing Plugins:{0} for $(1)\" &&\\\n"
+                    "$(EDM_TOOLS_PREFIX) {0} $(1)\n"
+                    "endef\n".format(refreshcmd)
+                )
             for dir in self.getPluginProductDirs(ptype):
                 fh.write("$({4})/{0}: $(SCRAM_INTwork)/cache/{1}_{2} "
                          "$(SCRAM_INTwork)/cache/prod/{2}\n"
