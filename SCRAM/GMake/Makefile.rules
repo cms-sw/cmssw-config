@@ -339,6 +339,13 @@ $(1)_TEST_SKIP_MSG:=Not a $(UNITTEST_TYPES) type test
 endif
 endef
 
+define SetRuntimeGPULibPath
+$(if $(strip $(filter alpaka/rocm,$($(1)_PRODUCT_TYPE))),\
+  LD_LIBRARY_PATH=$(subst $(space),$(colon),$(filter-out %/external/$(SCRAM_ARCH)/lib/scram_cuda,$(subst $(colon),$(space),$(LD_LIBRARY_PATH)))),\
+  $(if $(strip $(filter alpaka/cuda,$($(1)_PRODUCT_TYPE))),\
+    LD_LIBRARY_PATH=$(subst $(space),$(colon),$(filter-out %/external/$(SCRAM_ARCH)/lib/scram_rocm,$(subst $(colon),$(space),$(LD_LIBRARY_PATH))))))
+endef
+
 define SetCompilerTargetsFlag
   $(eval $(1)_SCRAM_TARGETS:=)
   $(foreach v,$(SCRAM_TARGETS),\
