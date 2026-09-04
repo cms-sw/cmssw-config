@@ -33,7 +33,7 @@ define bigedm_register_plugin
   if [ -f $< ] ; then \
     [ -d $(@D)/edm ] || $(CMD_mkdir) -p $(@D)/edm &&\
     ($(call install_name_tool,$(<F),$<) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
-    ($(SCRAM_edm_REFRESH_CMD) $< && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
+    ($(EDM_TOOLS_PREFIX) $(call SetRuntimeGPULibPath,$1) $(SCRAM_edm_REFRESH_CMD) $< && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
     $(CMD_echo) "module $(<F)" > $(@D)/$(1).edmplugin &&\
     $(CMD_cp) -f $< $@ &&\
     $(CMD_echo) "01:$(CMD_rm) -f $$del_files" > $(call AutoCleanFile,$<,bigedm) &&\

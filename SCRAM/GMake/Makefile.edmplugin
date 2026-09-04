@@ -74,7 +74,7 @@ define edm_register_plugin
       ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
     $(CMD_echo) "module $$plugin" > $@ &&\
     $(CMD_cp) $< $(<D)/$$plugin &&\
-    ($(SCRAM_edm_REFRESH_CMD) $(<D)/$$plugin && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
+    ($(EDM_TOOLS_PREFIX) $(call SetRuntimeGPULibPath,$1) $(SCRAM_edm_REFRESH_CMD) $(<D)/$$plugin && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
     $(CMD_echo) "01:$(CMD_rm) -f $$del_files" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:$(SCRAM_edm_REFRESH_SCRIPT) $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "--- $(strip Registered $3) EDM Plugin: $(1)"; \

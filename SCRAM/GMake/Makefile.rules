@@ -340,10 +340,9 @@ endif
 endef
 
 define SetRuntimeGPULibPath
-$(if $(strip $(filter alpaka/rocm,$($(1)_PRODUCT_TYPE))),\
-  LD_LIBRARY_PATH=$(subst $(space),$(colon),$(filter-out %/external/$(SCRAM_ARCH)/lib/scram_cuda,$(subst $(colon),$(space),$(LD_LIBRARY_PATH)))),\
-  $(if $(strip $(filter alpaka/cuda,$($(1)_PRODUCT_TYPE))),\
-    LD_LIBRARY_PATH=$(subst $(space),$(colon),$(filter-out %/external/$(SCRAM_ARCH)/lib/scram_rocm,$(subst $(colon),$(space),$(LD_LIBRARY_PATH))))))
+$(strip $(foreach v,$(filter-out cpu,$(self_EX_FLAGS_SCRAM_GPU_VENDORS)),\
+  $(if $(strip $(filter alpaka/$v,$($(1)_PRODUCT_TYPE))),\
+    LD_LIBRARY_PATH=$(strip $(subst $(space),$(colon),$(filter-out $(foreach g,$(filter-out cpu $v,$(self_EX_FLAGS_SCRAM_GPU_VENDORS)),%/external/$(SCRAM_ARCH)/lib/scram_$g),$(subst $(colon),$(space),$(LD_LIBRARY_PATH))))))))
 endef
 
 define SetCompilerTargetsFlag
