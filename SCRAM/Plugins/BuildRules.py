@@ -1209,10 +1209,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             refreshcmd = self.getPluginData("Refresh", ptype)
             cachefile = self.getPluginData("Cache", ptype)
             fh.write("PLUGIN_REFRESH_CMDS += {0}\n"
+                     "SCRAM_{1}_REFRESH_SCRIPT := $(if $(strip $(wildcard $(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/run_{0})),$(LOCALTOP)/$(SCRAM_CONFIGDIR)/SCRAM/run_{0},{0})\n"
+                     "SCRAM_{1}_REFRESH_CMD := {0}\n"
                      "define do_{0}\n"
                      "  $(CMD_echo) \"@@@@ Refreshing Plugins:{0} for $(1)\" &&\\\n"
-                     "$(EDM_TOOLS_PREFIX) {0} $(1)\n"
-                     "endef\n".format(refreshcmd))
+                     "  $(EDM_TOOLS_PREFIX) $(SCRAM_{1}_REFRESH_SCRIPT) $(1)\n"
+                     "endef\n".format(refreshcmd, ptype))
             for dir in self.getPluginProductDirs(ptype):
                 fh.write("$({4})/{0}: $(SCRAM_INTwork)/cache/{1}_{2} "
                          "$(SCRAM_INTwork)/cache/prod/{2}\n"

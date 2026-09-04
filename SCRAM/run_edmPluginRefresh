@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ -d $1/edm ] ; then
+  touch $1/edm/1.cache
+  cat $1/edm/*.cache > $1/.edmplugincache
+  rm -f $1/edm/1.cache
+else
+  rm -f $1/.edmplugincache
+fi

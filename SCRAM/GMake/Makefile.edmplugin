@@ -64,19 +64,22 @@ endif
 
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/edm_$($(1)_pluginrefresh) &&\
+  plugin=$(patsubst lib%,plugin%,$(<F)) &&\
+  pcache=$(@D)/edm/$(1).cache &&\
+  del_files="$< $@ $$pcache $(<D)/$$plugin $(@D)/$$plugin" &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    ($(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $< && exit 1) &&\
-    plugin=$(patsubst lib%,plugin%,$(<F)) &&\
-    $(CMD_echo) "module $$plugin" > $(<D)/$(@F) &&\
+    [ -d $(@D)/edm ] || $(CMD_mkdir) -p $(@D)/edm &&\
+    ($(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $$del_files && exit 1) &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$(@D),$<) &&\
-    ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $< $(<D)/$$plugin && exit 1)) &&\
-    $(CMD_cp) -f $(<D)/$(@F) $@ &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$$plugin $@" > $(call AutoCleanFile,$<,edm) &&\
-    $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
+      ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $(@D)/$$plugin) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
+    $(CMD_echo) "module $$plugin" > $@ &&\
+    $(CMD_cp) $< $(<D)/$$plugin &&\
+    ($(SCRAM_edm_REFRESH_CMD) $(<D)/$$plugin && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
+    $(CMD_echo) "01:$(CMD_rm) -f $$del_files" > $(call AutoCleanFile,$<,edm) &&\
+    $(CMD_echo) "90:$(SCRAM_edm_REFRESH_SCRIPT) $(@D)" >> $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "--- $(strip Registered $3) EDM Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $@ $(@D)/$(patsubst lib%,plugin%,$(<F)) ;\
+    $(CMD_rm) -f $$del_files ;\
   fi $(endlog_$(2))
 endef
 

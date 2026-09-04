@@ -28,16 +28,19 @@ endef
 #############################################################################
 define bigedm_register_plugin
   @$(startlog_$(1)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh &&\
+  pcache=$(@D)/edm/$(1).cache &&\
+  del_files=" $< $@ $(@D)/$(1).edmplugin $$pcache" &&\
   if [ -f $< ] ; then \
-    [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(CMD_echo) "module $(<F)" > $(<D)/$(1).edmplugin &&\
-    ($(call install_name_tool,$(<F),$<) || ($(CMD_rm) -f $< $(<D)/$(<F) && exit 1)) &&\
-    $(CMD_cp) -f $< $@ && $(CMD_cp) $(<D)/$(1).edmplugin $(@D)/$(1).edmplugin &&\
-    $(CMD_echo) "01:$(CMD_rm) -f $(@D)/$(1).edmplugin $(@D)/$(<F)" > $(call AutoCleanFile,$<,bigedm) &&\
-    $(CMD_echo) "90:edmPluginRefresh $(@D)" >> $(call AutoCleanFile,$<,bigedm) &&\
+    [ -d $(@D)/edm ] || $(CMD_mkdir) -p $(@D)/edm &&\
+    ($(call install_name_tool,$(<F),$<) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
+    ($(SCRAM_edm_REFRESH_CMD) $< && $(CMD_mv) $(<D)/.edmplugincache $$pcache) || ($(CMD_rm) -f $$del_files && exit 1) &&\
+    $(CMD_echo) "module $(<F)" > $(@D)/$(1).edmplugin &&\
+    $(CMD_cp) -f $< $@ &&\
+    $(CMD_echo) "01:$(CMD_rm) -f $$del_files" > $(call AutoCleanFile,$<,bigedm) &&\
+    $(CMD_echo) "90:$(SCRAM_edm_REFRESH_SCRIPT) $(@D)" >> $(call AutoCleanFile,$<,bigedm) &&\
     $(CMD_echo) "--- $(strip Registered $2) EDM Plugin: $(1)"; \
   else \
-    $(CMD_rm) -f $(@D)/$(1).edmplugin $@ ;\
+    $(CMD_rm) -f $$del_files;\
   fi $(endlog_$(1))
 endef
 #############################################################################
