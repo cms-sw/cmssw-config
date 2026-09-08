@@ -11,7 +11,7 @@ class ExtraBuildRule:
         # $self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
         #   plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
         buildrules.addPluginSupport("edm", "EDM_PLUGIN", "edmPluginRefresh", r'\/plugins$', "SCRAMSTORENAME_LIB",
-                                    ".edmplugincache", '$name="${name}.edmplugin"', "yes")
+                                    ".edmplugincache", '$name="edm/${name}.cache"', "yes")
         buildrules.addPluginSupport("rivet", "RIVET_PLUGIN", "RivetPluginRefresh", r'\/plugins$', "SCRAMSTORENAME_LIB",
                                     ".rivetcache", '$name="Rivet${name}.$(SHAREDSUFFIX)"', "yes")
         buildrules.addPluginSupport("dd4hep", "DD4HEP_PLUGIN", "DD4HepPluginRefresh", r'\/nplugins$',
