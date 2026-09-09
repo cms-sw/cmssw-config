@@ -178,9 +178,9 @@ $(1)_xr_dicts+=$$(foreach x,$$($(1)_biglib_lcgdict_pkgs),$$(foreach y,$$($$(x)_L
 else ifeq ($(strip $(IS_PATCH)),yes)
 $(1)_xr_dicts+=$$(foreach x,$$($(1)_biglib_lcgdict_pkgs),$$(foreach y,$$($$(x)_LCGDICTS),$$(if $$(strip $$(wildcard $(FULL_RELEASE_FOR_A_PATCH)/$(SCRAMSTORENAME_BIGLIB)/$$(x)_$$(y)r_rdict.pcm)),$$(x)_$$(y)r_rdict.pcm)))
 endif
-$(SCRAMSTORENAME_BIGLIB)/edm/$(1).cache: $(WORKINGDIR)/$(2)/lib$(1).$(SHAREDSUFFIX) $$(foreach p,$$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$$p)
+$(SCRAMSTORENAME_BIGLIB)/edm/$(1).cache: $(WORKINGDIR)/$(2)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $$(foreach p,$$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$$p)
 	$$(call edm_register_plugin,$1,$1,,bigedm)
-$(WORKINGDIR)/$(2)/lib$(1).$(SHAREDSUFFIX): $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
+$(WORKINGDIR)/$(2)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX): $$($(1)_objs) $(call libdeps,$1) $(logfile_$1)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs))
 ifeq ($(CMS_PGO_USE),1)
 ifneq ($(strip $($(1)_LOC_FLAGS_TARGETS)),)

@@ -61,9 +61,9 @@ endef
 define SetCudaRules
 ifeq ($(strip $(filter %LIBRARY,$($(1)_CLASS))$(2)),$($(1)_CLASS))
 $(1)_EX_CUDA_DLINK_LIB := $(1)_nv
-$(WORKINGDIR)/cache/cuda_dlink/$(1): $($(1)_objdir)/lib$(1)_nv.$(AREXT) $($(1)_cuda_dlink_deps)
+$(WORKINGDIR)/cache/cuda_dlink/$(1): $($(1)_objdir)/$(MODULE_PREFIX)$(1)_nv.$(AREXT) $($(1)_cuda_dlink_deps)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-$($(1)_objdir)/lib$(1)_nv.$(AREXT): $(addprefix $($(1)_objdir)/, $(addsuffix _nv.$(OBJEXT),$($(1)_cudafiles)))
+$($(1)_objdir)/$(MODULE_PREFIX)$(1)_nv.$(AREXT): $(addprefix $($(1)_objdir)/, $(addsuffix _nv.$(OBJEXT),$($(1)_cudafiles)))
 	$$(call generate_cuda_nv_a,$1) && $$(call copy_build_product,$(SCRAMSTORENAME_STATIC))
 $($(1)_objdir)/%_nv.$(OBJEXT): $($(1)_objdir)/%.$(OBJEXT)
 	$$(call generate_cuda_nv_objs,$1)

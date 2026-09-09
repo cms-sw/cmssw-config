@@ -7,7 +7,7 @@ EXTRA_TOP_LEVEL_BUILD_RULES+=ExtraPCMsRules
 MODULEMAP_BASE_DIR:=$(strip $(if $(strip $(RELEASETOP)),$(RELEASETOP),$(FULL_RELEASE_FOR_A_PATCH)))
 
 Tool_DirectDependencyPCMS=$(foreach l,$(foreach u,$($(1)_LOC_USE),$($(u))),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
-                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
+                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m $(MODULE_PREFIX)$(p)_rdict.pcm))
 
 define generate_full_modulemap
  $(CMD_echo) ">> Generating ModuleMap $@" &&\

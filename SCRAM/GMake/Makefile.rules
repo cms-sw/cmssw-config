@@ -400,7 +400,7 @@ Tool_LDFLAGS=$(strip $(call PreTool_LDFLAGS,$1) $(call TOOLS_DIR_FUNC,$1,LIBDIR,
   $(if $(strip $($1_rocm)),$(call TOOLS_LIB_FUNC,$1,ROCM_DLINK_LIB)) $(call TOOLS_LIB_FUNC,$1,LIB))
 GetPublicProducts=$(strip $($1) $(if $(strip $($2_PRODUCT_TYPE)),$(filter-out $2,$($1/$($2_PRODUCT_TYPE)))))
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
-                      $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m lib$(p)_rdict.pcm))
+                      $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m $(MODULE_PREFIX)$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_echo) $$(($$($(CMD_echo) -e $(2)$(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),\\n$($(dep)_ORDER)) | sort -n | head -1)-1))),$(2))
 FindToolDependency=$(sort $(filter-out $(subst $(semicolon),$(space),$(3)),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
@@ -781,7 +781,7 @@ define link_lib_common
   fi &&\
   true $(call run_edm_checks,$1,$2,$3,$4,$6) $(endlog_$(2))
   @($(call processMMDData,$1,$2,$@.dep,$(foreach d,$($(1)_objs:.$(OBJEXT)=.d),$d))) &&\
-  ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/lib$(1))
+  ([ -d $(WORKINGDIR)/cache/prod/$(6) ] || $(CMD_mkdir) -p $(WORKINGDIR)/cache/prod/$(6) && $(CMD_touch) $(WORKINGDIR)/cache/prod/$(6)/$(MODULE_PREFIX)$(1))
 endef
 define link_lib
   $(if $(strip $($1_rocm)),
@@ -999,7 +999,7 @@ ALL_BUILDFILES += $($(1)_BuildFile)
 $($(1)_BuildFile): $$($(1)_CONFIGDEPS)
 	@$(CMD_touch) $($(1)_BuildFile)
 endif
-$(WORKINGDIR)/cache/prod/lib$(1): $($(1)_BuildFile) $$($(1)_libdeps)
+$(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(1): $($(1)_BuildFile) $$($(1)_libdeps)
 	@$(CMD_touch) $$@
 endef
 define Package
@@ -1419,7 +1419,7 @@ define LibraryTail
 $(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(4),$(5)))
 ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
-$(WORKINGDIR)/cache/prod/lib$(1): $($(1)_objdir)/$($(1)_product)
+$(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(1): $($(1)_objdir)/$($(1)_product)
 	@:
 $$(eval $$(call CompileRules,$(1)))
 $$(eval $$(call AddBigObjCompileRule,$1))
@@ -2090,7 +2090,7 @@ ifeq ($(strip $(LLVM_PLUGIN)),)
 checker:
 	@(CMD_echo) "**** ERROR: LLVM static plugin is not set for this project" && exit 1
 else
-checker: $(WORKINGDIR)/cache/prod/lib$(LLVM_PLUGIN)
+checker: $(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(LLVM_PLUGIN)
 	@+$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
 	plugin=$(call find_project_file,lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)) &&\
 	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)" ; exit 1; fi ;\

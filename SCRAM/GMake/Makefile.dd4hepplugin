@@ -30,12 +30,12 @@ define dd4hep_register_plugin_copy
 endef
 
 define dd4hep_plugin_clean
-  $(call clean_prod,$($(1)_plugindir)/lib$(1).$(SHAREDSUFFIX))
+  $(call clean_prod,$($(1)_plugindir)/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX))
   $(call clean_prod,$($(1)_pluginprod))
 endef
 
 define dd4hepPlugin
-$$(eval $$(call addPlugin,$1,$2,dd4hep,yes,$3,,,lib$(1).components,$1,$4))
+$$(eval $$(call addPlugin,$1,$2,dd4hep,yes,$3,,,$(MODULE_PREFIX)$(1).components,$1,$4))
 endef
 
 %/.dd4hepcache:

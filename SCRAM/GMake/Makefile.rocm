@@ -54,9 +54,9 @@ endef
 define SetRocmRules
 $(1)_EX_ROCM_DLINK_LIB := $(1)_rocm
 $(1)_libdeps+=$(WORKINGDIR)/cache/rocm_dlink/$(1)
-$(WORKINGDIR)/cache/rocm_dlink/$(1): $($(1)_objdir)/lib$(1)_rocm.$(AREXT) $$($(1)_rocm_dlink_deps)
+$(WORKINGDIR)/cache/rocm_dlink/$(1): $($(1)_objdir)/$(MODULE_PREFIX)$(1)_rocm.$(AREXT) $$($(1)_rocm_dlink_deps)
 	@[ -d $$(@D) ] || $(CMD_mkdir) -p $$(@D) && $(CMD_touch) $$@
-$($(1)_objdir)/lib$(1)_rocm.$(AREXT): $(addsuffix .rocm_o,$($(1)_rocmobjs))
+$($(1)_objdir)/$(MODULE_PREFIX)$(1)_rocm.$(AREXT): $(addsuffix .rocm_o,$($(1)_rocmobjs))
 	$$(call generate_rocm_a,$1) && $$(call copy_build_product,$(SCRAMSTORENAME_STATIC))
 $($(1)_objdir)/%.rocm_o: $($(1)_objdir)/%
 	$$(call generate_rocm_device_objs,$1)
