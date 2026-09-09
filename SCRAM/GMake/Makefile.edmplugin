@@ -1,3 +1,6 @@
+EDMPLUGIN_PREFIX:=plugin
+EDMPLUGIN_CACHE:=.edmplugincache
+EDMPLUGIN_POISON_CACHE:=$(EDMPLUGIN_POISON_CACHE)
 ifneq ($(strip $(edmPluginRefresh_cache)),)
   POISON_EDMPLUGIN_CACHE      := $(strip $(if $(strip $(RELEASETOP)$(IS_PATCH)),yes))
 endif
@@ -18,7 +21,7 @@ run_edm_checks:=
 endif
 ifneq ($(strip $(SCRAM_TARGETS)),)
   ifneq ($(strip $(edmPluginRefresh_cache)),)
-    $(foreach v,$(SCRAM_TARGETS),$(eval edmPluginRefresh_cache+=$(SCRAMSTORENAME_LIB)/$v/.edmplugincache))
+    $(foreach v,$(SCRAM_TARGETS),$(eval edmPluginRefresh_cache+=$(SCRAMSTORENAME_LIB)/$v/$(EDMPLUGIN_CACHE)))
   endif
 endif
 
@@ -64,17 +67,17 @@ endif
 
 define edm_register_plugin
   @$(startlog_$(2)) $(CMD_touch) $(LOCALTOP)/$(SCRAM_INTwork)/cache/$(if $(strip $4),$4,edm)_$(SCRAM_edm_REFRESH_CMD) &&\
-  plugin=$(patsubst lib%,plugin%,$(<F)) &&\
+  plugin=$(patsubst $(MODULE_PREFIX)%,$(EDMPLUGIN_PREFIX)%,$(<F)) &&\
   pub_dir=$(dir $(@D)) &&\
   del_files="$< $@ $${pub_dir}/$${plugin}" &&\
-  pcache=$(<D)/.edmplugincache &&\
+  pcache=$(<D)/$(EDMPLUGIN_CACHE) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
     $(if $(strip $4),$(CMD_true),($(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$${pub_dir},$<) &&\
       ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $${pub_dir}/$${plugin}) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
     $(CMD_rm) -f $$pcache &&\
-    ($(EDM_TOOLS_PREFIX) $(call SetRuntimeGPULibPath,$1) $(SCRAM_edm_REFRESH_CMD) $< && $(CMD_sed) -i -e 's|^lib$1|plugin$1|' $$pcache && $(CMD_mv) $$pcache $@) || ($(CMD_rm) -f $$del_files && exit 1) &&\
+    ($(EDM_TOOLS_PREFIX) $(call SetRuntimeGPULibPath,$1) $(SCRAM_edm_REFRESH_CMD) $< && $(CMD_sed) -i -e 's|^$(MODULE_PREFIX)$1|$(EDMPLUGIN_PREFIX)$1|' $$pcache && $(CMD_mv) $$pcache $@) || ($(CMD_rm) -f $$del_files && exit 1) &&\
     $(CMD_echo) "01:$(CMD_rm) -f $$del_files" > $(call AutoCleanFile,$<,edm) &&\
     $(CMD_echo) "90:$(SCRAM_edm_REFRESH_SCRIPT) $${pub_dir}" >> $(call AutoCleanFile,$<,$(if $(strip $4),$4,edm)) &&\
     $(CMD_echo) "--- $(strip Registered $3) EDM Plugin: $(1)"; \
@@ -84,12 +87,12 @@ define edm_register_plugin
 endef
 
 define edm_plugin_clean
-  $(call clean_prod,$($(1)_plugindir)/plugin$(1).$(SHAREDSUFFIX))
+  $(call clean_prod,$($(1)_plugindir)/$(EDMPLUGIN_PREFIX)$(1).$(SHAREDSUFFIX))
   $(call clean_prod,$($(1)_pluginprod))
 endef
 define edmPlugin
 ifneq ($(strip $($(1)_objs)),)
-$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,.edmplugincache,edm/$(1).cache,$1,$4))
+$$(eval $$(call addPlugin,$1,$2,edm,yes,$3,edmPluginRefresh,$(EDMPLUGIN_CACHE),edm/$(1).cache,$1,$4))
 $(1)_BUILDRULES := _edm
 $(call add_postprocessing,$($(1)_PROD_PACKAGE),50,check_duplicate_cfi_config)
 else
@@ -168,32 +171,32 @@ define getPluginCacheForPackage
 $(strip $(if $(strip $(RELEASETOP)),\
      $(if $(strip $(IS_PATCH)),\
           $(if $(strip $($(1)_inpatch)),\
-               $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache,\
-               $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache),\
-          $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache),\
-     $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/.edmplugincache))
+               $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE),\
+               $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)),\
+          $(RELEASETOP)/$(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)),\
+     $(FULL_RELEASE_FOR_A_PATCH)/$(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)))
 endef
 define GetPackagePluginCache
   [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
   $(CMD_touch) $@ &&\
   cache=$(call getPluginCacheForPackage,$*) &&\
   for p in $(sort $($*_edm_plugins)); do \
-    $(CMD_grep) "^plugin$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^plugin|plugin-poisoned-|' >> $@ || true;\
+    $(CMD_grep) "^$(EDMPLUGIN_PREFIX)$$p.$(SHAREDSUFFIX)" $$cache | $(CMD_sed) 's|^$(EDMPLUGIN_PREFIX)|$(EDMPLUGIN_PREFIX)-poisoned-|' >> $@ || true;\
   done
 endef
 
 ifneq ($(GENERATED_EDMPLUGIN_DIR),$(SCRAMSTORENAME_LIB))
-$(SCRAMSTORENAME_LIB)/.edmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.edmplugincache
+$(SCRAMSTORENAME_LIB)/$(EDMPLUGIN_CACHE): $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
-$(SCRAMSTORENAME_LIB)/.poisonededmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache
+$(SCRAMSTORENAME_LIB)/$(EDMPLUGIN_POISON_CACHE): $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_POISON_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 endif
-$(SCRAMSTORENAME_LIB)/%/.edmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.edmplugincache
+$(SCRAMSTORENAME_LIB)/%/$(EDMPLUGIN_CACHE): $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
-$(SCRAMSTORENAME_LIB)/%/.poisonededmplugincache: $(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache
+$(SCRAMSTORENAME_LIB)/%/$(EDMPLUGIN_POISON_CACHE): $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_POISON_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -d $(@D) -a -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 
@@ -251,8 +254,8 @@ $(COMMON_WORKINGDIR)/cache/packs/%/poison_edmplugin:
 	@$(call GetPackagePluginCache)
 
 poisoned_edmplugins: $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugins) \
-                     $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/.poisonededmplugincache \
-                          $(foreach v,$(SCRAM_TARGETS),$(SCRAMSTORENAME_LIB)/$v/.poisonededmplugincache))
+                     $(if $(POISON_EDMPLUGIN_CACHE),$(SCRAMSTORENAME_LIB)/$(EDMPLUGIN_POISON_CACHE) \
+                          $(foreach v,$(SCRAM_TARGETS),$(SCRAMSTORENAME_LIB)/$v/$(EDMPLUGIN_POISON_CACHE)))
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:
@@ -262,7 +265,7 @@ $(PUB_DIRCACHE_MKDIR)/edmplugins:
 	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
 	@$(CMD_echo) ">> Generated $@"
 
-$(GENERATED_EDMPLUGIN_DIR)/.poisonededmplugincache: $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
+$(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_POISON_CACHE): $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
 	$(CMD_rm) -f $@ && $(CMD_touch) $@ &&\
 	for d in $(WORKINGDIR)/edmplugins/poison $(COMMON_WORKINGDIR)/cache/packs ; do \

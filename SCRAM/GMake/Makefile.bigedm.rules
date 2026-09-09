@@ -116,9 +116,9 @@ $(1)_objs_$3:=$(foreach o,$($(1)_objs),\
                 $(if $(strip $(filter $3,$(call GetLocExTargetFlags,$(basename $(notdir $o))))),\
                   $(dir $o)$3/$(notdir $o),\
                   $o))
-$(SCRAMSTORENAME_BIGLIB)/$3/edm/$(1).cache: $(WORKINGDIR)/$(2)/$3/lib$(1).$(SHAREDSUFFIX) $(foreach l,$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$3/$l)
+$(SCRAMSTORENAME_BIGLIB)/$3/edm/$(1).cache: $(WORKINGDIR)/$(2)/$3/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX) $(foreach l,$($(1)_xr_dicts),$(SCRAMSTORENAME_BIGLIB)/$3/$l)
 	$$(call edm_register_plugin,$1,$1,$3,bigedm)
-$(WORKINGDIR)/$(2)/$3/lib$(1).$(SHAREDSUFFIX): $$($(1)_objs_$3)
+$(WORKINGDIR)/$(2)/$3/$(MODULE_PREFIX)$(1).$(SHAREDSUFFIX): $$($(1)_objs_$3) $(call libdeps,$1)
 	$$(call bigobj_link_plugin,$1,$$($(1)_objs_$3),$3)
 $(foreach l,$($(1)_xr_dicts),$(eval $(call TargetLcgDict,$3,$l)))
 endef
@@ -198,21 +198,21 @@ endef
 #############################################################################
 ifneq ($(strip $(SCRAMSTORENAME_BIGLIB)),)
 GENERATED_BIGEDMPLUGIN_DIR:=$(if $(strip $(_BUILD_TIME_MICROARCH)),$(SCRAMSTORENAME_BIGLIB)/$(_BUILD_TIME_MICROARCH),$(SCRAMSTORENAME_BIGLIB))
-bigedmPluginRefresh_cache := $(SCRAMSTORENAME_BIGLIB)/.edmplugincache
+bigedmPluginRefresh_cache := $(SCRAMSTORENAME_BIGLIB)/$(EDMPLUGIN_CACHE)
 PLUGIN_REFRESH_CMDS       += bigedmPluginRefresh
-$(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache: $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
+$(GENERATED_BIGEDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE): $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh $(SCRAM_INTwork)/cache/prod/edmPluginRefresh
 	$(call run_plugin_refresh_cmd,edmPluginRefresh)
 $(SCRAM_INTwork)/cache/bigedm_edmPluginRefresh:
 	@:
 ifneq ($(strip $(SCRAM_TARGETS)),)
-  $(foreach v,$(SCRAM_TARGETS),$(eval bigedmPluginRefresh_cache+=$(SCRAMSTORENAME_BIGLIB)/$v/.edmplugincache))
+  $(foreach v,$(SCRAM_TARGETS),$(eval bigedmPluginRefresh_cache+=$(SCRAMSTORENAME_BIGLIB)/$v/$(EDMPLUGIN_CACHE)))
 endif
 ifneq ($(GENERATED_BIGEDMPLUGIN_DIR),$(SCRAMSTORENAME_BIGLIB))
-$(SCRAMSTORENAME_BIGLIB)/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
+$(SCRAMSTORENAME_BIGLIB)/$(EDMPLUGIN_CACHE): $(GENERATED_BIGEDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 endif
-$(SCRAMSTORENAME_BIGLIB)/%/.edmplugincache: $(GENERATED_BIGEDMPLUGIN_DIR)/.edmplugincache
+$(SCRAMSTORENAME_BIGLIB)/%/$(EDMPLUGIN_CACHE): $(GENERATED_BIGEDMPLUGIN_DIR)/$(EDMPLUGIN_CACHE)
 	@$(CMD_rm) -f $@
 	@if [ -e $< ] ; then $(VERB_ECHO) $(CMD_cp) -f $< $@ ; $(CMD_cp) -f $< $@; fi
 endif
