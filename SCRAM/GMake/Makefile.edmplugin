@@ -1,6 +1,6 @@
 EDMPLUGIN_PREFIX:=plugin
 EDMPLUGIN_CACHE:=.edmplugincache
-EDMPLUGIN_POISON_CACHE:=$(EDMPLUGIN_POISON_CACHE)
+EDMPLUGIN_POISON_CACHE:=.poisonededmplugincache
 ifneq ($(strip $(edmPluginRefresh_cache)),)
   POISON_EDMPLUGIN_CACHE      := $(strip $(if $(strip $(RELEASETOP)$(IS_PATCH)),yes))
 endif
