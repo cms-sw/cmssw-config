@@ -31,7 +31,7 @@ define compile_cuda_common
   $(call run_compile_command,$2,$4,$5,$(NVCC) -x cu $(if $(6),,$(CXX_MMD) $(CXX_MF) $(basename $@).d) -dc $(3) --compiler-options '$(call AdjustCudaHostFlags,$1,CXXFLAGS) $(CXXSHAREDOBJECTFLAGS)',)
 endef
 define compile_cuda
-  $(call compile_cuda_common,$1,$2,$(patsubst -isystem%,-I%,$(call AdjustFlags,$1,,CPPFLAGS,gcc)) $(call AdjustFlags,$1,,CUDA_FLAGS))
+  $(call compile_cuda_common,$1,$2,$(patsubst -isystem%,-I%,$(filter-out $(REM_CUDA_CPPFLAGS) $(call GetToolFlag,cuda,REM_CUDA_CPPFLAGS),$(call AdjustFlags,$1,,CPPFLAGS,gcc))) $(call AdjustFlags,$1,,CUDA_FLAGS))
 endef
 define CudaCompileRule
 $($(1)_objdir)/%.$(2).$(OBJEXT): $($(1)_srcdir)/%.$(2) $$($(1)_objdir)/precompile
