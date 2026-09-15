@@ -1,7 +1,6 @@
 #!/bin/bash
 GCC_TOOLFILE="config/toolbox/${SCRAM_ARCH}/tools/selected/gcc-cxxcompiler.xml"
 if [ -f "${RELEASETOP}/${GCC_TOOLFILE}" ] && grep -q 'ftrack-macro-expansion' "${RELEASETOP}/${GCC_TOOLFILE}" ; then
-    sed -i -e 's|-ftrack-macro-expansion=.||;s|^\s*<flags CPPFLAGS=""/>\s*||' "${LOCALTOP}/${GCC_TOOLFILE}"
-    scram setup gcc-cxxcompiler >/dev/null 2>&1
-  fi
+  sed -i -e 's|-ftrack-macro-expansion=.||;s|^\s*<flags CPPFLAGS=""/>\s*||' "${LOCALTOP}/${GCC_TOOLFILE}"
+  scram setup gcc-cxxcompiler >/dev/null 2>&1
 fi
