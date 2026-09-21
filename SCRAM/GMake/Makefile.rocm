@@ -39,8 +39,8 @@ endef
 define generate_rocm_device_objs
   @$(startlog_$(1)) [ -d $(@D) ] ||  $(CMD_mkdir) -p $(@D) &&\
   $(CMD_echo) ">> ROCm Device Code Obj $@ " &&\
-  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CMD_objcopy) -j '__CLANG_OFFLOAD_BUNDLE*' $^ $@" &&\
-              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(CMD_objcopy)  -j '__CLANG_OFFLOAD_BUNDLE*' $^ $@) $(endlog_$(1))
+  $(VERB_ECHO) $(SCRAM_PREFIX_COMPILER_COMMAND) "$(CMD_objcopy) -j '.llvm.offloading*' $^ $@" &&\
+              ($(SCRAM_PREFIX_COMPILER_COMMAND) $(CMD_objcopy)  -j '.llvm.offloading*' $^ $@) $(endlog_$(1))
 endef
 
 define generate_rocm_a
