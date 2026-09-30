@@ -1,0 +1,14 @@
+#!/bin/bash
+cmd=$(printf '%q ' "$@")
+out=$(echo "$@" | tr ' ' '\n' | grep '^\-o$' -A1 | tail -1 || true)
+if [[ -z "$out" ]]; then out="$$.txt"; fi
+log="time_it/${out}"
+rm -f "$log"
+mkdir -p $(dirname "$log")
+stime=$(date +%s)
+ERR=0
+/usr/bin/time -v -o "$log" bash -c "$cmd" || ERR=$?
+etime=$(date +%s)
+dtime=$((etime - stime))
+echo -e "=====================\nSTART_TIME: ${stime}\nEND_TIME: ${etime}\nTOTAL_TIME: ${dtime}" >> "$log"
+exit $ERR
