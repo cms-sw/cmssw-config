@@ -103,10 +103,8 @@ HOOK_PACKAGE                :=
 HOOK_PRODUCT                :=
 DEPENDENCY_ORDER_VARIABLES  :=
 EXTRA_TOP_LEVEL_BUILD_RULES :=
-MAKE_JOB_SERVER_CMD         :=
-ifeq ($(strip $(self_EX_FLAGS_ENABLE_LTO)),1)
 MAKE_JOB_SERVER_CMD         := +
-endif
+SCRAM_PREFIX_COMPILER_COMMAND := $(firstword $(foreach g,$(MAKECMDGOALS),$(wildcard $(LOCALTOP)/${SCRAM_CONFIGDIR}/SCRAM/prefix-cmds/$(g))))
 SET_PRODUCT_VARIABLES       := INCLUDE LIB LIBDIR $(LIB_TYPES)
 DROP_EXTERNAL_HEADER_MMD_DEPS:= yes
 DEVICE_CC_EXT := dev.cc
@@ -774,8 +772,8 @@ endef
 define link_lib_common
   @$(MAKE_JOB_SERVER_CMD)$(startlog_$(2))$(CMD_echo) ">> Building $(strip $($1_PRODUCT_TYPE) $(6) $(5)) $@" &&\
   export TMPDIR=$(@D) &&\
-  $(VERB_ECHO)               "$(strip $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)" &&\
-  (($(call checklibs,$(1)) && $(strip $($(1)_$(6)_BUILD_ENV) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
+  $(VERB_ECHO)               "$(strip $($(1)_$(6)_BUILD_ENV) $(SCRAM_PREFIX_COMPILER_COMMAND) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv2,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1)     $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)" &&\
+  (($(call checklibs,$(1)) && $(strip $($(1)_$(6)_BUILD_ENV) $(SCRAM_PREFIX_COMPILER_COMMAND) $(call GetCXX,$1,,$($1_linker))) $(call FixEnv1,$(7)) $(CXXSHAREDFLAGS) $(call GetMissingSymbolFlags,$1,yes) $(if $(strip $6),$($(1)_objs_$6),$($(1)_objs)) -o $@ $(8)) || ($(call delete_plugin_build_prod,$(3),$(4)) && exit 1)) &&\
   if [ "X$($(1)_no_lib_copy)" = X ] ; then \
     $(call copy_lib_to_main_productstore,$(3)/$(6)) ;\
   fi &&\
@@ -2091,7 +2089,7 @@ checker:
 	@(CMD_echo) "**** ERROR: LLVM static plugin is not set for this project" && exit 1
 else
 checker: $(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(LLVM_PLUGIN)
-	@+$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
+	@$(MAKE_JOB_SERVER_CMD)$(CMD_echo) Starting LLVM static checkers $(THISDIR) &&\
 	plugin=$(call find_project_file,lib/$(SCRAM_ARCH)/$(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)) &&\
 	if [ "X$$plugin" == "X" ] ; then $(CMD_echo) "**** ERROR: Unable to find $(MODULE_PREFIX)$(LLVM_PLUGIN).$(SHAREDSUFFIX)" ; exit 1; fi ;\
 	LLVM_BASE=$($(shell $(CMD_echo) $(LLVM_ANALYZER)-$(CXX_TYPE_COMPILER)_BASE | $(CMD_tr) 'a-z-' 'A-Z_')) &&\
@@ -2233,7 +2231,7 @@ ifeq ($(strip $(filter checkdeps,$(MAKECMDGOALS))),checkdeps)
 -include $(SCRAM_CONFIGDIR)/SCRAM/GMake/Makefile.checkdeps
 endif
 endif
-.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos cleanup-runtest setup-cuda
+.PHONY: skip-scripts-copy ignore-deleted emit-llvm use-ibeos cleanup-runtest setup-cuda time_it
 use-ibeos: $(WORKINGDIR)/das_client/dasgoclient
 CUDA_SETUP_SCRIPT:=SCRAM/hooks/project/90-cuda-setup
 setup-cuda:
@@ -2263,6 +2261,8 @@ emit-llvm:
         SCRAM_COMPILE_OPTIONS="-S -emit-llvm" \
         COMPILER=llvm \
         $(MAKE) -f $(SCRAM_MAKEFILE) compile
+time_it:
+	@:
 ignore-deleted:
 	@:
 scripts_%:
