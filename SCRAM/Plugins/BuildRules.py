@@ -621,7 +621,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 else:
                     SCRAM.printerror('***WARNING: Multiple usage of "%s". Please cleanup "include" in "%s" '
                                      'section of "%s"' % (d, section, bf))
-        elif type == "USE":
+        elif type in ["USE", "EDMPLUGIN_FROM"]:
             for u in [j for i in data for j in i]:
                 x = u.strip()
                 lx = x.lower()
@@ -1325,6 +1325,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def plugin_template(self):
         self.checkPluginFlag()
         if self.get("plugin_name"):
+            if self.get("plugin_type") == "edm":
+                self.data["FH"].write("EDMPLUGINS_{0}:={0}\nEDMPLUGINS_{1}+={0}\n".format(self.get("plugin_name"), self.get("parent")))
             self.data["FH"].write("{0}_PRE_INIT_FUNC += $$(eval $$(call {1}Plugin,{2},{0},$({3}),{4}))\n".format(
                 self.get("safename"), self.get("plugin_type"), self.get("plugin_name"),
                 self.get("plugin_dir"), self.get("path")))
@@ -1649,6 +1651,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             if flag:
                 fh.write("%s_SKIP_FILES   := %s\n" % (safename, flag))
         fh.write("%s_LOC_USE := %s  %s\n" % (safename, self.getCacheData("USE"), locuse))
+        edmplugin_deps = self.fixData(self.core.get_data("EDMPLUGIN_FROM"), "EDMPLUGIN_FROM", localbf)
+        if edmplugin_deps:
+            fh.write("%s_LOC_EDMPLUGIN_FROM := %s\n" % (safename, " ".join(edmplugin_deps)))
 
     def dumpBuildFileData(self, lib=False, check_alpaka=True):
         fh = self.data["FH"]

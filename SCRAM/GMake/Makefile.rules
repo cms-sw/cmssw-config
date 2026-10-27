@@ -400,6 +400,7 @@ GetPublicProducts=$(strip $($1) $(if $(strip $($2_PRODUCT_TYPE)),$(filter-out $2
 Tool_DependencyPCMS=$(foreach l,$($(1)_LOC_LIB_ALL),$(if $(strip $(filter 0,$($(l)_CXXMODULES))),$(foreach p,$($(l)_LCGDICTS) $($(l)_ROOTDICTS),-m $(l)_$(p)r_rdict.pcm))) \
                       $(foreach u,$($(1)_LOC_USE_ALL),$(foreach p,$($(u)_EX_FLAGS_PCMS),-m $(MODULE_PREFIX)$(p)_rdict.pcm))
 CalculateToolOrder=$(if $(strip $($(1)_EX_USE)),$(shell $(CMD_echo) $$(($$($(CMD_echo) -e $(2)$(foreach dep,$(foreach d,$($(1)_EX_USE),$($d)),\\n$($(dep)_ORDER)) | sort -n | head -1)-1))),$(2))
+FindEdmPluginDependency=$(sort $(foreach p,$(foreach d,$($(1)_$(2)_EDMPLUGIN_FROM),$(EDMPLUGINS_$(d))),$(p) $($(p)_$(2)_EDMPLUGIN_FROM_ALL)))
 FindToolDependency=$(sort $(filter-out $(subst $(semicolon),$(space),$(3)),$(foreach dep,$(foreach d,$($(1)_$(2)_USE),$(call GetPublicProducts,$d,$1)),$(dep) $($(dep)_EX_USE_ALL))))
 FindUOLibDependency=$(sort $(foreach d,$($(1)_EX_USE),$($($d)_EX_LIB) $($($d)_EX_UOLIB)))
 FindToolDepVariable=$($(1)_$(3)_$(2)) $(foreach var,$(sort $(foreach dep,$($(1)_$(3)_USE_ALL),$($(dep)_ORDER)$(colon)$(dep))),\
@@ -432,6 +433,7 @@ define SetProductCommonVars
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(SET_PRODUCT_VARIABLES),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariable:$(1):$(type):$(scope),1))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(foreach type,$(foreach f,$(OVERRIDABLE_FLAGS),FLAGS_$(f)),$(eval $(call AddCachedVariable,$(1)_$(scope)_$(type)_ALL,FindToolDepVariableR:$(1):$(type):$(scope),))))
 $(foreach scope,$(if $(strip $($(1)_EX_LIB)$($(1)_EX_USE)),EX) LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_USE_ALL,FindToolDependency:$(1):$(scope):$(subst $(space),$(semicolon),$($(1)_DROP_DEP)),)))
+$(foreach scope,                                               LOC,$(eval $(call AddCachedVariable,$(1)_$(scope)_EDMPLUGIN_FROM_ALL,FindEdmPluginDependency:$(1):$(scope):,)))
 $(foreach f,$(OVERRIDABLE_FLAGS),$(eval $(call AddCachedVariable,$(1)_$f,Tool_$f:$(1),)))
 endef
 
@@ -1085,9 +1087,11 @@ $($(1)_PROD_PACKAGE)_$(3)_plugins += $(1)
 ifndef SCRAM_NOEDMWRITECONFIG
 ifeq ($$(strip $(3)),edm)
 $(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE)/.scram
+$($(2)_objdir)/$(EDMPLUGIN_CACHE).deps: $(foreach x,$($(1)_LOC_EDMPLUGIN_FROM_ALL),$(5)/edm/$(x).cache)
+	@cat $$^ > $$@
 endif
 endif
-$(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps) $(if $(strip  $(_BUILD_TIME_MICROARCH)),$(5)/$(_BUILD_TIME_MICROARCH)/$(8))
+$(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps) $(if $(strip  $(_BUILD_TIME_MICROARCH)),$(5)/$(_BUILD_TIME_MICROARCH)/$(8)) $(if $(strip $(filter edm,$3)),$(if $(strip $($(1)_LOC_EDMPLUGIN_FROM)),$($(2)_objdir)/$(EDMPLUGIN_CACHE).deps))
 	$$(call $(3)_register_plugin,$(1),$(9))
 $$(foreach v,$($(1)_LOC_FLAGS_TARGETS),$$(eval $$(call TargetPlugin,$1,$2,$3,$4,$5,$6,$7,$8,$9,$$v)))
 endef

@@ -73,7 +73,7 @@ define edm_register_plugin
   pcache=$(<D)/$(EDMPLUGIN_CACHE) &&\
   if [ -f $< ] ; then \
     [ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
-    $(if $(strip $4),$(CMD_true),($(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
+    $(if $(strip $4),$(CMD_true),((if [ -e $${pcache}.deps ] ; then cp $${pcache}.deps $$pcache;  fi) && $(call edm_write_config,$(1),$(3))) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
     ($(call install_name_tool_rpath,$(LOCALTOP)/$${pub_dir},$<) &&\
       ($(call install_name_tool,@rpath/$$plugin,$<) && $(CMD_cp) -f $< $${pub_dir}/$${plugin}) || ($(CMD_rm) -f $$del_files && exit 1)) &&\
     $(CMD_rm) -f $$pcache &&\

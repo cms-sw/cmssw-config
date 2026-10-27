@@ -126,6 +126,8 @@ mkprocess["skiplines"].append(re.compile("^.+_LOC_((?!(USE|FLAGS)).+)\\s+[:+]=.*
 mkprocess["skiplines"].append(re.compile("^.+_LOC_USE\\s*[+]="))
 mkprocess["skiplines"].append(re.compile("^.+_EX_((?!LIB).+)\\s+[:+]=.*"))
 mkprocess["skiplines"].append(re.compile("^(ALL_COMMONRULES|NON_XML_BUILDFILE)\\s+\\+=.*"))
+mkprocess["skiplines"].append(re.compile("^EDMPLUGINS_.+"))
+mkprocess["skiplines"].append(re.compile("^.+_LOC_EDMPLUGIN_FROM\\*[:+]=\s*.*"))
 mkprocess["skiplines"].append(re.compile("^.+_PACKAGE\\s+:=\\s+self\\/.*"))
 mkprocess["skiplines"].append(re.compile("^.+\\$\\(call\\s+.*"))
 
