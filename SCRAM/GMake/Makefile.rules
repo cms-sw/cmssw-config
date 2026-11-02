@@ -338,9 +338,12 @@ endif
 endef
 
 define SetRuntimeGPULibPath
+  $(eval x:=$(strip $(call SetRuntimeGPULibPathImp,$1)))LD_LIBRARY_PATH=$(LOCALRT)/$(<D)$(colon)$(if $x,$x,$(LD_LIBRARY_PATH))
+endef
+define SetRuntimeGPULibPathImp
 $(strip $(foreach v,$(filter-out cpu,$(self_EX_FLAGS_SCRAM_GPU_VENDORS)),\
   $(if $(strip $(filter alpaka/$v,$($(1)_PRODUCT_TYPE))),\
-    LD_LIBRARY_PATH=$(strip $(subst $(space),$(colon),$(filter-out $(foreach g,$(filter-out cpu $v,$(self_EX_FLAGS_SCRAM_GPU_VENDORS)),%/external/$(SCRAM_ARCH)/lib/scram_$g),$(subst $(colon),$(space),$(LD_LIBRARY_PATH))))))))
+    $(strip $(subst $(space),$(colon),$(filter-out $(foreach g,$(filter-out cpu $v,$(self_EX_FLAGS_SCRAM_GPU_VENDORS)),%/external/$(SCRAM_ARCH)/lib/scram_$g),$(subst $(colon),$(space),$(LD_LIBRARY_PATH))))))))
 endef
 
 define SetCompilerTargetsFlag
@@ -1088,7 +1091,7 @@ ifndef SCRAM_NOEDMWRITECONFIG
 ifeq ($$(strip $(3)),edm)
 $(1)_extra_deps    += $(WORKINGDIR)/cache/prod/$(EDM_WRITE_CONFIG) $(SCRAMSTORENAME_CFIPYTHON)/$($(1)_PROD_PACKAGE)/.scram
 $($(2)_objdir)/$(EDMPLUGIN_CACHE).deps: $(foreach x,$($(1)_LOC_EDMPLUGIN_FROM_ALL),$(5)/edm/$(x).cache)
-	@cat $$^ > $$@
+	@$(CMD_sed) -e 's|^plugin|$(LOCALTOP)/$(5)/plugin|' $$^ > $$@
 endif
 endif
 $(5)/$(8): $$($(1)_pluginlib) $$($(1)_extra_deps) $(if $(strip  $(_BUILD_TIME_MICROARCH)),$(5)/$(_BUILD_TIME_MICROARCH)/$(8)) $(if $(strip $(filter edm,$3)),$(if $(strip $($(1)_LOC_EDMPLUGIN_FROM)),$($(2)_objdir)/$(EDMPLUGIN_CACHE).deps))
