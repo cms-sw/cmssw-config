@@ -259,11 +259,11 @@ poisoned_edmplugins: $(if $(strip $(RELEASETOP)),,$(PUB_DIRCACHE_MKDIR)/edmplugi
 	@$(CMD_echo) ">> Done generating edm plugin poisoned information"
 
 $(PUB_DIRCACHE_MKDIR)/edmplugins:
-	@$(CMD_echo) "#Auto generated EDM Plugins information" > $@
-	@for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_edm_plugins:=" >> $@; done
-	@$(if $(strip $(IS_PATCH)),for p in $(ALL_PACKAGES) ; do $(CMD_echo) "$${p}_inpatch:=1" >> $@; done, true)
-	@for l in $(foreach p,$(ALL_edm_PLUGINS),$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)) ; do $(CMD_echo) "$$l" >> $@ ; done
-	@$(CMD_echo) ">> Generated $@"
+	$(file >$@,#Auto generated EDM Plugins information)
+	$(foreach p,$(ALL_PACKAGES),$(file >>$@,$(p)_edm_plugins:=))
+	$(if $(strip $(IS_PATCH)),$(foreach p,$(ALL_PACKAGES),$(file >>$@,$(p)_inpatch:=1)))
+	$(foreach p,$(ALL_edm_PLUGINS),$(file >>$@,$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)))
+	$(CMD_echo) ">> Generated $@"
 
 $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_POISON_CACHE): $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
