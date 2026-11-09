@@ -263,7 +263,7 @@ $(PUB_DIRCACHE_MKDIR)/edmplugins:
 	$(foreach p,$(ALL_PACKAGES),$(file >>$@,$(p)_edm_plugins:=))
 	$(if $(strip $(IS_PATCH)),$(foreach p,$(ALL_PACKAGES),$(file >>$@,$(p)_inpatch:=1)))
 	$(foreach p,$(ALL_edm_PLUGINS),$(file >>$@,$($(p)_PROD_PACKAGE)_edm_plugins+=$(p)))
-	$(CMD_echo) ">> Generated $@"
+	@$(CMD_echo) ">> Generated $@"
 
 $(GENERATED_EDMPLUGIN_DIR)/$(EDMPLUGIN_POISON_CACHE): $(COMMON_WORKINGDIR)/cache/packs/changed $(wildcard $(WORKINGDIR)/edmplugins/poison/*/*/poison_edmplugin)
 	@[ -d $(@D) ] || $(CMD_mkdir) -p $(@D) &&\
