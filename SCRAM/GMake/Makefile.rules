@@ -1223,6 +1223,7 @@ TargetObjs=$(filter-out $(NonTargetExt) $(addprefix $($(1)_objdir)/,$(AUTO_GENER
 NonTargetObjs=$(filter-out $(call TargetObjs,$1),$($(1)_objs))
 
 define MultiTargets
+multi_targets_$(1)+=$($(1)_objdir)/$4/$($(1)_product)
 $1:: $($(1)_objdir)/$4/$($(1)_product)
 ifeq ($(CMS_PGO_USE),1)
 $(1)_$(4)_BUILD_ENV:=CMSSW_CPU_TYPE=$(patsubst scram_%,%,$4) &&
@@ -1415,6 +1416,7 @@ endef
 
 #safename,path,safepath,scriptstore,scripts,plugintype
 define LibraryHead
+multi_targets_$(1):=
 $(eval $(call CommonBinaryHead,$(1),$(2),$(3),$(4),$(5),$(6)))
 $(1)_product      := $(MODULE_PREFIX)$(1).$(SHAREDSUFFIX)
 endef
@@ -1424,7 +1426,7 @@ define LibraryTail
 $(eval $(call CommonBinaryTail,$(1),$(2),$(3),lib,$(4),$(5)))
 ifneq ($$(strip $$($(1)_objs)),)
 ALL_LIBRARIES += $(1)
-$(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(1): $($(1)_objdir)/$($(1)_product)
+$(WORKINGDIR)/cache/prod/$(MODULE_PREFIX)$(1): $($(1)_objdir)/$($(1)_product) $(multi_targets_$(1))
 	@:
 $$(eval $$(call CompileRules,$(1)))
 $$(eval $$(call AddBigObjCompileRule,$1))
